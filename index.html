@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chase x Records - Music Production Studio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/components.css">
+</head>
+<body>
+    <!-- Header & Navigation -->
+    <header class="header" id="header">
+    <div class="header-container">
+        <div class="logo">
+            <a href="index.html" style="text-decoration: none;">
+                <h1><i class="fas fa-compact-disc"></i> Chase x Records</h1>
+            </a>
+        </div>
+        <nav class="nav" id="nav">
+            <a href="index.html" class="nav-link"><i class="fas fa-home"></i> Home</a>
+            <a href="services.html" class="nav-link"><i class="fas fa-sliders-h"></i> Services</a>
+            <a href="music.html" class="nav-link"><i class="fas fa-music"></i> Music</a>
+            <a href="artists.html" class="nav-link"><i class="fas fa-user-alt"></i> Artists</a>
+            <a href="about.html" class="nav-link"><i class="fas fa-info-circle"></i> About</a>
+            <a href="contact.html" class="nav-link"><i class="fas fa-envelope"></i> Contact</a>
+        </nav>
+        <button class="hamburger" id="hamburger">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+    </div>
+</header>
+
+    <!-- Hero Section -->
+    <section class="hero" id="hero">
+        <div class="hero-content">
+            <h2 class="hero-title">CHASE x RECORDS</h2>
+            <p class="hero-tagline">Where Sound Meets Vision</p>
+            <div class="hero-cta">
+                <a href="contact.html" class="btn btn-primary">Book a Session</a>
+                <a href="music.html" class="btn btn-secondary">Listen Now</a>
+            </div>
+        </div>
+        <div class="hero-background"></div>
+    </section>
+
+    <!-- Services Preview -->
+    <section class="services" id="services">
+    <div class="container">
+        <h3 class="section-title">Our Services</h3>
+        <div class="services-grid">
+            <div class="service-card">
+                <div class="service-icon">
+                    <i class="fas fa-headphones-alt"></i>
+                </div>
+                <h4>Music Production</h4>
+                <p>Full production from concept to final mix. We bring your vision to life.</p>
+                <a href="services.html#production" class="btn btn-secondary" style="margin-top: 1rem; padding: 0.5rem 1rem;">
+                    <i class="fas fa-arrow-right"></i> Learn More
+                </a>
+            </div>
+            <div class="service-card">
+                <div class="service-icon">
+                    <i class="fas fa-sliders-h"></i>
+                </div>
+                <h4>Mixing & Mastering</h4>
+                <p>Professional mixing and mastering for radio-ready sound quality.</p>
+                <a href="services.html#mixing" class="btn btn-secondary" style="margin-top: 1rem; padding: 0.5rem 1rem;">
+                    <i class="fas fa-arrow-right"></i> Learn More
+                </a>
+            </div>
+            <div class="service-card">
+                <div class="service-icon">
+                    <i class="fas fa-microphone-alt"></i>
+                </div>
+                <h4>Vocal Tuning</h4>
+                <p>Precise vocal editing and tuning with industry-standard tools.</p>
+                <a href="services.html#vocal" class="btn btn-secondary" style="margin-top: 1rem; padding: 0.5rem 1rem;">
+                    <i class="fas fa-arrow-right"></i> Learn More
+                </a>
+            </div>
+        </div>
+        <div style="text-align: center; margin-top: 3rem;">
+            <a href="services.html" class="btn btn-primary">View All Services</a>
+        </div>
+    </div>
+</section>
+
+    <!-- Featured Tracks Preview -->
+    <section class="music" id="music">
+        <div class="container">
+            <h3 class="section-title">Featured Tracks</h3>
+            <div class="music-grid">
+                <div class="track-card" data-track="0">
+                    <div class="track-artwork">
+                        <img src="/placeholder.svg?height=200&width=200" alt="Track 1">
+                        <button class="play-btn-card">
+                <i class="fas fa-play"></i>
+            </button>
+                    </div>
+                    <h4 class="track-title">Midnight Echo</h4>
+                    <p class="track-artist">By Alex Studios</p>
+                </div>
+                <div class="track-card" data-track="1">
+                    <div class="track-artwork">
+                        <img src="/placeholder.svg?height=200&width=200" alt="Track 2">
+                        <button class="play-btn-card">
+                <i class="fas fa-play"></i>
+            </button>
+                    </div>
+                    <h4 class="track-title">Electric Dreams</h4>
+                    <p class="track-artist">By Luna Project</p>
+                </div>
+                <div class="track-card" data-track="2">
+                    <div class="track-artwork">
+                        <img src="/placeholder.svg?height=200&width=200" alt="Track 3">
+                        <button class="play-btn-card">
+                <i class="fas fa-play"></i>
+            </button>
+                    </div>
+                    <h4 class="track-title">Neon Nights</h4>
+                    <p class="track-artist">By Sonic Wave</p>
+                </div>
+            </div>
+            <div style="text-align: center; margin-top: 3rem;">
+                <a href="music.html" class="btn btn-primary">Browse All Music</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Featured Artists Preview -->
+    <section class="artists" id="artists">
+        <div class="container">
+            <h3 class="section-title">Featured Artists</h3>
+            <div class="artists-grid">
+                <div class="artist-card">
+                    <div class="artist-image">
+                        <img src="/placeholder.svg?height=250&width=250" alt="Alex Nova">
+                    </div>
+                    <h4>Alex Nova</h4>
+                    <p class="artist-genre">Electronic</p>
+                    <div class="artist-socials">
+                        <a href="#" target="_blank" title="Instagram">
+                        <i class="fab fa-instagram"></i>
+                    </a>
+                        <a href="#" target="_blank" title="Spotify">
+                        <i class="fab fa-spotify"></i>
+                    </a>
+                    </div>
+                </div>
+                <div class="artist-card">
+                    <div class="artist-image">
+                        <img src="/placeholder.svg?height=250&width=250" alt="Luna Sky">
+                    </div>
+                    <h4>Luna Sky</h4>
+                    <p class="artist-genre">Hip-Hop</p>
+                    <div class="artist-socials">
+                        <a href="#" target="_blank" title="Instagram">
+                        <i class="fab fa-instagram"></i>
+                    </a>
+                        <a href="#" target="_blank" title="Spotify">
+                        <i class="fab fa-spotify"></i>
+                    </a>
+                    </div>
+                </div>
+                <div class="artist-card">
+                    <div class="artist-image">
+                        <img src="/placeholder.svg?height=250&width=250" alt="Marcus Sound">
+                    </div>
+                    <h4>Marcus Sound</h4>
+                    <p class="artist-genre">R&B</p>
+                    <div class="artist-socials">
+                        <a href="#" target="_blank" title="Instagram">
+                        <i class="fab fa-instagram"></i>
+                    </a>
+                        <a href="#" target="_blank" title="Spotify">
+                        <i class="fab fa-spotify"></i>
+                    </a>
+                    </div>
+                </div>
+            </div>
+            <div style="text-align: center; margin-top: 3rem;">
+                <a href="artists.html" class="btn btn-primary">Meet All Artists</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials Section -->
+    <section class="testimonials" id="testimonials">
+        <div class="container">
+            <h3 class="section-title">What Artists Say</h3>
+            <div class="testimonials-carousel">
+                <div class="testimonial-slide">
+                    <p class="testimonial-text">"Chase x Records transformed my sound. The production quality is unmatched, and the creative energy is infectious."</p>
+                    <p class="testimonial-author">— Maria Chen, Singer-Songwriter</p>
+                </div>
+                <div class="testimonial-slide">
+                    <p class="testimonial-text">"Working with Chase was a game-changer for our album. Professional, creative, and truly dedicated to the craft."</p>
+                    <p class="testimonial-author">— The Vibe Collective, Producer</p>
+                </div>
+                <div class="testimonial-slide">
+                    <p class="testimonial-text">"The mix they delivered was pristine. Chase understands modern production standards perfectly."</p>
+                    <p class="testimonial-author">— Jordan Miles, Hip-Hop Artist</p>
+                </div>
+            </div>
+            <div class="carousel-dots" id="carouselDots"></div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="about" style="background: var(--background);">
+        <div class="container" style="text-align: center;">
+            <h3 class="section-title">Ready to Create Something Amazing?</h3>
+            <p style="color: var(--text-secondary); font-size: 1.2rem; margin-bottom: 2rem;">
+                Join the artists who trust Chase x Records for their creative vision.
+            </p>
+            <div class="hero-cta">
+                <a href="contact.html" class="btn btn-primary">Start Your Project</a>
+                <a href="about.html" class="btn btn-secondary">Learn About Us</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container footer-content">
+            <div class="footer-section">
+                <h5>Chase x Records</h5>
+                <p>Professional music production and recording studio.</p>
+            </div>
+            <div class="footer-section">
+                <h5>Quick Links</h5>
+                <ul>
+                    <li><a href="services.html">Services</a></li>
+                    <li><a href="music.html">Music</a></li>
+                    <li><a href="artists.html">Artists</a></li>
+                    <li><a href="contact.html">Contact</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h5>Follow</h5>
+                <div class="footer-socials">
+                    <a href="https://instagram.com" target="_blank">Instagram</a>
+                    <a href="https://youtube.com" target="_blank">YouTube</a>
+                    <a href="https://spotify.com" target="_blank">Spotify</a>
+                    <a href="https://tiktok.com" target="_blank">TikTok</a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 Chase x Records. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="scripts/main.js"></script>
+</body>
+</html>

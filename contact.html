@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact - Chase x Records</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/components.css">
+</head>
+<body>
+    <header class="header" id="header">
+    <div class="header-container">
+        <div class="logo">
+            <a href="index.html" style="text-decoration: none;">
+                <h1><i class="fas fa-compact-disc"></i> Chase x Records</h1>
+            </a>
+        </div>
+        <nav class="nav" id="nav">
+            <a href="index.html" class="nav-link"><i class="fas fa-home"></i> Home</a>
+            <a href="services.html" class="nav-link"><i class="fas fa-sliders-h"></i> Services</a>
+            <a href="music.html" class="nav-link"><i class="fas fa-music"></i> Music</a>
+            <a href="artists.html" class="nav-link"><i class="fas fa-user-alt"></i> Artists</a>
+            <a href="about.html" class="nav-link"><i class="fas fa-info-circle"></i> About</a>
+            <a href="contact.html" class="nav-link"><i class="fas fa-envelope"></i> Contact</a>
+        </nav>
+        <button class="hamburger" id="hamburger">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+    </div>
+</header>
+
+    <!-- Page Header -->
+    <section class="hero" style="min-height: 40vh; margin-top: 80px;">
+        <div class="hero-content">
+            <h2 class="hero-title" style="font-size: 3rem;">Contact Us</h2>
+            <p class="hero-tagline">Let's create something amazing together</p>
+        </div>
+        <div class="hero-background"></div>
+    </section>
+
+    <!-- Contact Section -->
+    <section class="contact">
+        <div class="container">
+            <div class="contact-content">
+                <div class="contact-info">
+                    <div class="contact-item">
+                        <h4>📍 Location</h4>
+                        <p>123 Studio Lane, Music City, MC 10001</p>
+                    </div>
+                    <div class="contact-item">
+                        <h4>📧 Email</h4>
+                        <p><a href="mailto:hello@chasexrecords.com">hello@chasexrecords.com</a></p>
+                    </div>
+                    <div class="contact-item">
+                        <h4>📱 Phone</h4>
+                        <p><a href="tel:+1234567890">+1 (234) 567-890</a></p>
+                    </div>
+                    <div class="contact-item">
+                        <h4>🕒 Studio Hours</h4>
+                        <p>Monday - Friday: 9AM - 10PM</p>
+                        <p>Saturday: 10AM - 8PM</p>
+                        <p>Sunday: By appointment only</p>
+                    </div>
+                    <div class="contact-item">
+                        <h4>🌐 Follow Us</h4>
+                        <div class="social-links">
+                            <a href="https://instagram.com" target="_blank" title="Instagram">📷</a>
+                            <a href="https://youtube.com" target="_blank" title="YouTube">📹</a>
+                            <a href="https://spotify.com" target="_blank" title="Spotify">🎵</a>
+                            <a href="https://tiktok.com" target="_blank" title="TikTok">🎬</a>
+                        </div>
+                    </div>
+                </div>
+
+                <form class="contact-form" id="contactForm">
+                    <div class="form-group">
+                        <label for="name">Full Name</label>
+                        <input type="text" id="name" name="name" required>
+                        <span class="error-message" id="nameError"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email Address</label>
+                        <input type="email" id="email" name="email" required>
+                        <span class="error-message" id="emailError"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="phone">Phone Number</label>
+                        <input type="tel" id="phone" name="phone">
+                        <span class="error-message" id="phoneError"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="subject">Project Type</label>
+                        <select id="subject" name="subject" required>
+                            <option value="">Select a service</option>
+                            <option value="production">Music Production</option>
+                            <option value="mixing">Mixing & Mastering</option>
+                            <option value="vocal">Vocal Production</option>
+                            <option value="songwriting">Songwriting</option>
+                            <option value="other">Other</option>
+                        </select>
+                        <span class="error-message" id="subjectError"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="budget">Project Budget</label>
+                        <select id="budget" name="budget">
+                            <option value="">Select budget range</option>
+                            <option value="500-1000">$500 - $1,000</option>
+                            <option value="1000-2500">$1,000 - $2,500</option>
+                            <option value="2500-5000">$2,500 - $5,000</option>
+                            <option value="5000+">$5,000+</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="message">Project Details</label>
+                        <textarea id="message" name="message" rows="6" placeholder="Tell us about your project, timeline, and any specific requirements..." required></textarea>
+                        <span class="error-message" id="messageError"></span>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Send Message</button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section class="services">
+        <div class="container">
+            <h3 class="section-title">Frequently Asked Questions</h3>
+            <div class="faq-grid">
+                <div class="faq-item">
+                    <h4>How long does a typical project take?</h4>
+                    <p>Production projects usually take 2-4 weeks, while mixing and mastering can be completed in 1-2 weeks depending on complexity.</p>
+                </div>
+                <div class="faq-item">
+                    <h4>Do you offer remote services?</h4>
+                    <p>Yes! We work with artists worldwide through remote collaboration tools and file sharing platforms.</p>
+                </div>
+                <div class="faq-item">
+                    <h4>What file formats do you work with?</h4>
+                    <p>We work with all major DAW formats and can accept WAV, MP3, or stems for mixing and mastering.</p>
+                </div>
+                <div class="faq-item">
+                    <h4>Do you offer payment plans?</h4>
+                    <p>Yes, we offer flexible payment plans for larger projects. Contact us to discuss options.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Map Section -->
+    <section class="music">
+        <div class="container">
+            <h3 class="section-title">Visit Our Studio</h3>
+            <div class="map-placeholder">
+                <div style="background: var(--surface); padding: 2rem; border-radius: var(--radius); text-align: center;">
+                    <h4>Studio Location Map</h4>
+                    <p>123 Studio Lane, Music City, MC 10001</p>
+                    <div style="background: var(--border); height: 300px; border-radius: var(--radius); display: flex; align-items: center; justify-content: center; margin-top: 1rem;">
+                        <p>Interactive Map Would Appear Here</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container footer-content">
+            <div class="footer-section">
+                <h5>Chase x Records</h5>
+                <p>Professional music production and recording studio.</p>
+            </div>
+            <div class="footer-section">
+                <h5>Quick Links</h5>
+                <ul>
+                    <li><a href="services.html">Services</a></li>
+                    <li><a href="music.html">Music</a></li>
+                    <li><a href="artists.html">Artists</a></li>
+                    <li><a href="contact.html">Contact</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h5>Follow</h5>
+                <div class="footer-socials">
+                    <a href="https://instagram.com" target="_blank">Instagram</a>
+                    <a href="https://youtube.com" target="_blank">YouTube</a>
+                    <a href="https://spotify.com" target="_blank">Spotify</a>
+                    <a href="https://tiktok.com" target="_blank">TikTok</a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 Chase x Records. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="scripts/main.js"></script>
+</body>
+</html>
