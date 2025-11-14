@@ -280,7 +280,7 @@ correctTransactionId(paymentId, correctId) {
 }
 
 contactSupport(paymentId) {
-    alert('Please contact support at +256 700 123 456 with your payment details.');
+    alert('Please contact support at +256 757 858 462 with your payment details.');
     this.hidePaymentModal();
 }
 
@@ -641,7 +641,7 @@ class DevPaymentBypass {
             }, 1500); // 1.5 second delay to simulate processing
         };
 
-        console.log('🔧 Development Payment Bypass: Active - All payments will be auto-approved');
+        console.log('<i class="fas fa-history"></i> Development Payment Bypass: Active - All payments will be auto-approved');
     }
 }
 

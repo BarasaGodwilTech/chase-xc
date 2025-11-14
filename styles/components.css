@@ -1142,8 +1142,7 @@
 }
 
 .track-artwork img {
-    width: 100%;
-    height: 200px;
+    
     object-fit: cover;
     border-radius: 12px;
 }
@@ -1332,3 +1331,222 @@
         height: 120px;
     }
 }
+/* Latest Releases Timeline Styles */
+.releases-timeline {
+    position: relative;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.releases-timeline::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 30px;
+    width: 2px;
+    background: linear-gradient(to bottom, var(--primary), var(--secondary));
+    z-index: 1;
+}
+
+.release-item {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 2.5rem;
+    position: relative;
+    z-index: 2;
+}
+
+.release-date-circle {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 2px solid var(--primary);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1.5rem;
+    flex-shrink: 0;
+    z-index: 3;
+    box-shadow: 0 4px 15px rgba(0, 212, 255, 0.2);
+}
+
+.release-date-circle span {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--primary);
+    line-height: 1;
+}
+
+.release-date-circle strong {
+    font-size: 1.1rem;
+    color: var(--text-primary);
+    line-height: 1;
+}
+
+.release-content {
+    display: flex;
+    align-items: center;
+    background: var(--surface);
+    padding: 1.5rem;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    flex-grow: 1;
+    transition: var(--transition);
+    gap: 1.5rem;
+}
+
+.release-content:hover {
+    transform: translateY(-3px);
+    border-color: var(--primary);
+    box-shadow: 0 10px 30px rgba(0, 212, 255, 0.1);
+}
+
+.release-artwork {
+    width: 80px;
+    height: 80px;
+    border-radius: var(--radius);
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.release-artwork img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.release-info {
+    flex-grow: 1;
+}
+
+.release-info h4 {
+    color: var(--text-primary);
+    font-size: 1.2rem;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.release-info p {
+    color: var(--text-secondary);
+    margin-bottom: 0.75rem;
+    font-size: 0.95rem;
+}
+
+.release-stats {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.release-stats span {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.btn-outline {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    transition: var(--transition);
+}
+
+.btn-outline:hover {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: var(--background);
+    transform: translateY(-2px);
+}
+
+.btn-sm {
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+}
+
+/* Responsive Design for Releases Timeline */
+@media (max-width: 768px) {
+    .releases-timeline::before {
+        left: 25px;
+    }
+    
+    .release-date-circle {
+        width: 50px;
+        height: 50px;
+        margin-right: 1rem;
+    }
+    
+    .release-date-circle span {
+        font-size: 0.65rem;
+    }
+    
+    .release-date-circle strong {
+        font-size: 1rem;
+    }
+    
+    .release-content {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+        padding: 1.25rem;
+    }
+    
+    .release-artwork {
+        width: 60px;
+        height: 60px;
+    }
+    
+    .release-info h4 {
+        font-size: 1.1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .release-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .release-date-circle {
+        margin-right: 0;
+        margin-bottom: 1rem;
+        align-self: flex-start;
+    }
+    
+    .releases-timeline::before {
+        left: 25px;
+    }
+    
+    .release-content {
+        margin-left: 0;
+        width: 100%;
+    }
+}
+
+/* Optional: Add background color variable if not already defined */
+:root {
+    --background-alt: #0f142e; /* Slightly lighter than main background */
+}
+
+/* Optional: Add animation for the timeline */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.release-item {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+.release-item:nth-child(1) { animation-delay: 0.1s; }
+.release-item:nth-child(2) { animation-delay: 0.2s; }
+.release-item:nth-child(3) { animation-delay: 0.3s; }
