@@ -22,7 +22,7 @@
             <nav class="nav" id="nav">
                 <a href="index.html" class="nav-link"><i class="fas fa-home"></i> Home</a>
                 <a href="services.html" class="nav-link"><i class="fas fa-sliders-h"></i> Services</a>
-                <a href="music.html" class="nav-link"><i class="fas fa-music"></i> Music</a>
+                <a href="music.html" class="nav-link active"><i class="fas fa-music"></i> Music</a>
                 <a href="artists.html" class="nav-link"><i class="fas fa-user-alt"></i> Artists</a>
                 <a href="savings.html" class="nav-link"><i class="fas fa-piggy-bank"></i> Savings</a>
                 <a href="about.html" class="nav-link"><i class="fas fa-info-circle"></i> About</a>
@@ -37,35 +37,97 @@
     </header>
 
     <!-- Page Header -->
-    <section class="hero" style="min-height: 40vh; margin-top: 80px;">
+    <section class="hero" style="min-height: 50vh; margin-top: 80px;">
         <div class="hero-content">
-            <h2 class="hero-title" style="font-size: 3rem;">Our Music</h2>
+            <h2 class="hero-title" style="font-size: 3.5rem;">Our Music</h2>
             <p class="hero-tagline">Discover tracks produced at Chase x Records</p>
+            <div class="hero-actions">
+                <button class="btn btn-primary" id="exploreMusic">
+                    <i class="fas fa-play-circle"></i> Explore Music
+                </button>
+                <button class="btn btn-outline">
+                    <i class="fas fa-headphones"></i> Listen on Spotify
+                </button>
+            </div>
         </div>
-        <div class="hero-background"></div>
+        <div class="hero-background" style="background: linear-gradient(135deg, rgba(0, 212, 255, 0.2), rgba(168, 85, 247, 0.2));"></div>
     </section>
 
+    <!-- Floating Music Player -->
+    <div class="floating-player" id="floatingPlayer">
+        <div class="floating-track-info">
+            <div class="floating-cover">
+                <img id="floatingCover" src="https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=60&h=60&fit=crop" alt="Now Playing">
+            </div>
+            <div class="floating-info">
+                <h5 id="floatingTitle">Sunset Dreams</h5>
+                <p id="floatingArtist">Sarah Miles</p>
+            </div>
+        </div>
+        <div class="floating-controls">
+            <button id="floatingPrevBtn" class="floating-btn">
+                <i class="fas fa-step-backward"></i>
+            </button>
+            <button id="floatingPlayBtn" class="floating-btn play-pause">
+                <i class="fas fa-play"></i>
+            </button>
+            <button id="floatingNextBtn" class="floating-btn">
+                <i class="fas fa-step-forward"></i>
+            </button>
+        </div>
+        <div class="floating-progress">
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="floatingProgressBar"></div>
+            </div>
+        </div>
+        <button class="floating-close" id="floatingClose">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+
     <!-- Music Player Section -->
-    <section class="music">
+    <section class="music" id="musicSection">
         <div class="container">
-            <h3 class="section-title">Featured Releases</h3>
+            <div class="section-header">
+                <h3 class="section-title">Featured Releases</h3>
+                <div class="section-controls">
+                    <button class="filter-btn active" data-filter="all">All</button>
+                    <button class="filter-btn" data-filter="new">New Releases</button>
+                    <button class="filter-btn" data-filter="popular">Popular</button>
+                    <button class="filter-btn" data-filter="trending">Trending</button>
+                </div>
+            </div>
             
             <!-- Custom Audio Player -->
-            <div class="audio-player" id="audioPlayer">
+            <div class="audio-player enhanced-player" id="audioPlayer">
                 <div class="player-track-info">
                     <div class="player-cover">
                         <img id="playerCover" src="https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=80&h=80&fit=crop" alt="Now Playing">
+                        <div class="vinyl-overlay"></div>
                     </div>
                     <div class="player-info">
                         <h5 id="playerTitle">Sunset Dreams</h5>
                         <p id="playerArtist">Sarah Miles</p>
+                        <div class="track-progress-mobile">
+                            <span id="currentTimeMobile">0:00</span>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar" id="progressBarMobile"></div>
+                            </div>
+                            <span id="durationMobile">3:45</span>
+                        </div>
                     </div>
                 </div>
 
                 <div class="player-controls">
-                    <button id="prevBtn" class="player-btn">⏮</button>
-                    <button id="playBtn" class="player-btn play-pause">▶</button>
-                    <button id="nextBtn" class="player-btn">⏭</button>
+                    <button id="prevBtn" class="player-btn" title="Previous">
+                        <i class="fas fa-step-backward"></i>
+                    </button>
+                    <button id="playBtn" class="player-btn play-pause" title="Play/Pause">
+                        <i class="fas fa-play"></i>
+                    </button>
+                    <button id="nextBtn" class="player-btn" title="Next">
+                        <i class="fas fa-step-forward"></i>
+                    </button>
                 </div>
 
                 <div class="player-progress">
@@ -78,8 +140,27 @@
                 </div>
 
                 <div class="player-volume">
-                    <span class="volume-icon">🔊</span>
-                    <input type="range" id="volumeControl" class="volume-slider" min="0" max="100" value="70">
+                    <button class="volume-btn" id="volumeToggle">
+                        <i class="fas fa-volume-up"></i>
+                    </button>
+                    <div class="volume-control" id="volumeControlContainer">
+                        <input type="range" id="volumeControl" class="volume-slider" min="0" max="100" value="70">
+                    </div>
+                </div>
+
+                <div class="player-actions">
+                    <button class="player-action-btn" id="repeatBtn" title="Repeat">
+                        <i class="fas fa-redo"></i>
+                    </button>
+                    <button class="player-action-btn" id="shuffleBtn" title="Shuffle">
+                        <i class="fas fa-random"></i>
+                    </button>
+                    <button class="player-action-btn" id="likeBtn" title="Like">
+                        <i class="far fa-heart"></i>
+                    </button>
+                    <button class="player-action-btn" id="downloadBtn" title="Download">
+                        <i class="fas fa-download"></i>
+                    </button>
                 </div>
 
                 <audio id="audioElement">
@@ -88,14 +169,27 @@
             </div>
 
             <!-- Music Grid -->
-            <div class="music-grid">
-                <div class="track-card" data-track="0">
+            <div class="music-grid" id="musicGrid">
+                <div class="track-card" data-track="0" data-category="new">
                     <div class="track-artwork">
                         <img src="https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=400&fit=crop" alt="Sunset Dreams">
                         <button class="play-btn-card">
                             <i class="fas fa-play"></i>
                         </button>
                         <div class="track-badge new-release">New</div>
+                        <div class="track-overlay">
+                            <div class="overlay-actions">
+                                <button class="overlay-btn" title="Add to playlist">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                                <button class="overlay-btn" title="Like">
+                                    <i class="far fa-heart"></i>
+                                </button>
+                                <button class="overlay-btn" title="Share">
+                                    <i class="fas fa-share"></i>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                     <h4 class="track-title">Sunset Dreams</h4>
                     <p class="track-artist">Sarah Miles</p>
@@ -110,13 +204,26 @@
                     <div class="release-date">Released: Dec 2024</div>
                 </div>
                 
-                <div class="track-card" data-track="1">
+                <div class="track-card" data-track="1" data-category="popular">
                     <div class="track-artwork">
                         <img src="https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=400&fit=crop" alt="City Lights">
                         <button class="play-btn-card">
                             <i class="fas fa-play"></i>
                         </button>
                         <div class="track-badge popular">Popular</div>
+                        <div class="track-overlay">
+                            <div class="overlay-actions">
+                                <button class="overlay-btn" title="Add to playlist">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                                <button class="overlay-btn" title="Like">
+                                    <i class="far fa-heart"></i>
+                                </button>
+                                <button class="overlay-btn" title="Share">
+                                    <i class="fas fa-share"></i>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                     <h4 class="track-title">City Lights</h4>
                     <p class="track-artist">DJ Kato</p>
@@ -131,12 +238,25 @@
                     <div class="release-date">Released: Nov 2024</div>
                 </div>
                 
-                <div class="track-card" data-track="2">
+                <div class="track-card" data-track="2" data-category="popular">
                     <div class="track-artwork">
                         <img src="https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&h=400&fit=crop" alt="Rhythm of Mbale">
                         <button class="play-btn-card">
                             <i class="fas fa-play"></i>
                         </button>
+                        <div class="track-overlay">
+                            <div class="overlay-actions">
+                                <button class="overlay-btn" title="Add to playlist">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                                <button class="overlay-btn" title="Like">
+                                    <i class="far fa-heart"></i>
+                                </button>
+                                <button class="overlay-btn" title="Share">
+                                    <i class="fas fa-share"></i>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                     <h4 class="track-title">Rhythm of Mbale</h4>
                     <p class="track-artist">The UG Collective</p>
@@ -151,12 +271,25 @@
                     <div class="release-date">Released: Oct 2024</div>
                 </div>
                 
-                <div class="track-card" data-track="3">
+                <div class="track-card" data-track="3" data-category="trending">
                     <div class="track-artwork">
                         <img src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&h=400&fit=crop" alt="Morning Breeze">
                         <button class="play-btn-card">
                             <i class="fas fa-play"></i>
                         </button>
+                        <div class="track-overlay">
+                            <div class="overlay-actions">
+                                <button class="overlay-btn" title="Add to playlist">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                                <button class="overlay-btn" title="Like">
+                                    <i class="far fa-heart"></i>
+                                </button>
+                                <button class="overlay-btn" title="Share">
+                                    <i class="fas fa-share"></i>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                     <h4 class="track-title">Morning Breeze</h4>
                     <p class="track-artist">Lila Rose</p>
@@ -171,13 +304,26 @@
                     <div class="release-date">Released: Sep 2024</div>
                 </div>
                 
-                <div class="track-card" data-track="4">
+                <div class="track-card" data-track="4" data-category="trending">
                     <div class="track-artwork">
                         <img src="https://images.unsplash.com/photo-1571974599782-87624638275f?w=400&h=400&fit=crop" alt="Nile Flow">
                         <button class="play-btn-card">
                             <i class="fas fa-play"></i>
                         </button>
                         <div class="track-badge trending">Trending</div>
+                        <div class="track-overlay">
+                            <div class="overlay-actions">
+                                <button class="overlay-btn" title="Add to playlist">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                                <button class="overlay-btn" title="Like">
+                                    <i class="far fa-heart"></i>
+                                </button>
+                                <button class="overlay-btn" title="Share">
+                                    <i class="fas fa-share"></i>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                     <h4 class="track-title">Nile Flow</h4>
                     <p class="track-artist">Marcus Sound</p>
@@ -192,12 +338,25 @@
                     <div class="release-date">Released: Aug 2024</div>
                 </div>
                 
-                <div class="track-card" data-track="5">
+                <div class="track-card" data-track="5" data-category="popular">
                     <div class="track-artwork">
                         <img src="https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=400&h=400&fit=crop" alt="Golden Hour">
                         <button class="play-btn-card">
                             <i class="fas fa-play"></i>
                         </button>
+                        <div class="track-overlay">
+                            <div class="overlay-actions">
+                                <button class="overlay-btn" title="Add to playlist">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                                <button class="overlay-btn" title="Like">
+                                    <i class="far fa-heart"></i>
+                                </button>
+                                <button class="overlay-btn" title="Share">
+                                    <i class="fas fa-share"></i>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                     <h4 class="track-title">Golden Hour</h4>
                     <p class="track-artist">Sarah Miles & DJ Kato</p>
@@ -212,6 +371,13 @@
                     <div class="release-date">Released: Jul 2024</div>
                 </div>
             </div>
+            
+            <!-- Load More Button -->
+            <div class="load-more-container">
+                <button class="btn btn-outline" id="loadMoreBtn">
+                    <i class="fas fa-plus"></i> Load More Tracks
+                </button>
+            </div>
         </div>
     </section>
 
@@ -220,7 +386,7 @@
         <div class="container">
             <h3 class="section-title">Browse by Genre</h3>
             <div class="services-grid">
-                <div class="service-card">
+                <div class="service-card genre-card">
                     <div class="service-icon"><i class="fas fa-headphones-alt"></i></div>
                     <h4>Afro-Pop</h4>
                     <p>Modern African pop music with global influences</p>
@@ -228,8 +394,9 @@
                     <div class="genre-stats">
                         <span>245K Streams</span>
                     </div>
+                    <button class="btn btn-sm btn-outline">Explore</button>
                 </div>
-                <div class="service-card">
+                <div class="service-card genre-card">
                     <div class="service-icon"><i class="fas fa-microphone-alt"></i></div>
                     <h4>Dancehall</h4>
                     <p>Energetic dancehall and reggae fusion</p>
@@ -237,8 +404,9 @@
                     <div class="genre-stats">
                         <span>189K Streams</span>
                     </div>
+                    <button class="btn btn-sm btn-outline">Explore</button>
                 </div>
-                <div class="service-card">
+                <div class="service-card genre-card">
                     <div class="service-icon"><i class="fa-solid fa-piano"></i></div>
                     <h4>R&B</h4>
                     <p>Smooth R&B and contemporary soul</p>
@@ -246,8 +414,9 @@
                     <div class="genre-stats">
                         <span>156K Streams</span>
                     </div>
+                    <button class="btn btn-sm btn-outline">Explore</button>
                 </div>
-                <div class="service-card">
+                <div class="service-card genre-card">
                     <div class="service-icon">🎸</div>
                     <h4>Electronic</h4>
                     <p>From deep house to experimental electronica</p>
@@ -255,6 +424,7 @@
                     <div class="genre-stats">
                         <span>312K Streams</span>
                     </div>
+                    <button class="btn btn-sm btn-outline">Explore</button>
                 </div>
             </div>
         </div>
@@ -331,6 +501,22 @@
         </div>
     </section>
 
+    <!-- Newsletter Section -->
+    <section class="newsletter">
+        <div class="container">
+            <div class="newsletter-content">
+                <div class="newsletter-text">
+                    <h3>Stay Updated</h3>
+                    <p>Get notified about new releases, exclusive content, and special offers.</p>
+                </div>
+                <div class="newsletter-form">
+                    <input type="email" placeholder="Enter your email">
+                    <button class="btn btn-primary">Subscribe</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <footer class="footer">
         <div class="container footer-content">
             <div class="footer-section">
@@ -368,6 +554,7 @@
                     <li><a href="services.html"><i class="fas fa-chevron-right"></i> Services</a></li>
                     <li><a href="music.html"><i class="fas fa-chevron-right"></i> Music</a></li>
                     <li><a href="artists.html"><i class="fas fa-chevron-right"></i> Artists</a></li>
+                    <li><a href="savings.html"><i class="fas fa-chevron-right"></i> Savings</a></li>
                     <li><a href="contact.html"><i class="fas fa-chevron-right"></i> Contact</a></li>
                 </ul>
             </div>
