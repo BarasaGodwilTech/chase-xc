@@ -108,6 +108,203 @@
         </div>
     </section>
 
+    <!-- Studio Membership Section -->
+<section class="membership" id="membership">
+    <div class="container">
+        <h3 class="section-title">Studio Membership Plans</h3>
+        <p class="section-subtitle">Unlock exclusive benefits with our flexible subscription plans</p>
+        
+        <div class="membership-plans">
+            <div class="plan-card">
+                <div class="plan-header">
+                    <h4>Weekly Pass</h4>
+                    <div class="plan-price">
+                        <span class="price">UGX 150,000</span>
+                        <span class="period">/ week</span>
+                    </div>
+                </div>
+                <div class="plan-features">
+                    <ul>
+                        <li><i class="fas fa-check"></i> 10 hours of studio time</li>
+                        <li><i class="fas fa-check"></i> Basic mixing for 2 tracks</li>
+                        <li><i class="fas fa-check"></i> Equipment rental included</li>
+                        <li><i class="fas fa-check"></i> Engineer assistance</li>
+                        <li><i class="fas fa-times"></i> Mastering services</li>
+                        <li><i class="fas fa-times"></i> Vocal tuning sessions</li>
+                    </ul>
+                </div>
+                <div class="plan-actions">
+                    <button class="btn btn-outline plan-select" data-plan="weekly" data-amount="150000">
+                        Select Plan
+                    </button>
+                </div>
+            </div>
+            
+            <div class="plan-card popular">
+                <div class="plan-badge">Most Popular</div>
+                <div class="plan-header">
+                    <h4>Monthly Pro</h4>
+                    <div class="plan-price">
+                        <span class="price">UGX 500,000</span>
+                        <span class="period">/ month</span>
+                    </div>
+                    <div class="plan-savings">Save UGX 100,000</div>
+                </div>
+                <div class="plan-features">
+                    <ul>
+                        <li><i class="fas fa-check"></i> 50 hours of studio time</li>
+                        <li><i class="fas fa-check"></i> Unlimited mixing sessions</li>
+                        <li><i class="fas fa-check"></i> Premium equipment access</li>
+                        <li><i class="fas fa-check"></i> Dedicated engineer</li>
+                        <li><i class="fas fa-check"></i> Mastering for 5 tracks</li>
+                        <li><i class="fas fa-check"></i> 4 vocal tuning sessions</li>
+                    </ul>
+                </div>
+                <div class="plan-actions">
+                    <button class="btn btn-primary plan-select" data-plan="monthly" data-amount="500000">
+                        Select Plan
+                    </button>
+                </div>
+            </div>
+            
+            <div class="plan-card">
+                <div class="plan-header">
+                    <h4>Yearly Elite</h4>
+                    <div class="plan-price">
+                        <span class="price">UGX 5,000,000</span>
+                        <span class="period">/ year</span>
+                    </div>
+                    <div class="plan-savings">Save UGX 1,000,000</div>
+                </div>
+                <div class="plan-features">
+                    <ul>
+                        <li><i class="fas fa-check"></i> 600 hours of studio time</li>
+                        <li><i class="fas fa-check"></i> Unlimited mixing & mastering</li>
+                        <li><i class="fas fa-check"></i> VIP equipment priority</li>
+                        <li><i class="fas fa-check"></i> Personal producer sessions</li>
+                        <li><i class="fas fa-check"></i> Unlimited vocal tuning</li>
+                        <li><i class="fas fa-check"></i> 2 free music videos</li>
+                    </ul>
+                </div>
+                <div class="plan-actions">
+                    <button class="btn btn-outline plan-select" data-plan="yearly" data-amount="5000000">
+                        Select Plan
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="membership-benefits">
+            <h4>All Members Enjoy:</h4>
+            <div class="benefits-grid">
+                <div class="benefit-item">
+                    <i class="fas fa-coffee"></i>
+                    <span>Complimentary refreshments</span>
+                </div>
+                <div class="benefit-item">
+                    <i class="fas fa-wifi"></i>
+                    <span>High-speed internet</span>
+                </div>
+                <div class="benefit-item">
+                    <i class="fas fa-parking"></i>
+                    <span>Free parking</span>
+                </div>
+                <div class="benefit-item">
+                    <i class="fas fa-users"></i>
+                    <span>Artist networking events</span>
+                </div>
+                <div class="benefit-item">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>Flexible scheduling</span>
+                </div>
+                <div class="benefit-item">
+                    <i class="fas fa-headset"></i>
+                    <span>24/7 support</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Payment Modal -->
+<div class="membership-modal" id="membershipModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Complete Your Membership</h3>
+            <button class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="plan-summary">
+                <h4 id="selectedPlanName">Monthly Pro Plan</h4>
+                <p id="selectedPlanPrice">UGX 500,000 / month</p>
+                <p id="selectedPlanDescription">50 hours of studio time, unlimited mixing, and more</p>
+            </div>
+            
+            <form class="membership-form" id="membershipForm">
+                <div class="form-group">
+                    <label for="fullName">Full Name *</label>
+                    <input type="text" id="fullName" name="fullName" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">Email Address *</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="phone">Phone Number *</label>
+                    <input type="tel" id="phone" name="phone" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="billingCycle">Billing Cycle *</label>
+                    <select id="billingCycle" name="billingCycle" required>
+                        <option value="weekly">Weekly - UGX 150,000</option>
+                        <option value="monthly" selected>Monthly - UGX 500,000</option>
+                        <option value="yearly">Yearly - UGX 5,000,000</option>
+                    </select>
+                </div>
+                
+                <div class="payment-section">
+                    <h4>Payment Method</h4>
+                    <div class="payment-options">
+                        <div class="payment-option" data-method="mtn">
+                            <i class="fas fa-mobile-alt"></i>
+                            <span>MTN Mobile Money</span>
+                        </div>
+                        <div class="payment-option" data-method="airtel">
+                            <i class="fas fa-wallet"></i>
+                            <span>Airtel Money</span>
+                        </div>
+                        <div class="payment-option" data-method="card">
+                            <i class="fas fa-credit-card"></i>
+                            <span>Credit/Debit Card</span>
+                        </div>
+                        <div class="payment-option" data-method="bank">
+                            <i class="fas fa-university"></i>
+                            <span>Bank Transfer</span>
+                        </div>
+                    </div>
+                    
+                    <div class="payment-instructions" id="paymentInstructions" style="display: none;">
+                        <h5 id="instructionsTitle">Payment Instructions</h5>
+                        <p id="instructionsText"></p>
+                        <div class="transaction-input" id="transactionInput" style="display: none;">
+                            <label for="transactionId">Transaction ID/Reference *</label>
+                            <input type="text" id="transactionId" name="transactionId" 
+                                   placeholder="Enter transaction ID from your payment">
+                        </div>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-primary submit-btn">
+                    <i class="fas fa-lock"></i> Complete Subscription
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
     <!-- Featured Tracks Preview -->
     <section class="music" id="music">
         <div class="container">
@@ -395,5 +592,6 @@
     </footer>
 
     <script src="scripts/main.js"></script>
+    <script src="scripts/membership-payments.js"></script>
 </body>
 </html>

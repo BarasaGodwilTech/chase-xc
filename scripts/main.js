@@ -8,6 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
     initContactForm()
     initTrackCards()
     setActiveNavLink()
+    initMembership() // ADD THIS LINE
 })
 
 // Header Scroll Effect
@@ -246,3 +247,69 @@ function initTrackCards() {
         })
     })
 }
+// Membership functionality
+document.addEventListener('DOMContentLoaded', function() {
+    
+    
+    // Plan data
+    const plans = {
+        weekly: {
+            name: 'Weekly Pass',
+            price: 'UGX 150,000',
+            period: 'week',
+            description: '10 hours of studio time, basic mixing for 2 tracks'
+        },
+        monthly: {
+            name: 'Monthly Pro',
+            price: 'UGX 500,000',
+            period: 'month',
+            description: '50 hours of studio time, unlimited mixing sessions'
+        },
+        yearly: {
+            name: 'Yearly Elite',
+            price: 'UGX 5,000,000',
+            period: 'year',
+            description: '600 hours of studio time, unlimited mixing & mastering'
+        }
+    };
+    
+    // Event listeners
+    planSelectButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const planType = this.getAttribute('data-plan');
+            openMembershipModal(planType);
+        });
+    });
+    
+    // Payment option selection
+    membershipModal.addEventListener('click', function(e) {
+        if (e.target.classList.contains('payment-option')) {
+            document.querySelectorAll('.payment-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            e.target.classList.add('selected');
+        }
+    });
+    
+    // Close modal
+    membershipModal.addEventListener('click', function(e) {
+        if (e.target.classList.contains('modal-close') || e.target.classList.contains('membership-modal')) {
+            closeMembershipModal();
+        }
+    });
+    
+    // Form submission
+    const subscriptionForm = document.getElementById('subscriptionForm');
+    subscriptionForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        processSubscription();
+    });
+    
+    
+    // Close modal with Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && membershipModal.classList.contains('active')) {
+            closeMembershipModal();
+        }
+    });
+});
