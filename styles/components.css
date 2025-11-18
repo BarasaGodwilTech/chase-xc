@@ -2913,7 +2913,7 @@ border: none;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background: rgba(255, 255, 255, 0.95);
+    background: rgba(32, 20, 139, 0.95);
     border: none;
     border-radius: 50%;
     width: 60px;
@@ -2933,7 +2933,7 @@ border: none;
 }
 
 .play-btn-card:hover {
-    background: var(--primary);
+    background: blueviolet;
     color: white;
     transform: translate(-50%, -50%) scale(1.1);
 }
@@ -3158,3 +3158,396 @@ border: none;
 .track-card:nth-child(4) { animation-delay: 0.4s; }
 .track-card:nth-child(5) { animation-delay: 0.5s; }
 .track-card:nth-child(6) { animation-delay: 0.6s; }
+
+/* Enhanced Repeat and Shuffle Buttons */
+.player-action-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 1rem;
+  transition: var(--transition);
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+  position: relative;
+}
+
+.player-action-btn:hover {
+  color: var(--primary);
+  background: rgba(0, 212, 255, 0.1);
+}
+
+.player-action-btn.active {
+  color: var(--primary);
+}
+
+/* Repeat button states */
+.repeat-one {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  background: var(--primary);
+  color: var(--background);
+  border-radius: 50%;
+  width: 12px;
+  height: 12px;
+  font-size: 0.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+/* Like button states */
+.player-action-btn.liked {
+  color: var(--accent);
+}
+
+.player-action-btn.liked i {
+  animation: heartBeat 0.3s ease;
+}
+
+@keyframes heartBeat {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+/* Volume control for mobile */
+.volume-control {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+@media (max-width: 768px) {
+  .volume-control {
+    position: absolute;
+    bottom: -50px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--surface);
+    padding: 0.75rem;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-lg);
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    z-index: 10;
+  }
+  
+  .volume-control.show {
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
+/* Active track card */
+.track-card.active {
+  border-color: var(--primary);
+  background: rgba(0, 212, 255, 0.05);
+}
+
+.track-card.active .track-title {
+  color: var(--primary);
+}
+
+/* Enhanced button tooltips */
+.player-action-btn {
+  position: relative;
+}
+
+.player-action-btn::before {
+  content: attr(title);
+  position: absolute;
+  bottom: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+  z-index: 1000;
+}
+
+.player-action-btn:hover::before {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Floating player enhancements */
+.floating-player.active {
+  display: flex;
+  animation: slideInUp 0.3s ease;
+}
+
+@keyframes slideInUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Shuffle and Repeat active states with better visual feedback */
+.player-action-btn.active {
+  position: relative;
+}
+
+.player-action-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  background: var(--primary);
+  border-radius: 50%;
+}
+
+/* === ENHANCED FILTER BUTTONS === */
+.section-controls {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.filter-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    padding: 0.75rem 1.25rem;
+    border-radius: 2rem;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    font-size: 0.9rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.filter-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+    transition: left 0.5s ease;
+}
+
+.filter-btn:hover::before {
+    left: 100%;
+}
+
+.filter-btn:hover {
+    background: rgba(0, 212, 255, 0.1);
+    border-color: var(--primary);
+    color: var(--primary);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 212, 255, 0.2);
+}
+
+.filter-btn.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: var(--background);
+    box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
+}
+
+.filter-btn i {
+    font-size: 0.9rem;
+    transition: transform 0.3s ease;
+}
+
+.filter-btn:hover i {
+    transform: scale(1.1);
+}
+
+.filter-btn.active i {
+    transform: scale(1.1);
+}
+
+/* Filter button animations */
+.filter-btn {
+    animation: slideInRight 0.5s ease-out;
+}
+
+.filter-btn:nth-child(1) { animation-delay: 0.1s; }
+.filter-btn:nth-child(2) { animation-delay: 0.2s; }
+.filter-btn:nth-child(3) { animation-delay: 0.3s; }
+.filter-btn:nth-child(4) { animation-delay: 0.4s; }
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Enhanced section header */
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 3rem;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+}
+
+.section-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin: 0;
+}
+
+/* Responsive filter buttons */
+@media (max-width: 768px) {
+    .section-controls {
+        gap: 0.5rem;
+    }
+    
+    .filter-btn {
+        padding: 0.6rem 1rem;
+        font-size: 0.85rem;
+    }
+    
+    .filter-btn span {
+        display: none;
+    }
+    
+    .filter-btn i {
+        margin-right: 0;
+        font-size: 1rem;
+    }
+    
+    .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .section-controls {
+        width: 100%;
+        justify-content: flex-start;
+    }
+    
+    .section-title {
+        font-size: 2rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .section-controls {
+        justify-content: center;
+        width: 100%;
+    }
+    
+    .filter-btn {
+        flex: 1;
+        min-width: 60px;
+        justify-content: center;
+    }
+    
+    .section-header {
+        text-align: center;
+    }
+}
+
+/* Filter animations for track cards */
+.track-card {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.track-card.filter-visible {
+    animation: slideInUp 0.5s ease-out forwards;
+}
+
+.track-card.filter-hidden {
+    animation: slideOutDown 0.3s ease-in forwards;
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideOutDown {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+}
+
+/* No results message */
+.no-results-message {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--text-secondary);
+}
+
+.no-results-content i {
+    font-size: 3rem;
+    color: var(--text-tertiary);
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.no-results-content h4 {
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+    font-size: 1.5rem;
+}
+
+.no-results-content p {
+    color: var(--text-secondary);
+    font-size: 1rem;
+}
+
+@media (max-width: 480px) {
+    .no-results-message {
+        padding: 2rem 1rem;
+    }
+    
+    .no-results-content i {
+        font-size: 2rem;
+    }
+    
+    .no-results-content h4 {
+        font-size: 1.25rem;
+    }
+}

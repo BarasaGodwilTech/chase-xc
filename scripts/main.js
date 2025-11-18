@@ -313,3 +313,120 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
+// === MUSIC FILTERS FUNCTIONALITY ===
+class MusicFilters {
+    constructor() {
+        this.filterButtons = document.querySelectorAll('.filter-btn');
+        this.trackCards = document.querySelectorAll('.track-card');
+        this.musicGrid = document.getElementById('musicGrid');
+        
+        if (this.filterButtons.length > 0) {
+            this.init();
+        }
+    }
+    
+    init() {
+        this.setupEventListeners();
+    }
+    
+    setupEventListeners() {
+        this.filterButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                this.handleFilterClick(e);
+            });
+        });
+    }
+    
+    handleFilterClick(e) {
+        const button = e.currentTarget;
+        const filter = button.dataset.filter;
+        
+        // Update active state
+        this.filterButtons.forEach(btn => {
+            btn.classList.remove('active');
+        });
+        button.classList.add('active');
+        
+        // Filter tracks
+        this.filterTracks(filter);
+        
+        // Add click animation
+        this.animateButtonClick(button);
+    }
+    
+    filterTracks(filter) {
+        let visibleCount = 0;
+        
+        this.trackCards.forEach(card => {
+            const category = card.dataset.category;
+            const shouldShow = filter === 'all' || category === filter;
+            
+            if (shouldShow) {
+                card.style.display = 'block';
+                visibleCount++;
+                
+                // Add animation delay for staggered appearance
+                setTimeout(() => {
+                    card.classList.add('filter-visible');
+                    card.classList.remove('filter-hidden');
+                }, visibleCount * 50);
+            } else {
+                card.classList.add('filter-hidden');
+                card.classList.remove('filter-visible');
+                
+                // Hide after animation
+                setTimeout(() => {
+                    card.style.display = 'none';
+                }, 300);
+            }
+        });
+        
+        // Show message if no tracks found
+        this.showNoResultsMessage(visibleCount === 0, filter);
+    }
+    
+    animateButtonClick(button) {
+        button.style.transform = 'scale(0.95)';
+        setTimeout(() => {
+            button.style.transform = '';
+        }, 150);
+    }
+    
+    showNoResultsMessage(show, filter) {
+        // Remove existing message
+        const existingMessage = this.musicGrid.querySelector('.no-results-message');
+        if (existingMessage) {
+            existingMessage.remove();
+        }
+        
+        if (show) {
+            const message = document.createElement('div');
+            message.className = 'no-results-message';
+            message.innerHTML = `
+                <div class="no-results-content">
+                    <i class="fas fa-music"></i>
+                    <h4>No ${this.getFilterDisplayName(filter)} Found</h4>
+                    <p>Check back later for new ${this.getFilterDisplayName(filter).toLowerCase()} tracks</p>
+                </div>
+            `;
+            this.musicGrid.appendChild(message);
+        }
+    }
+    
+    getFilterDisplayName(filter) {
+        const names = {
+            'all': 'Tracks',
+            'new': 'New Releases',
+            'popular': 'Popular Tracks',
+            'trending': 'Trending Tracks'
+        };
+        return names[filter] || 'Tracks';
+    }
+}
+
+// Initialize music filters when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    // Initialize music filters
+    new MusicFilters();
+});

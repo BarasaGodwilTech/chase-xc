@@ -57,8 +57,8 @@
     <div class="floating-player" id="floatingPlayer">
         <div class="floating-track-info">
             <div class="floating-cover">
-                <img id="floatingCover" src="https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=60&h=60&fit=crop" alt="Now Playing">
-            </div>
+                 <img id="floatingCover" src="https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=60&h=60&fit=crop" alt="Now Playing">
+                </div>
             <div class="floating-info">
                 <h5 id="floatingTitle">Sunset Dreams</h5>
                 <p id="floatingArtist">Sarah Miles</p>
@@ -89,22 +89,34 @@
     <section class="music" id="musicSection">
         <div class="container">
             <div class="section-header">
-                <h3 class="section-title">Featured Releases</h3>
-                <div class="section-controls">
-                    <button class="filter-btn active" data-filter="all">All</button>
-                    <button class="filter-btn" data-filter="new">New Releases</button>
-                    <button class="filter-btn" data-filter="popular">Popular</button>
-                    <button class="filter-btn" data-filter="trending">Trending</button>
-                </div>
-            </div>
+    <h3 class="section-title">Featured Releases</h3>
+    <div class="section-controls">
+        <button class="filter-btn active" data-filter="all">
+            <i class="fas fa-layer-group"></i>
+            <span>All</span>
+        </button>
+        <button class="filter-btn" data-filter="new">
+            <i class="fas fa-fire"></i>
+            <span>New Releases</span>
+        </button>
+        <button class="filter-btn" data-filter="popular">
+            <i class="fas fa-chart-line"></i>
+            <span>Popular</span>
+        </button>
+        <button class="filter-btn" data-filter="trending">
+            <i class="fas fa-bolt"></i>
+            <span>Trending</span>
+        </button>
+    </div>
+</div>
             
             <!-- Custom Audio Player -->
             <div class="audio-player enhanced-player" id="audioPlayer">
                 <div class="player-track-info">
                     <div class="player-cover">
                         <img id="playerCover" src="https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=80&h=80&fit=crop" alt="Now Playing">
-                        <div class="vinyl-overlay"></div>
-                    </div>
+        <div class="vinyl-overlay"></div>
+    </div>
                     <div class="player-info">
                         <h5 id="playerTitle">Sunset Dreams</h5>
                         <p id="playerArtist">Sarah Miles</p>
@@ -169,7 +181,7 @@
             </div>
 
             <!-- Music Grid -->
-            <!-- Enhanced Music Grid -->
+             <!-- Enhanced Music Grid -->
 <div class="music-grid" id="musicGrid">
     <div class="track-card" data-track="0" data-category="new">
         <div class="track-artwork">
@@ -217,7 +229,6 @@
         </div>
     </div>
     
-    <!-- Repeat similar structure for other tracks -->
     <div class="track-card" data-track="1" data-category="popular">
         <div class="track-artwork">
             <img src="https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=400&fit=crop" alt="City Lights">
@@ -264,7 +275,186 @@
         </div>
     </div>
     
-    <!-- Add more tracks as needed -->
+    <div class="track-card" data-track="2" data-category="popular">
+        <div class="track-artwork">
+            <img src="https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&h=400&fit=crop" alt="Rhythm of Mbale">
+            <button class="play-btn-card">
+                <i class="fas fa-play"></i>
+            </button>
+            <div class="track-overlay">
+                <div class="overlay-actions">
+                    <button class="overlay-btn" title="Add to playlist">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                    <button class="overlay-btn" title="Like">
+                        <i class="far fa-heart"></i>
+                    </button>
+                    <button class="overlay-btn" title="Share">
+                        <i class="fas fa-share"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="track-content">
+            <h4 class="track-title">Rhythm of Mbale</h4>
+            <p class="track-artist">The UG Collective</p>
+            <div class="track-meta">
+                <span class="track-genre">Dancehall</span>
+                <span class="track-duration">3:30</span>
+            </div>
+            <div class="track-stats">
+                <div class="stat">
+                    <i class="fas fa-play"></i>
+                    <span>82.3K</span>
+                </div>
+                <div class="stat">
+                    <i class="fas fa-heart"></i>
+                    <span>15.2K</span>
+                </div>
+                <div class="stat">
+                    <i class="fas fa-download"></i>
+                    <span>12.5K</span>
+                </div>
+            </div>
+            <div class="release-date">Released: Oct 2024</div>
+        </div>
+    </div>
+    
+    <div class="track-card" data-track="3" data-category="trending">
+        <div class="track-artwork">
+            <img src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&h=400&fit=crop" alt="Morning Breeze">
+            <button class="play-btn-card">
+                <i class="fas fa-play"></i>
+            </button>
+            <div class="track-overlay">
+                <div class="overlay-actions">
+                    <button class="overlay-btn" title="Add to playlist">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                    <button class="overlay-btn" title="Like">
+                        <i class="far fa-heart"></i>
+                    </button>
+                    <button class="overlay-btn" title="Share">
+                        <i class="fas fa-share"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="track-content">
+            <h4 class="track-title">Morning Breeze</h4>
+            <p class="track-artist">Lila Rose</p>
+            <div class="track-meta">
+                <span class="track-genre">R&B</span>
+                <span class="track-duration">4:05</span>
+            </div>
+            <div class="track-stats">
+                <div class="stat">
+                    <i class="fas fa-play"></i>
+                    <span>28.7K</span>
+                </div>
+                <div class="stat">
+                    <i class="fas fa-heart"></i>
+                    <span>5.3K</span>
+                </div>
+                <div class="stat">
+                    <i class="fas fa-download"></i>
+                    <span>3.9K</span>
+                </div>
+            </div>
+            <div class="release-date">Released: Sep 2024</div>
+        </div>
+    </div>
+    
+    <div class="track-card" data-track="4" data-category="trending">
+        <div class="track-artwork">
+            <img src="https://images.unsplash.com/photo-1571974599782-87624638275f?w=400&h=400&fit=crop" alt="Nile Flow">
+            <button class="play-btn-card">
+                <i class="fas fa-play"></i>
+            </button>
+            <div class="track-badge trending">Trending</div>
+            <div class="track-overlay">
+                <div class="overlay-actions">
+                    <button class="overlay-btn" title="Add to playlist">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                    <button class="overlay-btn" title="Like">
+                        <i class="far fa-heart"></i>
+                    </button>
+                    <button class="overlay-btn" title="Share">
+                        <i class="fas fa-share"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="track-content">
+            <h4 class="track-title">Nile Flow</h4>
+            <p class="track-artist">Marcus Sound</p>
+            <div class="track-meta">
+                <span class="track-genre">Afrobeat</span>
+                <span class="track-duration">3:55</span>
+            </div>
+            <div class="track-stats">
+                <div class="stat">
+                    <i class="fas fa-play"></i>
+                    <span>67.4K</span>
+                </div>
+                <div class="stat">
+                    <i class="fas fa-heart"></i>
+                    <span>12.8K</span>
+                </div>
+                <div class="stat">
+                    <i class="fas fa-download"></i>
+                    <span>9.1K</span>
+                </div>
+            </div>
+            <div class="release-date">Released: Aug 2024</div>
+        </div>
+    </div>
+    
+    <div class="track-card" data-track="5" data-category="popular">
+        <div class="track-artwork">
+            <img src="https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=400&h=400&fit=crop" alt="Golden Hour">
+            <button class="play-btn-card">
+                <i class="fas fa-play"></i>
+            </button>
+            <div class="track-overlay">
+                <div class="overlay-actions">
+                    <button class="overlay-btn" title="Add to playlist">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                    <button class="overlay-btn" title="Like">
+                        <i class="far fa-heart"></i>
+                    </button>
+                    <button class="overlay-btn" title="Share">
+                        <i class="fas fa-share"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="track-content">
+            <h4 class="track-title">Golden Hour</h4>
+            <p class="track-artist">Sarah Miles & DJ Kato</p>
+            <div class="track-meta">
+                <span class="track-genre">Afro-House</span>
+                <span class="track-duration">5:15</span>
+            </div>
+            <div class="track-stats">
+                <div class="stat">
+                    <i class="fas fa-play"></i>
+                    <span>94.2K</span>
+                </div>
+                <div class="stat">
+                    <i class="fas fa-heart"></i>
+                    <span>18.6K</span>
+                </div>
+                <div class="stat">
+                    <i class="fas fa-download"></i>
+                    <span>14.3K</span>
+                </div>
+            </div>
+            <div class="release-date">Released: Jul 2024</div>
+        </div>
+    </div>
 </div>
             
             <!-- Load More Button -->
