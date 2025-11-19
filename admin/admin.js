@@ -130,7 +130,460 @@ class AdminPanel {
                 }
             }
         });
+
+        // =========================================================================
+        // MUSIC MANAGEMENT EVENT LISTENERS - ADD THIS SECTION
+        // =========================================================================
+        this.setupMusicManagement();
     }
+
+    // =========================================================================
+    // MUSIC MANAGEMENT METHODS - ADD THESE METHODS TO THE CLASS
+    // =========================================================================
+
+    setupMusicManagement() {
+        // Method tabs
+        document.querySelectorAll('.method-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const method = tab.getAttribute('data-method');
+                this.switchUploadMethod(method);
+            });
+        });
+
+        // File upload
+        const audioUploadArea = document.getElementById('audioUploadArea');
+        const audioFileInput = document.getElementById('audioFile');
+        const fileInfo = document.getElementById('fileInfo');
+
+        if (audioUploadArea && audioFileInput) {
+            audioUploadArea.addEventListener('click', () => audioFileInput.click());
+            
+            audioUploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                audioUploadArea.classList.add('dragover');
+            });
+
+            audioUploadArea.addEventListener('dragleave', () => {
+                audioUploadArea.classList.remove('dragover');
+            });
+
+            audioUploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                audioUploadArea.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    this.handleFileSelect(files[0]);
+                }
+            });
+
+            audioFileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    this.handleFileSelect(e.target.files[0]);
+                }
+            });
+        }
+
+        // Artwork upload
+        const artworkBtn = document.getElementById('uploadArtworkBtn');
+        const artworkInput = document.getElementById('trackArtwork');
+        const artworkPreview = document.getElementById('artworkPreview');
+
+        if (artworkBtn && artworkInput) {
+            artworkBtn.addEventListener('click', () => artworkInput.click());
+            
+            artworkInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    this.handleArtworkSelect(e.target.files[0]);
+                }
+            });
+        }
+
+        // Form submissions
+        document.getElementById('audioUploadForm')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.handleAudioUpload();
+        });
+
+        document.getElementById('externalTrackForm')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.handleExternalTrack();
+        });
+
+        document.getElementById('searchSpotify')?.addEventListener('click', () => {
+            this.searchSpotify();
+        });
+
+        document.getElementById('importSpotify')?.addEventListener('click', () => {
+            this.importSpotifyTrack();
+        });
+
+        // Cancel buttons
+        document.getElementById('cancelUpload')?.addEventListener('click', () => {
+            this.resetUploadForm();
+        });
+
+        document.getElementById('cancelSpotify')?.addEventListener('click', () => {
+            this.resetSpotifyForm();
+        });
+
+        document.getElementById('cancelExternal')?.addEventListener('click', () => {
+            this.resetExternalForm();
+        });
+    }
+
+    switchUploadMethod(method) {
+        // Update tabs
+        document.querySelectorAll('.method-tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        document.querySelector(`[data-method="${method}"]`).classList.add('active');
+
+        // Update content
+        document.querySelectorAll('.method-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        document.getElementById(`${method}Form`).classList.add('active');
+    }
+
+    handleFileSelect(file) {
+        const fileInfo = document.getElementById('fileInfo');
+        const audioUploadArea = document.getElementById('audioUploadArea');
+        
+        if (!fileInfo || !audioUploadArea) return;
+
+        // Validate file type
+        const validTypes = ['audio/mpeg', 'audio/wav', 'audio/flac', 'audio/mp4', 'audio/x-m4a'];
+        if (!validTypes.includes(file.type)) {
+            this.showNotification('Please select a valid audio file (MP3, WAV, FLAC, M4A)', 'error');
+            return;
+        }
+
+        // Validate file size (50MB)
+        if (file.size > 50 * 1024 * 1024) {
+            this.showNotification('File size must be less than 50MB', 'error');
+            return;
+        }
+
+        // Update UI
+        fileInfo.innerHTML = `
+            <strong>Selected File:</strong> ${file.name}<br>
+            <strong>Size:</strong> ${this.formatFileSize(file.size)}<br>
+            <strong>Type:</strong> ${file.type}
+        `;
+        fileInfo.classList.add('active');
+
+        audioUploadArea.innerHTML = `
+            <i class="fas fa-check-circle" style="color: var(--success-color);"></i>
+            <p>File ready for upload</p>
+            <span>${file.name}</span>
+        `;
+    }
+
+    handleArtworkSelect(file) {
+        const artworkPreview = document.getElementById('artworkPreview');
+        if (!artworkPreview) return;
+        
+        // Validate file type
+        const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        if (!validTypes.includes(file.type)) {
+            this.showNotification('Please select a valid image file (JPEG, PNG, GIF, WebP)', 'error');
+            return;
+        }
+
+        // Create preview
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            artworkPreview.innerHTML = `<img src="${e.target.result}" alt="Artwork preview">`;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    async handleAudioUpload() {
+        const formData = new FormData(document.getElementById('audioUploadForm'));
+        
+        try {
+            this.showLoading();
+            
+            // Simulate API call - replace with actual endpoint
+            await this.simulateApiCall('uploadTrack', formData);
+            
+            this.showNotification('Track uploaded successfully!', 'success');
+            this.resetUploadForm();
+            
+            // Refresh tracks list if on tracks section
+            if (this.currentSection === 'tracks') {
+                this.loadTracks();
+            }
+            
+        } catch (error) {
+            this.showNotification('Error uploading track: ' + error.message, 'error');
+        } finally {
+            this.hideLoading();
+        }
+    }
+
+    async searchSpotify() {
+        const query = document.getElementById('spotifySearch')?.value.trim();
+        if (!query) {
+            this.showNotification('Please enter a search term', 'warning');
+            return;
+        }
+
+        try {
+            this.showLoading();
+            
+            // In a real implementation, you would call your backend which would use Spotify API
+            const results = await this.simulateSpotifySearch(query);
+            this.displaySpotifyResults(results);
+            
+        } catch (error) {
+            this.showNotification('Error searching Spotify: ' + error.message, 'error');
+        } finally {
+            this.hideLoading();
+        }
+    }
+
+    simulateSpotifySearch(query) {
+        return new Promise((resolve) => {
+            setTimeout(() => {
+                // Mock data - replace with actual Spotify API integration
+                resolve([
+                    {
+                        id: 'spotify_1',
+                        title: `${query} - Track 1`,
+                        artist: 'Artist 1',
+                        album: 'Album 1',
+                        duration: '3:45',
+                        image: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=100&h=100&fit=crop',
+                        url: `https://open.spotify.com/track/mock1`
+                    },
+                    {
+                        id: 'spotify_2',
+                        title: `${query} - Track 2`,
+                        artist: 'Artist 2',
+                        album: 'Album 2',
+                        duration: '4:20',
+                        image: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=100&h=100&fit=crop',
+                        url: `https://open.spotify.com/track/mock2`
+                    }
+                ]);
+            }, 1000);
+        });
+    }
+
+    displaySpotifyResults(results) {
+        const container = document.getElementById('spotifyResults');
+        if (!container) return;
+        
+        if (results.length === 0) {
+            container.innerHTML = '<p class="no-results">No tracks found</p>';
+            return;
+        }
+
+        container.innerHTML = results.map(track => `
+            <div class="track-result" data-track-id="${track.id}">
+                <img src="${track.image}" alt="${track.album}">
+                <div class="track-result-info">
+                    <h4>${track.title}</h4>
+                    <p>${track.artist} • ${track.album} • ${track.duration}</p>
+                </div>
+                <button class="btn btn-sm btn-primary select-track" 
+                        data-track='${JSON.stringify(track).replace(/'/g, "\\'")}'>
+                    Select
+                </button>
+            </div>
+        `).join('');
+
+        // Add event listeners to select buttons
+        container.querySelectorAll('.select-track').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const trackData = JSON.parse(btn.getAttribute('data-track'));
+                this.selectSpotifyTrack(trackData);
+            });
+        });
+    }
+
+    selectSpotifyTrack(track) {
+        // Populate the Spotify URL field
+        const spotifyUrl = document.getElementById('spotifyUrl');
+        if (spotifyUrl) {
+            spotifyUrl.value = track.url;
+        }
+        
+        // Mark as selected
+        document.querySelectorAll('.track-result').forEach(result => {
+            result.classList.remove('selected');
+        });
+        event.target.closest('.track-result').classList.add('selected');
+    }
+
+    async importSpotifyTrack() {
+        const spotifyUrl = document.getElementById('spotifyUrl')?.value.trim();
+        
+        if (!spotifyUrl) {
+            this.showNotification('Please select a track or enter a Spotify URL', 'warning');
+            return;
+        }
+
+        try {
+            this.showLoading();
+            
+            // Simulate API call to import from Spotify
+            await this.simulateApiCall('importSpotifyTrack', { url: spotifyUrl });
+            
+            this.showNotification('Track imported from Spotify successfully!', 'success');
+            this.resetSpotifyForm();
+            
+        } catch (error) {
+            this.showNotification('Error importing from Spotify: ' + error.message, 'error');
+        } finally {
+            this.hideLoading();
+        }
+    }
+
+    async handleExternalTrack() {
+        const form = document.getElementById('externalTrackForm');
+        if (!form) return;
+
+        const formData = new FormData(form);
+        const platform = formData.get('platform');
+        const url = formData.get('externalUrl');
+        const title = formData.get('externalTitle');
+        const artist = formData.get('externalArtist');
+
+        if (!platform || !url || !title || !artist) {
+            this.showNotification('Please fill all required fields', 'warning');
+            return;
+        }
+
+        try {
+            this.showLoading();
+            
+            // Simulate API call
+            await this.simulateApiCall('addExternalTrack', {
+                platform,
+                url,
+                title,
+                artist,
+                genre: formData.get('externalGenre')
+            });
+            
+            this.showNotification('External track added successfully!', 'success');
+            this.resetExternalForm();
+            
+        } catch (error) {
+            this.showNotification('Error adding external track: ' + error.message, 'error');
+        } finally {
+            this.hideLoading();
+        }
+    }
+
+    resetUploadForm() {
+        const form = document.getElementById('audioUploadForm');
+        const audioUploadArea = document.getElementById('audioUploadArea');
+        const fileInfo = document.getElementById('fileInfo');
+        const artworkPreview = document.getElementById('artworkPreview');
+
+        if (form) form.reset();
+        if (audioUploadArea) {
+            audioUploadArea.innerHTML = `
+                <i class="fas fa-cloud-upload-alt"></i>
+                <p>Drag & drop your audio file here or click to browse</p>
+                <span>Supports: MP3, WAV, FLAC, M4A (Max 50MB)</span>
+            `;
+        }
+        if (fileInfo) fileInfo.classList.remove('active');
+        if (artworkPreview) {
+            artworkPreview.innerHTML = `
+                <i class="fas fa-image"></i>
+                <span>No artwork selected</span>
+            `;
+        }
+    }
+
+    resetSpotifyForm() {
+        const spotifyUrl = document.getElementById('spotifyUrl');
+        const spotifySearch = document.getElementById('spotifySearch');
+        const spotifyResults = document.getElementById('spotifyResults');
+
+        if (spotifyUrl) spotifyUrl.value = '';
+        if (spotifySearch) spotifySearch.value = '';
+        if (spotifyResults) spotifyResults.innerHTML = '';
+    }
+
+    resetExternalForm() {
+        const form = document.getElementById('externalTrackForm');
+        if (form) form.reset();
+    }
+
+    formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    simulateApiCall(endpoint, data) {
+        return new Promise((resolve, reject) => {
+            setTimeout(() => {
+                // Simulate random success/failure
+                if (Math.random() > 0.2) {
+                    resolve({ success: true, message: 'Operation completed' });
+                } else {
+                    reject(new Error('Simulated API error'));
+                }
+            }, 2000);
+        });
+    }
+
+    showNotification(message, type = 'info') {
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = `notification notification-${type}`;
+        notification.innerHTML = `
+            <div class="notification-content">
+                <i class="fas fa-${this.getNotificationIcon(type)}"></i>
+                <span>${message}</span>
+            </div>
+            <button class="notification-close">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+
+        // Add to page
+        document.body.appendChild(notification);
+
+        // Animate in
+        setTimeout(() => notification.classList.add('show'), 100);
+
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            notification.classList.remove('show');
+            setTimeout(() => notification.remove(), 300);
+        }, 5000);
+
+        // Close on click
+        notification.querySelector('.notification-close').addEventListener('click', () => {
+            notification.classList.remove('show');
+            setTimeout(() => notification.remove(), 300);
+        });
+    }
+
+    getNotificationIcon(type) {
+        const icons = {
+            success: 'check-circle',
+            error: 'exclamation-circle',
+            warning: 'exclamation-triangle',
+            info: 'info-circle'
+        };
+        return icons[type] || 'info-circle';
+    }
+
+    // =========================================================================
+    // EXISTING METHODS - KEEP THESE AS THEY ARE
+    // =========================================================================
 
     showSection(sectionId) {
         // Update navigation
@@ -162,7 +615,8 @@ class AdminPanel {
             projects: 'Project Management',
             savings: 'Savings Goals',
             reports: 'Reports & Analytics',
-            settings: 'Settings'
+            settings: 'Settings',
+            'music-management': 'Music Management'
         };
 
         const pageTitle = document.getElementById('pageTitle');
@@ -181,7 +635,8 @@ class AdminPanel {
                 projects: 'Track ongoing projects and progress',
                 savings: 'Monitor client savings goals',
                 reports: 'View analytics and reports',
-                settings: 'Configure studio settings'
+                settings: 'Configure studio settings',
+                'music-management': 'Upload and manage music tracks'
             };
             pageSubtitle.textContent = subtitles[sectionId] || 'Manage your studio operations';
         }
@@ -216,6 +671,10 @@ class AdminPanel {
                     break;
                 case 'settings':
                     this.loadSettings();
+                    break;
+                case 'music-management':
+                    // Initialize music management section
+                    this.loadArtistsForSelect();
                     break;
             }
             this.hideLoading();
@@ -270,6 +729,22 @@ class AdminPanel {
                     genre: 'Electronic',
                     tracks: 12,
                     since: '2020',
+                    status: 'active'
+                },
+                {
+                    id: 'A002',
+                    name: 'Sarah Miles',
+                    genre: 'Afro-Pop',
+                    tracks: 8,
+                    since: '2021',
+                    status: 'active'
+                },
+                {
+                    id: 'A003',
+                    name: 'DJ Kato',
+                    genre: 'Electronic',
+                    tracks: 15,
+                    since: '2019',
                     status: 'active'
                 }
             ],
@@ -327,6 +802,16 @@ class AdminPanel {
                 }
             ]
         };
+    }
+
+    loadArtistsForSelect() {
+        const artistSelect = document.getElementById('trackArtist');
+        if (artistSelect && this.data.artists) {
+            artistSelect.innerHTML = '<option value="">Select Artist</option>' +
+                this.data.artists.map(artist => 
+                    `<option value="${artist.id}">${artist.name}</option>`
+                ).join('');
+        }
     }
 
     renderDashboard() {
@@ -436,18 +921,6 @@ class AdminPanel {
             artist: 'user-plus',
             track: 'music',
             system: 'cog'
-        };
-        return icons[type] || 'bell';
-    }
-
-    getNotificationIcon(type) {
-        const icons = {
-            payment: 'money-bill-wave',
-            project: 'project-diagram',
-            artist: 'user',
-            track: 'music',
-            system: 'cog',
-            warning: 'exclamation-triangle'
         };
         return icons[type] || 'bell';
     }

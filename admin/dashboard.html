@@ -33,20 +33,24 @@
             </div>
 
             <div class="nav-section">
-                <h4>CONTENT</h4>
-                <a href="#" class="nav-item" data-target="artists">
-                    <i class="fas fa-users"></i>
-                    <span>Artists</span>
-                </a>
-                <a href="#" class="nav-item" data-target="tracks">
-                    <i class="fas fa-music"></i>
-                    <span>Tracks</span>
-                </a>
-                <a href="#" class="nav-item" data-target="projects">
-                    <i class="fas fa-project-diagram"></i>
-                    <span>Projects</span>
-                </a>
-            </div>
+    <h4>CONTENT</h4>
+    <a href="#" class="nav-item" data-target="artists">
+        <i class="fas fa-users"></i>
+        <span>Artists</span>
+    </a>
+    <a href="#" class="nav-item" data-target="tracks">
+        <i class="fas fa-music"></i>
+        <span>Tracks</span>
+    </a>
+    <a href="#" class="nav-item" data-target="music-management">
+        <i class="fas fa-cloud-upload-alt"></i>
+        <span>Music Management</span>
+    </a>
+    <a href="#" class="nav-item" data-target="projects">
+        <i class="fas fa-project-diagram"></i>
+        <span>Projects</span>
+    </a>
+</div>
 
             <div class="nav-section">
                 <h4>FINANCIAL</h4>
@@ -300,6 +304,227 @@
                 </table>
             </div>
         </section>
+
+        <!-- Music Management Section -->
+<section class="admin-section" id="music-management">
+    <div class="section-header">
+        <h2>Music Management</h2>
+        <div class="section-actions">
+            <button class="btn btn-primary" id="addTrackBtn">
+                <i class="fas fa-plus"></i> Add New Track
+            </button>
+        </div>
+    </div>
+
+    <!-- Upload Methods Tabs -->
+    <div class="upload-methods">
+        <div class="method-tabs">
+            <button class="method-tab active" data-method="upload">
+                <i class="fas fa-upload"></i>
+                Upload Audio File
+            </button>
+            <button class="method-tab" data-method="spotify">
+                <i class="fab fa-spotify"></i>
+                Import from Spotify
+            </button>
+            <button class="method-tab" data-method="external">
+                <i class="fas fa-link"></i>
+                External Platform
+            </button>
+        </div>
+
+        <!-- Upload Audio File Form -->
+        <div class="method-content active" id="uploadForm">
+            <div class="form-card">
+                <h3>Upload Audio File</h3>
+                <form id="audioUploadForm" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="audioFile">Audio File</label>
+                        <div class="file-upload-area" id="audioUploadArea">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <p>Drag & drop your audio file here or click to browse</p>
+                            <span>Supports: MP3, WAV, FLAC, M4A (Max 50MB)</span>
+                            <input type="file" id="audioFile" name="audioFile" accept="audio/*" hidden>
+                        </div>
+                        <div class="file-info" id="fileInfo"></div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="trackTitle">Track Title *</label>
+                            <input type="text" id="trackTitle" name="trackTitle" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="trackArtist">Artist *</label>
+                            <select id="trackArtist" name="trackArtist" required>
+                                <option value="">Select Artist</option>
+                                <!-- Artists will be populated dynamically -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="trackGenre">Genre *</label>
+                            <select id="trackGenre" name="trackGenre" required>
+                                <option value="">Select Genre</option>
+                                <option value="afro-pop">Afro-Pop</option>
+                                <option value="electronic">Electronic</option>
+                                <option value="dancehall">Dancehall</option>
+                                <option value="r&b">R&B</option>
+                                <option value="afrobeat">Afrobeat</option>
+                                <option value="afro-house">Afro-House</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="releaseDate">Release Date</label>
+                            <input type="date" id="releaseDate" name="releaseDate">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="trackDescription">Description</label>
+                        <textarea id="trackDescription" name="trackDescription" rows="3" placeholder="Track description..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="trackArtwork">Track Artwork</label>
+                        <div class="artwork-upload">
+                            <div class="artwork-preview" id="artworkPreview">
+                                <i class="fas fa-image"></i>
+                                <span>No artwork selected</span>
+                            </div>
+                            <button type="button" class="btn btn-secondary" id="uploadArtworkBtn">
+                                <i class="fas fa-upload"></i> Upload Artwork
+                            </button>
+                            <input type="file" id="trackArtwork" name="trackArtwork" accept="image/*" hidden>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" id="cancelUpload">Cancel</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-upload"></i> Upload Track
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Spotify Import Form -->
+        <div class="method-content" id="spotifyForm">
+            <div class="form-card">
+                <h3>Import from Spotify</h3>
+                <div class="spotify-connect">
+                    <div class="spotify-header">
+                        <i class="fab fa-spotify"></i>
+                        <p>Connect to Spotify to import your tracks</p>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="spotifyUrl">Spotify Track URL</label>
+                        <input type="url" id="spotifyUrl" name="spotifyUrl" 
+                               placeholder="https://open.spotify.com/track/..." 
+                               pattern="https://open.spotify.com/track/.*">
+                        <small>Paste the full Spotify track URL</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="spotifySearch">Or Search Spotify</label>
+                        <div class="search-box">
+                            <input type="text" id="spotifySearch" placeholder="Search for tracks on Spotify...">
+                            <button type="button" class="btn btn-secondary" id="searchSpotify">
+                                <i class="fas fa-search"></i> Search
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="spotify-results" id="spotifyResults">
+                        <!-- Search results will appear here -->
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" id="cancelSpotify">Cancel</button>
+                        <button type="button" class="btn btn-primary" id="importSpotify">
+                            <i class="fab fa-spotify"></i> Import Track
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- External Platform Form -->
+        <div class="method-content" id="externalForm">
+            <div class="form-card">
+                <h3>Add from External Platform</h3>
+                <form id="externalTrackForm">
+                    <div class="platform-selection">
+                        <label>Select Platform</label>
+                        <div class="platform-options">
+                            <label class="platform-option">
+                                <input type="radio" name="platform" value="youtube">
+                                <i class="fab fa-youtube"></i>
+                                <span>YouTube</span>
+                            </label>
+                            <label class="platform-option">
+                                <input type="radio" name="platform" value="apple-music">
+                                <i class="fab fa-apple"></i>
+                                <span>Apple Music</span>
+                            </label>
+                            <label class="platform-option">
+                                <input type="radio" name="platform" value="soundcloud">
+                                <i class="fab fa-soundcloud"></i>
+                                <span>SoundCloud</span>
+                            </label>
+                            <label class="platform-option">
+                                <input type="radio" name="platform" value="other">
+                                <i class="fas fa-globe"></i>
+                                <span>Other</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="externalUrl">Track URL *</label>
+                        <input type="url" id="externalUrl" name="externalUrl" required 
+                               placeholder="Paste track URL from the selected platform">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="externalTitle">Track Title *</label>
+                        <input type="text" id="externalTitle" name="externalTitle" required>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="externalArtist">Artist *</label>
+                            <input type="text" id="externalArtist" name="externalArtist" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="externalGenre">Genre</label>
+                            <select id="externalGenre" name="externalGenre">
+                                <option value="">Select Genre</option>
+                                <option value="afro-pop">Afro-Pop</option>
+                                <option value="electronic">Electronic</option>
+                                <option value="dancehall">Dancehall</option>
+                                <option value="r&b">R&B</option>
+                                <option value="afrobeat">Afrobeat</option>
+                                <option value="afro-house">Afro-House</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" id="cancelExternal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Add Track
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
 
         <!-- Add other sections (artists, tracks, projects, savings, reports, settings) here -->
         <!-- The structure would be similar to the payments section -->
