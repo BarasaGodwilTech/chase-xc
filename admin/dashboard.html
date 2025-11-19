@@ -526,6 +526,68 @@
     </div>
 </section>
 
+<!-- Artists Section -->
+<section class="admin-section" id="artists">
+    <div class="section-header">
+        <h2>Artist Management</h2>
+        <div class="section-actions">
+            <button class="btn btn-primary" onclick="adminPanel.addNewArtist()">
+                <i class="fas fa-plus"></i> Add New Artist
+            </button>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Artist</th>
+                    <th>Genre</th>
+                    <th>Tracks</th>
+                    <th>Streams</th>
+                    <th>Since</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="artistsTable">
+                <!-- Artists will be loaded here -->
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<!-- Tracks Section -->
+<section class="admin-section" id="tracks">
+    <div class="section-header">
+        <h2>Track Management</h2>
+        <div class="section-actions">
+            <button class="btn btn-primary" onclick="adminPanel.addNewTrack()">
+                <i class="fas fa-plus"></i> Add New Track
+            </button>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Track</th>
+                    <th>Artist</th>
+                    <th>Genre</th>
+                    <th>Streams</th>
+                    <th>Duration</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="tracksTable">
+                <!-- Tracks will be loaded here -->
+            </tbody>
+        </table>
+    </div>
+</section>
+
         <!-- Add other sections (artists, tracks, projects, savings, reports, settings) here -->
         <!-- The structure would be similar to the payments section -->
 

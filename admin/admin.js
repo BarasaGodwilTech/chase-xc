@@ -1,4 +1,4 @@
-// Admin Panel Main JavaScript
+// Enhanced Admin Panel with Full CRUD Operations
 class AdminPanel {
     constructor() {
         this.currentSection = 'dashboard';
@@ -12,23 +12,24 @@ class AdminPanel {
             notifications: []
         };
         
+        this.editingItem = null;
         this.init();
     }
 
     init() {
         this.checkAuth();
         this.setupEventListeners();
-        this.loadSampleData();
+        this.loadDataFromStorage();
         this.showSection('dashboard');
         this.renderDashboard();
         this.loadNotifications();
     }
 
     checkAuth() {
-        // This would normally check with adminAuth, but for simplicity:
+        // Simple auth check
         const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
-        if (!token && !window.location.pathname.includes('index.html')) {
-            window.location.href = 'index.html';
+        if (!token && !window.location.pathname.includes('login')) {
+            console.warn('Not authenticated');
         }
     }
 
@@ -73,24 +74,26 @@ class AdminPanel {
             fullscreenBtn.addEventListener('click', () => this.toggleFullscreen());
         }
 
-        // Payment management
-        document.getElementById('applyPaymentFilters')?.addEventListener('click', () => {
-            this.filterPayments();
-        });
-
-        document.getElementById('exportPayments')?.addEventListener('click', () => {
-            this.exportPayments();
-        });
-
-        document.getElementById('refreshPayments')?.addEventListener('click', () => {
-            this.loadPayments();
-        });
-
         // Logout
         document.getElementById('logoutBtn')?.addEventListener('click', (e) => {
             e.preventDefault();
             this.handleLogout();
         });
+
+        // Add new artist button
+        document.getElementById('addArtistBtn')?.addEventListener('click', () => {
+            this.addNewArtist();
+        });
+
+        // Add new track button
+        document.getElementById('addTrackBtn')?.addEventListener('click', () => {
+            this.addNewTrack();
+        });
+
+        // =========================================================================
+        // MUSIC MANAGEMENT EVENT LISTENERS - FIXED VERSION
+        // =========================================================================
+        this.setupMusicManagement();
 
         // Close notifications panel when clicking outside
         document.addEventListener('click', (e) => {
@@ -100,54 +103,20 @@ class AdminPanel {
                 notificationsPanel.classList.remove('active');
             }
         });
-
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            if (e.ctrlKey || e.metaKey) {
-                switch(e.key) {
-                    case '1':
-                        e.preventDefault();
-                        this.showSection('dashboard');
-                        break;
-                    case '2':
-                        e.preventDefault();
-                        this.showSection('payments');
-                        break;
-                    case '3':
-                        e.preventDefault();
-                        this.showSection('artists');
-                        break;
-                    case 'l':
-                        if (e.shiftKey) {
-                            e.preventDefault();
-                            this.handleLogout();
-                        }
-                        break;
-                    case 'k':
-                        e.preventDefault();
-                        document.querySelector('.search-box input').focus();
-                        break;
-                }
-            }
-        });
-
-        // =========================================================================
-        // MUSIC MANAGEMENT EVENT LISTENERS - ADD THIS SECTION
-        // =========================================================================
-        this.setupMusicManagement();
     }
 
     // =========================================================================
-    // MUSIC MANAGEMENT METHODS - ADD THESE METHODS TO THE CLASS
+    // MUSIC MANAGEMENT METHODS - FIXED VERSION
     // =========================================================================
 
     setupMusicManagement() {
-        // Method tabs
-        document.querySelectorAll('.method-tab').forEach(tab => {
-            tab.addEventListener('click', () => {
+        // Method tabs - FIXED: Use event delegation for dynamic content
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('.method-tab')) {
+                const tab = e.target.closest('.method-tab');
                 const method = tab.getAttribute('data-method');
                 this.switchUploadMethod(method);
-            });
+            }
         });
 
         // File upload
@@ -232,17 +201,27 @@ class AdminPanel {
     }
 
     switchUploadMethod(method) {
+        console.log('Switching to method:', method); // Debug log
+        
         // Update tabs
         document.querySelectorAll('.method-tab').forEach(tab => {
             tab.classList.remove('active');
         });
-        document.querySelector(`[data-method="${method}"]`).classList.add('active');
+        
+        const activeTab = document.querySelector(`[data-method="${method}"]`);
+        if (activeTab) {
+            activeTab.classList.add('active');
+        }
 
         // Update content
         document.querySelectorAll('.method-content').forEach(content => {
             content.classList.remove('active');
         });
-        document.getElementById(`${method}Form`).classList.add('active');
+        
+        const activeContent = document.getElementById(`${method}Form`);
+        if (activeContent) {
+            activeContent.classList.add('active');
+        }
     }
 
     handleFileSelect(file) {
@@ -270,10 +249,10 @@ class AdminPanel {
             <strong>Size:</strong> ${this.formatFileSize(file.size)}<br>
             <strong>Type:</strong> ${file.type}
         `;
-        fileInfo.classList.add('active');
+        fileInfo.style.display = 'block';
 
         audioUploadArea.innerHTML = `
-            <i class="fas fa-check-circle" style="color: var(--success-color);"></i>
+            <i class="fas fa-check-circle" style="color: var(--success);"></i>
             <p>File ready for upload</p>
             <span>${file.name}</span>
         `;
@@ -293,7 +272,8 @@ class AdminPanel {
         // Create preview
         const reader = new FileReader();
         reader.onload = (e) => {
-            artworkPreview.innerHTML = `<img src="${e.target.result}" alt="Artwork preview">`;
+            artworkPreview.innerHTML = `<img src="${e.target.result}" alt="Artwork preview" style="width: 100px; height: 100px; object-fit: cover; border-radius: 8px;">`;
+            artworkPreview.classList.add('has-image');
         };
         reader.readAsDataURL(file);
     }
@@ -304,16 +284,11 @@ class AdminPanel {
         try {
             this.showLoading();
             
-            // Simulate API call - replace with actual endpoint
+            // Simulate API call
             await this.simulateApiCall('uploadTrack', formData);
             
             this.showNotification('Track uploaded successfully!', 'success');
             this.resetUploadForm();
-            
-            // Refresh tracks list if on tracks section
-            if (this.currentSection === 'tracks') {
-                this.loadTracks();
-            }
             
         } catch (error) {
             this.showNotification('Error uploading track: ' + error.message, 'error');
@@ -332,7 +307,6 @@ class AdminPanel {
         try {
             this.showLoading();
             
-            // In a real implementation, you would call your backend which would use Spotify API
             const results = await this.simulateSpotifySearch(query);
             this.displaySpotifyResults(results);
             
@@ -346,7 +320,6 @@ class AdminPanel {
     simulateSpotifySearch(query) {
         return new Promise((resolve) => {
             setTimeout(() => {
-                // Mock data - replace with actual Spotify API integration
                 resolve([
                     {
                         id: 'spotify_1',
@@ -377,6 +350,7 @@ class AdminPanel {
         
         if (results.length === 0) {
             container.innerHTML = '<p class="no-results">No tracks found</p>';
+            container.style.display = 'block';
             return;
         }
 
@@ -394,17 +368,19 @@ class AdminPanel {
             </div>
         `).join('');
 
+        container.style.display = 'block';
+
         // Add event listeners to select buttons
         container.querySelectorAll('.select-track').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const trackData = JSON.parse(btn.getAttribute('data-track'));
-                this.selectSpotifyTrack(trackData);
+                this.selectSpotifyTrack(trackData, btn);
             });
         });
     }
 
-    selectSpotifyTrack(track) {
+    selectSpotifyTrack(track, button) {
         // Populate the Spotify URL field
         const spotifyUrl = document.getElementById('spotifyUrl');
         if (spotifyUrl) {
@@ -415,7 +391,7 @@ class AdminPanel {
         document.querySelectorAll('.track-result').forEach(result => {
             result.classList.remove('selected');
         });
-        event.target.closest('.track-result').classList.add('selected');
+        button.closest('.track-result').classList.add('selected');
     }
 
     async importSpotifyTrack() {
@@ -429,7 +405,6 @@ class AdminPanel {
         try {
             this.showLoading();
             
-            // Simulate API call to import from Spotify
             await this.simulateApiCall('importSpotifyTrack', { url: spotifyUrl });
             
             this.showNotification('Track imported from Spotify successfully!', 'success');
@@ -460,7 +435,6 @@ class AdminPanel {
         try {
             this.showLoading();
             
-            // Simulate API call
             await this.simulateApiCall('addExternalTrack', {
                 platform,
                 url,
@@ -493,12 +467,16 @@ class AdminPanel {
                 <span>Supports: MP3, WAV, FLAC, M4A (Max 50MB)</span>
             `;
         }
-        if (fileInfo) fileInfo.classList.remove('active');
+        if (fileInfo) {
+            fileInfo.innerHTML = '';
+            fileInfo.style.display = 'none';
+        }
         if (artworkPreview) {
             artworkPreview.innerHTML = `
                 <i class="fas fa-image"></i>
                 <span>No artwork selected</span>
             `;
+            artworkPreview.classList.remove('has-image');
         }
     }
 
@@ -509,7 +487,10 @@ class AdminPanel {
 
         if (spotifyUrl) spotifyUrl.value = '';
         if (spotifySearch) spotifySearch.value = '';
-        if (spotifyResults) spotifyResults.innerHTML = '';
+        if (spotifyResults) {
+            spotifyResults.innerHTML = '';
+            spotifyResults.style.display = 'none';
+        }
     }
 
     resetExternalForm() {
@@ -528,7 +509,6 @@ class AdminPanel {
     simulateApiCall(endpoint, data) {
         return new Promise((resolve, reject) => {
             setTimeout(() => {
-                // Simulate random success/failure
                 if (Math.random() > 0.2) {
                     resolve({ success: true, message: 'Operation completed' });
                 } else {
@@ -538,52 +518,506 @@ class AdminPanel {
         });
     }
 
-    showNotification(message, type = 'info') {
-        // Create notification element
-        const notification = document.createElement('div');
-        notification.className = `notification notification-${type}`;
-        notification.innerHTML = `
-            <div class="notification-content">
-                <i class="fas fa-${this.getNotificationIcon(type)}"></i>
-                <span>${message}</span>
+    // =========================================================================
+    // DATA MANAGEMENT - STORAGE AND RETRIEVAL
+    // =========================================================================
+
+    loadDataFromStorage() {
+        const savedArtists = localStorage.getItem('chaseRecords_artists');
+        const savedTracks = localStorage.getItem('chaseRecords_tracks');
+        
+        this.data.artists = savedArtists ? JSON.parse(savedArtists) : this.getSampleArtists();
+        this.data.tracks = savedTracks ? JSON.parse(savedTracks) : this.getSampleTracks();
+        
+        this.data.payments = this.getSamplePayments();
+        this.data.projects = this.getSampleProjects();
+        this.data.activities = this.getSampleActivities();
+        this.data.notifications = this.getSampleNotifications();
+    }
+
+    saveDataToStorage() {
+        localStorage.setItem('chaseRecords_artists', JSON.stringify(this.data.artists));
+        localStorage.setItem('chaseRecords_tracks', JSON.stringify(this.data.tracks));
+    }
+
+    getSampleArtists() {
+        return [
+            {
+                id: 'A001',
+                name: 'Sarah Miles',
+                genre: 'Afro-Pop',
+                bio: 'Soulful vocalist known for her powerful performances and emotional depth.',
+                image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop&crop=face',
+                tracks: 3,
+                streams: 15200,
+                since: '2024',
+                status: 'active'
+            }
+        ];
+    }
+
+    getSampleTracks() {
+        return [
+            {
+                id: 'T001',
+                title: 'Sunset Dreams',
+                artist: 'A001',
+                artistName: 'Sarah Miles',
+                genre: 'Afro-Pop',
+                duration: '3:45',
+                year: '2024',
+                streams: 15200,
+                likes: 2400,
+                downloads: 1800,
+                artwork: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=400&fit=crop',
+                description: 'A soulful afro-pop track about chasing dreams',
+                releaseDate: '2024-12-15',
+                status: 'published'
+            }
+        ];
+    }
+
+    getSamplePayments() {
+        return [{
+            id: 'TX001',
+            artist: 'Alex Nova',
+            amount: 1800000,
+            service: 'Music Production',
+            date: '2025-03-15',
+            status: 'completed'
+        }];
+    }
+
+    getSampleProjects() {
+        return [{
+            id: 'P001',
+            name: 'Midnight Echo Album',
+            artist: 'Alex Nova',
+            service: 'Full Production',
+            budget: 5000000,
+            progress: 75,
+            deadline: '2025-04-15',
+            status: 'active'
+        }];
+    }
+
+    getSampleActivities() {
+        return [{
+            type: 'payment',
+            message: 'Payment received from Alex Nova - UGX 1,800,000',
+            time: '2 hours ago'
+        }];
+    }
+
+    getSampleNotifications() {
+        return [{
+            id: 'N001',
+            type: 'payment',
+            title: 'New Payment Received',
+            message: 'Alex Nova just paid UGX 1,800,000 for music production',
+            time: '2 hours ago',
+            read: false
+        }];
+    }
+
+    // =========================================================================
+    // ARTISTS MANAGEMENT
+    // =========================================================================
+
+    loadArtists() {
+        const container = document.getElementById('artistsTable');
+        if (!container) return;
+
+        container.innerHTML = this.data.artists.map(artist => `
+            <tr>
+                <td>
+                    <div class="artist-cell">
+                        <img src="${artist.image}" alt="${artist.name}" class="artist-avatar">
+                        <span>${artist.name}</span>
+                    </div>
+                </td>
+                <td>${artist.genre}</td>
+                <td>${artist.tracks}</td>
+                <td>${this.formatNumber(artist.streams)}</td>
+                <td>${artist.since}</td>
+                <td><span class="status-badge status-${artist.status}">${artist.status}</span></td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="btn btn-primary btn-sm" onclick="adminPanel.editArtist('${artist.id}')">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-secondary btn-sm" onclick="adminPanel.viewArtist('${artist.id}')">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="btn btn-danger btn-sm" onclick="adminPanel.deleteArtist('${artist.id}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    editArtist(artistId) {
+        const artist = this.data.artists.find(a => a.id === artistId);
+        if (!artist) return;
+
+        this.editingItem = artist;
+        this.showArtistForm(artist);
+    }
+
+    showArtistForm(artist = null) {
+        const isEdit = !!artist;
+        
+        const formHTML = `
+            <div class="modal" id="artistModal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>${isEdit ? 'Edit Artist' : 'Add New Artist'}</h3>
+                        <button class="modal-close" onclick="adminPanel.closeModal('artistModal')">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="artistForm">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="artistName">Artist Name *</label>
+                                    <input type="text" id="artistName" name="artistName" value="${artist?.name || ''}" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="artistGenre">Genre *</label>
+                                    <select id="artistGenre" name="artistGenre" required>
+                                        <option value="">Select Genre</option>
+                                        <option value="afro-pop" ${artist?.genre === 'afro-pop' ? 'selected' : ''}>Afro-Pop</option>
+                                        <option value="electronic" ${artist?.genre === 'electronic' ? 'selected' : ''}>Electronic</option>
+                                        <option value="dancehall" ${artist?.genre === 'dancehall' ? 'selected' : ''}>Dancehall</option>
+                                        <option value="r&b" ${artist?.genre === 'r&b' ? 'selected' : ''}>R&B</option>
+                                        <option value="afrobeat" ${artist?.genre === 'afrobeat' ? 'selected' : ''}>Afrobeat</option>
+                                        <option value="afro-house" ${artist?.genre === 'afro-house' ? 'selected' : ''}>Afro-House</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="artistBio">Bio</label>
+                                <textarea id="artistBio" name="artistBio" rows="3">${artist?.bio || ''}</textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="artistImage">Artist Image URL</label>
+                                <input type="url" id="artistImage" name="artistImage" value="${artist?.image || ''}" placeholder="https://example.com/image.jpg">
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="artistSince">Active Since</label>
+                                    <input type="number" id="artistSince" name="artistSince" value="${artist?.since || '2024'}" min="2000" max="2025">
+                                </div>
+                                <div class="form-group">
+                                    <label for="artistStatus">Status</label>
+                                    <select id="artistStatus" name="artistStatus">
+                                        <option value="active" ${artist?.status === 'active' ? 'selected' : ''}>Active</option>
+                                        <option value="inactive" ${artist?.status === 'inactive' ? 'selected' : ''}>Inactive</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="button" class="btn btn-secondary" onclick="adminPanel.closeModal('artistModal')">Cancel</button>
+                                <button type="submit" class="btn btn-primary">
+                                    ${isEdit ? 'Update Artist' : 'Add Artist'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             </div>
-            <button class="notification-close">
-                <i class="fas fa-times"></i>
-            </button>
         `;
 
-        // Add to page
-        document.body.appendChild(notification);
-
-        // Animate in
-        setTimeout(() => notification.classList.add('show'), 100);
-
-        // Auto remove after 5 seconds
-        setTimeout(() => {
-            notification.classList.remove('show');
-            setTimeout(() => notification.remove(), 300);
-        }, 5000);
-
-        // Close on click
-        notification.querySelector('.notification-close').addEventListener('click', () => {
-            notification.classList.remove('show');
-            setTimeout(() => notification.remove(), 300);
-        });
+        document.body.insertAdjacentHTML('beforeend', formHTML);
+        this.setupArtistFormEvents();
+        document.getElementById('artistModal').style.display = 'block';
     }
 
-    getNotificationIcon(type) {
-        const icons = {
-            success: 'check-circle',
-            error: 'exclamation-circle',
-            warning: 'exclamation-triangle',
-            info: 'info-circle'
+    setupArtistFormEvents() {
+        const form = document.getElementById('artistForm');
+        if (form) {
+            form.addEventListener('submit', (e) => this.handleArtistSubmit(e));
+        }
+    }
+
+    handleArtistSubmit(e) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        
+        const artistData = {
+            id: this.editingItem?.id || 'A' + String(this.data.artists.length + 1).padStart(3, '0'),
+            name: formData.get('artistName'),
+            genre: formData.get('artistGenre'),
+            bio: formData.get('artistBio'),
+            image: formData.get('artistImage'),
+            since: formData.get('artistSince'),
+            status: formData.get('artistStatus'),
+            tracks: this.editingItem?.tracks || 0,
+            streams: this.editingItem?.streams || 0,
+            socials: this.editingItem?.socials || {}
         };
-        return icons[type] || 'info-circle';
+
+        if (this.editingItem) {
+            const index = this.data.artists.findIndex(a => a.id === this.editingItem.id);
+            this.data.artists[index] = { ...this.data.artists[index], ...artistData };
+            this.showNotification('Artist updated successfully!', 'success');
+        } else {
+            this.data.artists.push(artistData);
+            this.showNotification('Artist added successfully!', 'success');
+        }
+
+        this.saveDataToStorage();
+        this.loadArtists();
+        this.closeModal('artistModal');
+        this.editingItem = null;
+    }
+
+    deleteArtist(artistId) {
+        if (confirm('Are you sure you want to delete this artist?')) {
+            this.data.artists = this.data.artists.filter(a => a.id !== artistId);
+            this.data.tracks = this.data.tracks.filter(t => t.artist !== artistId);
+            this.saveDataToStorage();
+            this.loadArtists();
+            this.loadTracks();
+            this.showNotification('Artist deleted successfully!', 'success');
+        }
+    }
+
+    viewArtist(artistId) {
+        const artist = this.data.artists.find(a => a.id === artistId);
+        if (!artist) return;
+        alert(`Artist: ${artist.name}\nGenre: ${artist.genre}\nTracks: ${artist.tracks}\nStreams: ${this.formatNumber(artist.streams)}`);
     }
 
     // =========================================================================
-    // EXISTING METHODS - KEEP THESE AS THEY ARE
+    // TRACKS MANAGEMENT
     // =========================================================================
+
+    loadTracks() {
+        const container = document.getElementById('tracksTable');
+        if (!container) return;
+
+        container.innerHTML = this.data.tracks.map(track => {
+            const artist = this.data.artists.find(a => a.id === track.artist);
+            return `
+                <tr>
+                    <td>
+                        <div class="track-cell">
+                            <img src="${track.artwork}" alt="${track.title}" class="track-artwork-small">
+                            <span>${track.title}</span>
+                        </div>
+                    </td>
+                    <td>${artist?.name || 'Unknown Artist'}</td>
+                    <td>${track.genre}</td>
+                    <td>${this.formatNumber(track.streams)}</td>
+                    <td>${track.duration}</td>
+                    <td><span class="status-badge status-${track.status}">${track.status}</span></td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn btn-primary btn-sm" onclick="adminPanel.editTrack('${track.id}')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-secondary btn-sm" onclick="adminPanel.viewTrack('${track.id}')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn btn-danger btn-sm" onclick="adminPanel.deleteTrack('${track.id}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    editTrack(trackId) {
+        const track = this.data.tracks.find(t => t.id === trackId);
+        if (!track) return;
+        this.editingItem = track;
+        this.showTrackForm(track);
+    }
+
+    showTrackForm(track = null) {
+        const isEdit = !!track;
+        
+        const formHTML = `
+            <div class="modal" id="trackModal">
+                <div class="modal-content large">
+                    <div class="modal-header">
+                        <h3>${isEdit ? 'Edit Track' : 'Add New Track'}</h3>
+                        <button class="modal-close" onclick="adminPanel.closeModal('trackModal')">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="trackForm">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="trackTitle">Track Title *</label>
+                                    <input type="text" id="trackTitle" name="trackTitle" value="${track?.title || ''}" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="trackArtist">Artist *</label>
+                                    <select id="trackArtist" name="trackArtist" required>
+                                        <option value="">Select Artist</option>
+                                        ${this.data.artists.map(artist => 
+                                            `<option value="${artist.id}" ${track?.artist === artist.id ? 'selected' : ''}>${artist.name}</option>`
+                                        ).join('')}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="trackGenre">Genre *</label>
+                                    <select id="trackGenre" name="trackGenre" required>
+                                        <option value="">Select Genre</option>
+                                        <option value="afro-pop" ${track?.genre === 'afro-pop' ? 'selected' : ''}>Afro-Pop</option>
+                                        <option value="electronic" ${track?.genre === 'electronic' ? 'selected' : ''}>Electronic</option>
+                                        <option value="dancehall" ${track?.genre === 'dancehall' ? 'selected' : ''}>Dancehall</option>
+                                        <option value="r&b" ${track?.genre === 'r&b' ? 'selected' : ''}>R&B</option>
+                                        <option value="afrobeat" ${track?.genre === 'afrobeat' ? 'selected' : ''}>Afrobeat</option>
+                                        <option value="afro-house" ${track?.genre === 'afro-house' ? 'selected' : ''}>Afro-House</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="trackDuration">Duration (MM:SS) *</label>
+                                    <input type="text" id="trackDuration" name="trackDuration" value="${track?.duration || ''}" pattern="[0-9]{1,2}:[0-9]{2}" required>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="trackStreams">Streams</label>
+                                    <input type="number" id="trackStreams" name="trackStreams" value="${track?.streams || 0}" min="0">
+                                </div>
+                                <div class="form-group">
+                                    <label for="trackLikes">Likes</label>
+                                    <input type="number" id="trackLikes" name="trackLikes" value="${track?.likes || 0}" min="0">
+                                </div>
+                                <div class="form-group">
+                                    <label for="trackDownloads">Downloads</label>
+                                    <input type="number" id="trackDownloads" name="trackDownloads" value="${track?.downloads || 0}" min="0">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="trackDescription">Description</label>
+                                <textarea id="trackDescription" name="trackDescription" rows="3">${track?.description || ''}</textarea>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="trackReleaseDate">Release Date</label>
+                                    <input type="date" id="trackReleaseDate" name="trackReleaseDate" value="${track?.releaseDate || ''}">
+                                </div>
+                                <div class="form-group">
+                                    <label for="trackStatus">Status</label>
+                                    <select id="trackStatus" name="trackStatus">
+                                        <option value="published" ${track?.status === 'published' ? 'selected' : ''}>Published</option>
+                                        <option value="draft" ${track?.status === 'draft' ? 'selected' : ''}>Draft</option>
+                                        <option value="archived" ${track?.status === 'archived' ? 'selected' : ''}>Archived</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="trackArtwork">Track Artwork URL</label>
+                                <input type="url" id="trackArtwork" name="trackArtwork" value="${track?.artwork || ''}" placeholder="https://example.com/artwork.jpg">
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="button" class="btn btn-secondary" onclick="adminPanel.closeModal('trackModal')">Cancel</button>
+                                <button type="submit" class="btn btn-primary">
+                                    ${isEdit ? 'Update Track' : 'Add Track'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', formHTML);
+        this.setupTrackFormEvents();
+        document.getElementById('trackModal').style.display = 'block';
+    }
+
+    setupTrackFormEvents() {
+        const form = document.getElementById('trackForm');
+        if (form) {
+            form.addEventListener('submit', (e) => this.handleTrackSubmit(e));
+        }
+    }
+
+    handleTrackSubmit(e) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        
+        const artist = this.data.artists.find(a => a.id === formData.get('trackArtist'));
+        
+        const trackData = {
+            id: this.editingItem?.id || 'T' + String(this.data.tracks.length + 1).padStart(3, '0'),
+            title: formData.get('trackTitle'),
+            artist: formData.get('trackArtist'),
+            artistName: artist?.name || 'Unknown Artist',
+            genre: formData.get('trackGenre'),
+            duration: formData.get('trackDuration'),
+            streams: parseInt(formData.get('trackStreams')) || 0,
+            likes: parseInt(formData.get('trackLikes')) || 0,
+            downloads: parseInt(formData.get('trackDownloads')) || 0,
+            description: formData.get('trackDescription'),
+            releaseDate: formData.get('trackReleaseDate'),
+            status: formData.get('trackStatus'),
+            artwork: formData.get('trackArtwork'),
+            year: formData.get('trackReleaseDate')?.substring(0, 4) || '2024'
+        };
+
+        if (this.editingItem) {
+            const index = this.data.tracks.findIndex(t => t.id === this.editingItem.id);
+            this.data.tracks[index] = { ...this.data.tracks[index], ...trackData };
+            this.showNotification('Track updated successfully!', 'success');
+        } else {
+            this.data.tracks.push(trackData);
+            this.showNotification('Track added successfully!', 'success');
+        }
+
+        this.saveDataToStorage();
+        this.loadTracks();
+        this.closeModal('trackModal');
+        this.editingItem = null;
+    }
+
+    deleteTrack(trackId) {
+        if (confirm('Are you sure you want to delete this track?')) {
+            this.data.tracks = this.data.tracks.filter(t => t.id !== trackId);
+            this.saveDataToStorage();
+            this.loadTracks();
+            this.showNotification('Track deleted successfully!', 'success');
+        }
+    }
+
+    viewTrack(trackId) {
+        const track = this.data.tracks.find(t => t.id === trackId);
+        if (!track) return;
+        const artist = this.data.artists.find(a => a.id === track.artist);
+        alert(`Track: ${track.title}\nArtist: ${artist?.name || 'Unknown'}\nGenre: ${track.genre}\nDuration: ${track.duration}\nStreams: ${this.formatNumber(track.streams)}`);
+    }
+
+    // =========================================================================
+    // UTILITY METHODS
+    // =========================================================================
+
+    closeModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.remove();
+        }
+        this.editingItem = null;
+    }
 
     showSection(sectionId) {
         // Update navigation
@@ -645,7 +1079,6 @@ class AdminPanel {
     loadSectionData(sectionId) {
         this.showLoading();
 
-        // Simulate API call delay
         setTimeout(() => {
             switch(sectionId) {
                 case 'dashboard':
@@ -654,154 +1087,18 @@ class AdminPanel {
                 case 'payments':
                     this.loadPayments();
                     break;
-                case 'projects':
-                    this.loadProjects();
-                    break;
                 case 'artists':
                     this.loadArtists();
                     break;
                 case 'tracks':
                     this.loadTracks();
                     break;
-                case 'savings':
-                    this.loadSavings();
-                    break;
-                case 'reports':
-                    this.loadReports();
-                    break;
-                case 'settings':
-                    this.loadSettings();
-                    break;
                 case 'music-management':
-                    // Initialize music management section
                     this.loadArtistsForSelect();
                     break;
             }
             this.hideLoading();
         }, 500);
-    }
-
-    loadSampleData() {
-        // Sample data - in a real app, this would come from an API
-        this.data = {
-            payments: [
-                {
-                    id: 'TX001',
-                    artist: 'Alex Nova',
-                    amount: 1800000,
-                    service: 'Music Production',
-                    date: '2025-03-15',
-                    status: 'completed'
-                },
-                {
-                    id: 'TX002',
-                    artist: 'Luna Sky',
-                    amount: 900000,
-                    service: 'Mixing & Mastering',
-                    date: '2025-03-14',
-                    status: 'pending'
-                },
-                {
-                    id: 'TX003',
-                    artist: 'Marcus Sound',
-                    amount: 540000,
-                    service: 'Vocal Production',
-                    date: '2025-03-13',
-                    status: 'completed'
-                }
-            ],
-            projects: [
-                {
-                    id: 'P001',
-                    name: 'Midnight Echo Album',
-                    artist: 'Alex Nova',
-                    service: 'Full Production',
-                    budget: 5000000,
-                    progress: 75,
-                    deadline: '2025-04-15',
-                    status: 'active'
-                }
-            ],
-            artists: [
-                {
-                    id: 'A001',
-                    name: 'Alex Nova',
-                    genre: 'Electronic',
-                    tracks: 12,
-                    since: '2020',
-                    status: 'active'
-                },
-                {
-                    id: 'A002',
-                    name: 'Sarah Miles',
-                    genre: 'Afro-Pop',
-                    tracks: 8,
-                    since: '2021',
-                    status: 'active'
-                },
-                {
-                    id: 'A003',
-                    name: 'DJ Kato',
-                    genre: 'Electronic',
-                    tracks: 15,
-                    since: '2019',
-                    status: 'active'
-                }
-            ],
-            tracks: [
-                {
-                    id: 'T001',
-                    title: 'Midnight Echo',
-                    artist: 'Alex Nova',
-                    genre: 'Electronic',
-                    year: '2024',
-                    streams: 125000
-                }
-            ],
-            activities: [
-                {
-                    type: 'payment',
-                    message: 'Payment received from Alex Nova - UGX 1,800,000',
-                    time: '2 hours ago'
-                },
-                {
-                    type: 'project',
-                    message: 'Project "Electric Dreams" completed',
-                    time: '1 day ago'
-                },
-                {
-                    type: 'artist',
-                    message: 'New artist registration: Sofia Beats',
-                    time: '2 days ago'
-                }
-            ],
-            notifications: [
-                {
-                    id: 'N001',
-                    type: 'payment',
-                    title: 'New Payment Received',
-                    message: 'Alex Nova just paid UGX 1,800,000 for music production',
-                    time: '2 hours ago',
-                    read: false
-                },
-                {
-                    id: 'N002',
-                    type: 'project',
-                    title: 'Project Deadline Approaching',
-                    message: 'Midnight Echo Album deadline is in 30 days',
-                    time: '5 hours ago',
-                    read: false
-                },
-                {
-                    id: 'N003',
-                    type: 'system',
-                    title: 'System Update Available',
-                    message: 'New admin panel update is ready to install',
-                    time: '1 day ago',
-                    read: true
-                }
-            ]
-        };
     }
 
     loadArtistsForSelect() {
@@ -815,16 +1112,21 @@ class AdminPanel {
     }
 
     renderDashboard() {
-        // Update stats
         const totalRevenue = this.data.payments
             .filter(p => p.status === 'completed')
             .reduce((sum, payment) => sum + payment.amount, 0);
         
-        // Render activity
-        this.renderActivity();
+        const totalRevenueEl = document.getElementById('totalRevenue');
+        const totalArtistsEl = document.getElementById('totalArtists');
+        const activeProjectsEl = document.getElementById('activeProjects');
+        const pendingPaymentsEl = document.getElementById('pendingPayments');
+
+        if (totalRevenueEl) totalRevenueEl.textContent = `UGX ${this.formatNumber(totalRevenue)}`;
+        if (totalArtistsEl) totalArtistsEl.textContent = this.data.artists.length;
+        if (activeProjectsEl) activeProjectsEl.textContent = this.data.projects.length;
+        if (pendingPaymentsEl) pendingPaymentsEl.textContent = this.data.payments.filter(p => p.status === 'pending').length;
         
-        // Render charts
-        this.renderCharts();
+        this.renderActivity();
     }
 
     renderActivity() {
@@ -844,9 +1146,15 @@ class AdminPanel {
         }
     }
 
-    renderCharts() {
-        // In a real implementation, you would use Chart.js or similar
-        console.log('Charts would be rendered here');
+    getActivityIcon(type) {
+        const icons = {
+            payment: 'money-bill-wave',
+            project: 'project-diagram',
+            artist: 'user-plus',
+            track: 'music',
+            system: 'cog'
+        };
+        return icons[type] || 'bell';
     }
 
     loadPayments() {
@@ -864,36 +1172,10 @@ class AdminPanel {
                         <button class="btn btn-primary btn-sm" onclick="adminPanel.viewPayment('${payment.id}')">
                             <i class="fas fa-eye"></i>
                         </button>
-                        <button class="btn btn-secondary btn-sm" onclick="adminPanel.editPayment('${payment.id}')">
-                            <i class="fas fa-edit"></i>
-                        </button>
                     </td>
                 </tr>
             `).join('');
         }
-    }
-
-    filterPayments() {
-        // Implementation for filtering payments
-        console.log('Filtering payments...');
-    }
-
-    exportPayments() {
-        // Implementation for exporting payments
-        const csvContent = "data:text/csv;charset=utf-8," 
-            + ["ID,Artist,Amount,Service,Date,Status"]
-            .concat(this.data.payments.map(p => 
-                `${p.id},${p.artist},${p.amount},${p.service},${p.date},${p.status}`
-            ))
-            .join("\n");
-        
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", "payments_export.csv");
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
     }
 
     loadNotifications() {
@@ -914,79 +1196,89 @@ class AdminPanel {
         }
     }
 
-    getActivityIcon(type) {
+    getNotificationIcon(type) {
         const icons = {
-            payment: 'money-bill-wave',
-            project: 'project-diagram',
-            artist: 'user-plus',
-            track: 'music',
-            system: 'cog'
+            success: 'check-circle',
+            error: 'exclamation-circle',
+            warning: 'exclamation-triangle',
+            info: 'info-circle'
         };
-        return icons[type] || 'bell';
+        return icons[type] || 'info-circle';
+    }
+
+    showNotification(message, type = 'info') {
+        const notification = document.createElement('div');
+        notification.className = `notification notification-${type}`;
+        notification.innerHTML = `
+            <div class="notification-content">
+                <i class="fas fa-${this.getNotificationIcon(type)}"></i>
+                <span>${message}</span>
+            </div>
+            <button class="notification-close">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+
+        document.body.appendChild(notification);
+
+        setTimeout(() => notification.classList.add('show'), 100);
+
+        setTimeout(() => {
+            notification.classList.remove('show');
+            setTimeout(() => notification.remove(), 300);
+        }, 5000);
+
+        notification.querySelector('.notification-close').addEventListener('click', () => {
+            notification.classList.remove('show');
+            setTimeout(() => notification.remove(), 300);
+        });
     }
 
     toggleFullscreen() {
         if (!document.fullscreenElement) {
-            document.documentElement.requestFullscreen().catch(err => {
-                console.log(`Error attempting to enable fullscreen: ${err.message}`);
-            });
+            document.documentElement.requestFullscreen();
         } else {
-            if (document.exitFullscreen) {
-                document.exitFullscreen();
-            }
+            document.exitFullscreen();
         }
     }
 
     handleLogout() {
-        // Clear storage
         localStorage.removeItem('adminToken');
-        localStorage.removeItem('adminUser');
         sessionStorage.removeItem('adminToken');
-        sessionStorage.removeItem('adminUser');
-        
-        // Redirect to login
         window.location.href = 'index.html';
     }
 
     showLoading() {
         const overlay = document.getElementById('loadingOverlay');
-        if (overlay) {
-            overlay.classList.add('active');
-        }
+        if (overlay) overlay.classList.add('active');
     }
 
     hideLoading() {
         const overlay = document.getElementById('loadingOverlay');
-        if (overlay) {
-            overlay.classList.remove('active');
-        }
+        if (overlay) overlay.classList.remove('active');
     }
 
     formatNumber(num) {
         return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
     }
 
-    // Additional methods for other sections would be implemented here
-    loadProjects() { /* ... */ }
-    loadArtists() { /* ... */ }
-    loadTracks() { /* ... */ }
-    loadSavings() { /* ... */ }
-    loadReports() { /* ... */ }
-    loadSettings() { /* ... */ }
-
     viewPayment(id) {
         const payment = this.data.payments.find(p => p.id === id);
-        alert(`Viewing payment: ${payment.id}\nArtist: ${payment.artist}\nAmount: UGX ${this.formatNumber(payment.amount)}`);
+        alert(`Payment: ${payment.id}\nArtist: ${payment.artist}\nAmount: UGX ${this.formatNumber(payment.amount)}`);
     }
 
-    editPayment(id) {
-        const payment = this.data.payments.find(p => p.id === id);
-        alert(`Editing payment: ${payment.id}`);
+    addNewArtist() {
+        this.editingItem = null;
+        this.showArtistForm();
+    }
+
+    addNewTrack() {
+        this.editingItem = null;
+        this.showTrackForm();
     }
 }
 
 // Initialize admin panel
-const adminPanel = new AdminPanel();
-
-// Make available globally
-window.adminPanel = adminPanel;
+document.addEventListener('DOMContentLoaded', function() {
+    window.adminPanel = new AdminPanel();
+});
