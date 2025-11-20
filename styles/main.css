@@ -66,6 +66,13 @@ body {
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
+.spotify-tab {
+  margin-top: 20px;
+  margin-bottom: 40px;
+  display: flex;
+  justify-content: center;
+  align-content: flex-start;
+}
 
 /* Header & Navigation */
 .header {
@@ -180,7 +187,7 @@ body {
 /* Hero Section */
 .hero {
   position: relative;
-  min-height: 100vh;
+  min-height: 70vh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -253,6 +260,7 @@ body {
   text-decoration: none;
   display: inline-block;
   font-family: var(--font-primary);
+  margin-top: 60px;
 }
 
 .btn-primary {

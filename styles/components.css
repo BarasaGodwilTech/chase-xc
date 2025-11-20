@@ -3421,7 +3421,7 @@ border: none;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    margin: 0;
+    margin: 10;
 }
 
 /* Responsive filter buttons */

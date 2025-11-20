@@ -1,4 +1,4 @@
-// Audio Player Component with Repeat and Shuffle
+// Enhanced Audio Player with Data Integration
 class AudioPlayer {
   constructor() {
     this.audio = document.getElementById("audioElement");
@@ -29,61 +29,92 @@ class AudioPlayer {
     this.shuffleHistory = [];
     this.originalTrackOrder = [];
 
-    // Extended tracks data for music page
-    this.tracks = [
-      {
-        title: "Sunset Dreams",
-        artist: "Sarah Miles",
-        cover: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=80&h=80&fit=crop",
-        src: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
-        duration: "3:45"
-      },
-      {
-        title: "City Lights",
-        artist: "DJ Kato",
-        cover: "https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=80&h=80&fit=crop",
-        src: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
-        duration: "4:20"
-      },
-      {
-        title: "Rhythm of Mbale",
-        artist: "The UG Collective",
-        cover: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=80&h=80&fit=crop",
-        src: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
-        duration: "3:30"
-      },
-      {
-        title: "Morning Breeze",
-        artist: "Lila Rose",
-        cover: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=80&h=80&fit=crop",
-        src: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
-        duration: "4:05"
-      },
-      {
-        title: "Nile Flow",
-        artist: "Marcus Sound",
-        cover: "https://images.unsplash.com/photo-1571974599782-87624638275f?w=80&h=80&fit=crop",
-        src: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
-        duration: "3:55"
-      },
-      {
-        title: "Golden Hour",
-        artist: "Sarah Miles & DJ Kato",
-        cover: "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=80&h=80&fit=crop",
-        src: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
-        duration: "5:15"
-      }
-    ];
+    // Use data from dataManager instead of hardcoded tracks
+    this.tracks = [];
+    this.dataManager = window.dataManager;
 
-    this.originalTrackOrder = [...this.tracks];
     this.init();
   }
 
   init() {
+    this.loadTracksFromData();
     this.setupEventListeners();
     this.loadTrack(this.currentTrackIndex);
     this.updateVolume();
     this.updateButtonStates();
+
+    // Listen for data updates
+    window.addEventListener('dataUpdated', () => {
+      this.loadTracksFromData();
+      // If current track was deleted, reset to first track
+      if (this.currentTrackIndex >= this.tracks.length) {
+        this.currentTrackIndex = 0;
+        this.loadTrack(this.currentTrackIndex);
+      }
+    });
+  }
+
+  loadTracksFromData() {
+    if (this.dataManager) {
+      const publishedTracks = this.dataManager.getPublishedTracks();
+      this.tracks = publishedTracks.map(track => {
+        const artist = this.dataManager.getArtist(track.artist);
+        return {
+          id: track.id,
+          title: track.title,
+          artist: artist?.name || track.artistName || 'Unknown Artist',
+          cover: track.artwork,
+          src: track.audioUrl || this.getFallbackAudioUrl(track.id),
+          duration: track.duration,
+          likes: track.likes || 0,
+          streams: track.streams || 0,
+          // Store original data for reference
+          originalData: track
+        };
+      });
+      
+      this.originalTrackOrder = [...this.tracks];
+    } else {
+      // Fallback to original tracks if dataManager not available
+      this.tracks = this.getDefaultTracks();
+      this.originalTrackOrder = [...this.tracks];
+    }
+  }
+
+  getDefaultTracks() {
+    return [
+      {
+        id: 'default_1',
+        title: "Sunset Dreams",
+        artist: "Sarah Miles",
+        cover: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=80&h=80&fit=crop",
+        src: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+        duration: "3:45",
+        likes: 2400,
+        streams: 15200
+      },
+      {
+        id: 'default_2',
+        title: "City Lights",
+        artist: "DJ Kato",
+        cover: "https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=80&h=80&fit=crop",
+        src: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
+        duration: "4:20",
+        likes: 8700,
+        streams: 45800
+      }
+    ];
+  }
+
+  getFallbackAudioUrl(trackId) {
+    // Provide fallback audio URLs based on track ID or use a default
+    const defaultUrls = [
+      "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+      "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
+      "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3"
+    ];
+    const index = trackId ? parseInt(trackId.replace(/\D/g, '')) % defaultUrls.length : 0;
+    return defaultUrls[index];
   }
 
   setupEventListeners() {
@@ -102,24 +133,23 @@ class AudioPlayer {
     this.audio.addEventListener("loadedmetadata", () => this.updateDuration());
     this.audio.addEventListener("ended", () => this.handleTrackEnd());
 
-    // Track card click handlers
-    document.querySelectorAll(".play-btn-card").forEach((btn, index) => {
-      btn.addEventListener("click", (e) => {
+    // Track card click handlers - updated to use event delegation for dynamic content
+    document.addEventListener('click', (e) => {
+      const playBtn = e.target.closest('.play-btn-card');
+      const trackCard = e.target.closest('.track-card');
+      
+      if (playBtn) {
         e.stopPropagation();
-        this.currentTrackIndex = index;
-        this.loadTrack(index);
+        const trackIndex = parseInt(playBtn.closest('.track-card').getAttribute('data-track'));
+        this.currentTrackIndex = trackIndex;
+        this.loadTrack(trackIndex);
         this.play();
-      });
-    });
-
-    document.querySelectorAll(".track-card").forEach((card, index) => {
-      card.addEventListener("click", (e) => {
-        if (!e.target.closest('.play-btn-card') && !e.target.closest('.overlay-btn')) {
-          this.currentTrackIndex = index;
-          this.loadTrack(index);
-          this.play();
-        }
-      });
+      } else if (trackCard && !e.target.closest('.play-btn-card') && !e.target.closest('.overlay-btn')) {
+        const trackIndex = parseInt(trackCard.getAttribute('data-track'));
+        this.currentTrackIndex = trackIndex;
+        this.loadTrack(trackIndex);
+        this.play();
+      }
     });
 
     // Floating player controls
@@ -153,14 +183,14 @@ class AudioPlayer {
       // Find current track in shuffled array
       const currentTrack = this.tracks[this.currentTrackIndex];
       this.currentTrackIndex = this.tracks.findIndex(track => 
-        track.title === currentTrack.title && track.artist === currentTrack.artist
+        track.id === currentTrack.id
       );
     } else {
       // Restore original order
       const currentTrack = this.tracks[this.currentTrackIndex];
       this.tracks = [...this.originalTrackOrder];
       this.currentTrackIndex = this.tracks.findIndex(track => 
-        track.title === currentTrack.title && track.artist === currentTrack.artist
+        track.id === currentTrack.id
       );
     }
     
@@ -180,11 +210,37 @@ class AudioPlayer {
       if (isLiked) {
         this.likeBtn.classList.remove("liked");
         this.likeBtn.innerHTML = '<i class="far fa-heart"></i>';
+        this.decrementLikes();
       } else {
         this.likeBtn.classList.add("liked");
         this.likeBtn.innerHTML = '<i class="fas fa-heart"></i>';
+        this.incrementLikes();
       }
     }
+  }
+
+  incrementLikes() {
+    const currentTrack = this.getCurrentOriginalTrack();
+    if (currentTrack && this.dataManager) {
+      currentTrack.likes = (currentTrack.likes || 0) + 1;
+      this.dataManager.saveTrack(currentTrack);
+    }
+  }
+
+  decrementLikes() {
+    const currentTrack = this.getCurrentOriginalTrack();
+    if (currentTrack && this.dataManager) {
+      currentTrack.likes = Math.max(0, (currentTrack.likes || 0) - 1);
+      this.dataManager.saveTrack(currentTrack);
+    }
+  }
+
+  getCurrentOriginalTrack() {
+    const currentAudioTrack = this.tracks[this.currentTrackIndex];
+    if (currentAudioTrack && currentAudioTrack.originalData) {
+      return currentAudioTrack.originalData;
+    }
+    return null;
   }
 
   updateButtonStates() {
@@ -217,6 +273,9 @@ class AudioPlayer {
   }
 
   handleTrackEnd() {
+    // Increment streams when track ends
+    this.incrementStreams();
+
     switch (this.repeatMode) {
       case 2: // Repeat one
         this.audio.currentTime = 0;
@@ -233,6 +292,14 @@ class AudioPlayer {
           this.audio.currentTime = 0;
         }
         break;
+    }
+  }
+
+  incrementStreams() {
+    const currentTrack = this.getCurrentOriginalTrack();
+    if (currentTrack && this.dataManager) {
+      currentTrack.streams = (currentTrack.streams || 0) + 1;
+      this.dataManager.saveTrack(currentTrack);
     }
   }
 
@@ -273,7 +340,10 @@ class AudioPlayer {
     document.querySelectorAll('.track-card').forEach(card => {
       card.classList.remove('active');
     });
-    document.querySelectorAll('.track-card')[index].classList.add('active');
+    const trackCards = document.querySelectorAll('.track-card');
+    if (trackCards[index]) {
+      trackCards[index].classList.add('active');
+    }
   }
 
   togglePlay() {
@@ -285,17 +355,22 @@ class AudioPlayer {
   }
 
   play() {
-    this.audio.play();
-    this.isPlaying = true;
-    if (this.playBtn) {
-      this.playBtn.innerHTML = '<i class="fas fa-pause"></i>';
-      this.playBtn.classList.add("playing");
-    }
-    
-    const floatingPlayBtn = document.getElementById("floatingPlayBtn");
-    if (floatingPlayBtn) {
-      floatingPlayBtn.innerHTML = '<i class="fas fa-pause"></i>';
-    }
+    this.audio.play().then(() => {
+      this.isPlaying = true;
+      if (this.playBtn) {
+        this.playBtn.innerHTML = '<i class="fas fa-pause"></i>';
+        this.playBtn.classList.add("playing");
+      }
+      
+      const floatingPlayBtn = document.getElementById("floatingPlayBtn");
+      if (floatingPlayBtn) {
+        floatingPlayBtn.innerHTML = '<i class="fas fa-pause"></i>';
+      }
+    }).catch(error => {
+      console.error("Error playing audio:", error);
+      // Fallback: try to load the track again
+      this.loadTrack(this.currentTrackIndex);
+    });
   }
 
   pause() {
@@ -313,6 +388,8 @@ class AudioPlayer {
   }
 
   nextTrack() {
+    if (this.tracks.length === 0) return;
+
     if (this.isShuffled && this.repeatMode !== 2) {
       let nextIndex;
       do {
@@ -329,6 +406,8 @@ class AudioPlayer {
   }
 
   prevTrack() {
+    if (this.tracks.length === 0) return;
+
     if (this.audio.currentTime > 3) {
       // If more than 3 seconds into track, restart current track
       this.audio.currentTime = 0;
@@ -406,8 +485,13 @@ class AudioPlayer {
 
 // Initialize player when DOM is ready and audio element exists
 document.addEventListener("DOMContentLoaded", () => {
+  // Make sure dataManager is available
+  if (typeof window.dataManager === 'undefined') {
+    console.warn('dataManager not found. Audio player will use default tracks.');
+  }
+
   if (document.getElementById("audioElement")) {
-    new AudioPlayer();
+    window.audioPlayer = new AudioPlayer();
   }
   
   // Floating player close button
