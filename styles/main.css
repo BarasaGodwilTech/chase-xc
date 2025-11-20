@@ -962,3 +962,11 @@ section {
   }
 }
 
+/* Make the map a bit taller on very small phones */
+@media (max-width: 480px) {
+  .map-link {
+    padding-bottom: 80%; /* taller aspect for small screens */
+    margin: 0.8rem auto;
+  }
+}
+
