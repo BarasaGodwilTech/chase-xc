@@ -47,7 +47,9 @@
                 <a href="music.html" class="btn btn-secondary">Listen Now</a>  
             </div>
         </div>
-        <div class="hero-background"><img src="background image.avif" alt="background image"></div>
+        <div class="hero-background" style="position:absolute; inset:0; z-index:-1; overflow:hidden;">
+            <img src="chase vid.jpg" alt="background image" style="width:100%; height:100%; object-fit:cover; display:block;" loading="lazy">
+        </div></div>
     </section>
     <iframe data-testid="embed-iframe" style="border-radius:12px" src="https://open.spotify.com/embed/album/39fFMXy2GNHUhASF8qv9sf?utm_source=generator" width="100%" height="352" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
     
@@ -227,7 +229,86 @@
         </div>
     </div>
 </section>
-<iframe width="1296" height="729" src="https://www.youtube.com/embed/xAX0x_yO4xc" title="Chase Xc -Blessed" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+<style>
+/* Responsive, card-style video with modern aspect-ratio support + fallback */
+.video-wrapper {
+    width: min(1296px, calc(100% - 3rem));
+    max-width: 100%;
+    margin: 2rem auto;
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.25);
+    background: #000; /* shows while iframe loads */
+
+    /* Modern browsers */
+    aspect-ratio: 16 / 9;
+    height: auto;
+}
+
+/* Fallback for older browsers: maintain 16:9 using padding hack */
+.video-wrapper::before{
+    content: "";
+    display: block;
+    padding-top: 56.25%; /* 16:9 aspect ratio fallback */
+}
+
+/* Make the iframe fill the wrapper (absolute positioning) */
+.video-wrapper iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    display: block;
+    left: 0;
+    top: 0;
+}
+
+/* Caption styling */
+.video-caption {
+    text-align: center;
+    color: var(--text-secondary, #666);
+    font-size: 0.95rem;
+    margin: 0.5rem 1rem 2rem;
+}
+
+/* Responsive tweaks */
+@media (max-width: 900px) {
+    .video-wrapper {
+        width: calc(100% - 2rem);
+        margin: 1.25rem auto;
+        border-radius: 10px;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.18);
+    }
+    .video-caption { font-size: 0.92rem; }
+}
+
+@media (max-width: 480px) {
+    .video-wrapper {
+        width: calc(100% - 1rem);
+        margin: 0.75rem auto;
+        border-radius: 8px;
+        box-shadow: 0 6px 14px rgba(0,0,0,0.14);
+    }
+    .video-caption {
+        font-size: 0.88rem;
+        margin: 0.4rem 0.5rem 1.25rem;
+    }
+}
+</style>
+
+<div class="video-wrapper" aria-labelledby="videoTitle">
+    <iframe
+        src="https://www.youtube.com/embed/xAX0x_yO4xc"
+        title="Chase Xc - Blessed"
+        loading="lazy"
+        referrerpolicy="strict-origin-when-cross-origin"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        allowfullscreen>
+    </iframe>
+</div>
+<p id="videoTitle" class="video-caption">Chase Xc — Blessed</p>
 
 <!-- Payment Modal -->
 <div class="membership-modal" id="membershipModal">
@@ -312,7 +393,7 @@
     <section class="music" id="music">
         <div class="container">
             <h3 class="section-title">Featured Tracks</h3>
-            <div class="music-grid">
+            <!--<div class="music-grid">
                 <div class="track-card" data-track="0">
                     <div class="track-artwork">
                         <img src="https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=400&fit=crop" alt="Sunset Dreams">
@@ -369,7 +450,7 @@
                         <span class="track-duration">4:05</span>
                     </div>
                 </div>
-            </div>
+            </div>-->
             <div style="text-align: center; margin-top: 3rem;">
                 <a href="music.html" class="btn btn-primary">Browse All Music</a>
             </div>
