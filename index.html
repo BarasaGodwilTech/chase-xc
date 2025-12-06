@@ -121,17 +121,56 @@
                 display: block;
             }
 
-            /* Background image + overlay */
-            .hero::before{
-                content:"";
-                position:absolute;
-                inset:0;
-                z-index:1;
-                background-image: linear-gradient(180deg, rgba(6,6,10,0.45) 0%, rgba(6,6,10,0.6) 100%), url('chase-vid.jpg');
-                background-size: cover;
-                background-position: center;
-                filter: saturate(.95) contrast(.98);
+            </style>
+
+            <!-- Background: embedded YouTube video (positioned behind content) -->
+            <div class="hero-video" aria-hidden="true">
+                <iframe
+                    src="https://www.youtube.com/embed/xAX0x_yO4xc?si=Euo-EYJss8dgxK9Y&mute=1&controls=0&rel=0&modestbranding=1&playsinline=1&autoplay=1&loop=1&playlist=xAX0x_yO4xc"
+                    title="Chase x Records - background"
+                    frameborder="0"
+                    referrerpolicy="strict-origin-when-cross-origin"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowfullscreen
+                ></iframe>
+            </div>
+
+            <style>
+            /* Replace prior .hero::before background with an absolutely positioned iframe video */
+            .hero-video{
+                position: absolute;
+                inset: 0;
+                z-index: 1;
+                overflow: hidden;
+                pointer-events: none; /* keep interactions for foreground */
+                background: #000;
             }
+
+            /* Make iframe cover the hero area while preserving aspect ratio */
+            .hero-video iframe{
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                /* 16:9 cover technique: make width large enough to cover height-first */
+                width: 177.78%; /* 100 * (16/9) */
+                height: 100%;
+                transform: translate(-50%, -50%);
+                border: 0;
+                display: block;
+            }
+
+            /* Overlay gradient to mimic previous darkened/background look */
+            .hero-video::after{
+                content: "";
+                position: absolute;
+                inset: 0;
+                background: linear-gradient(180deg, rgba(6,6,10,0.45) 0%, rgba(6,6,10,0.6) 100%);
+                pointer-events: none;
+            }
+
+            /* Ensure hero-inner stays above the video */
+            .hero-inner { position: relative; z-index: 2; }
+            </style>
 
             @media (max-width: 900px){
                 .hero-inner {
