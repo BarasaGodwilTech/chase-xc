@@ -969,4 +969,25 @@ section {
     margin: 0.8rem auto;
   }
 }
+.about-bg-video {
+                position: absolute;
+                inset: 0;
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                z-index: 1;
+                pointer-events: none; /* keep interactions for the foreground */
+                filter: brightness(0.45) saturate(0.95);
+                -webkit-filter: brightness(0.45) saturate(0.95);
+            }
 
+            /* Optional: reduce motion for users who prefer reduced motion */
+            @media (prefers-reduced-motion: reduce) {
+                .about-bg-video { animation: none; autoplay: false; }
+            }
+
+            /* Small screens: reduce padding for the inner container */
+            @media (max-width: 560px) {
+                .about-inner { padding: 2rem 1rem; }
+                .about-inner .section-title { font-size: 1.4rem; }
+            }

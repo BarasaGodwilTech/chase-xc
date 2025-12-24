@@ -42,152 +42,216 @@
         <style>
             /* Scoped hero styles - responsive layout + responsive embeds */
             .hero-inner {
-                max-width: 1200px;
-                margin: 0 auto;
-                padding: 3rem 1.25rem;
-                display: grid;
-                grid-template-columns: 1fr 420px;
-                gap: 2rem;
-                align-items: center;
-                position: relative;
-                z-index: 2;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 3rem 1.25rem;
+            display: grid;
+            grid-template-columns: 1fr 420px;
+            gap: 2rem;
+            align-items: center;
+            position: relative;
+            z-index: 2;
             }
 
             .hero-content {
-                color: #fff;
+            color: #fff;
             }
 
             .hero-title {
-                margin: 0 0 .5rem 0;
-                font-size: clamp(1.6rem, 4vw, 3rem);
-                letter-spacing: 1px;
-                line-height: 1.05;
+            margin: 0 0 .5rem 0;
+            font-size: clamp(1.6rem, 4vw, 3rem);
+            letter-spacing: 1px;
+            line-height: 1.05;
             }
 
             .hero-tagline {
-                margin: 0 0 1.25rem 0;
-                color: rgba(255, 255, 255, 0.76);
-                font-size: clamp(1rem, 2.2vw, 1.25rem);
+            margin: 0 0 1.25rem 0;
+            color: rgba(255, 255, 255, 0.76);
+            font-size: clamp(1rem, 2.2vw, 1.25rem);
             }
 
             .hero-cta {
-                display: flex;
-                gap: .75rem;
-                flex-wrap: wrap;
-                margin-top: 1rem;
+            display: flex;
+            gap: .75rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
             }
 
             /* Embed card area (right column) */
             .hero-embeds {
-                display: grid;
-                grid-auto-rows: 1fr;
-                gap: 1rem;
+            display: grid;
+            grid-auto-rows: 1fr;
+            gap: 1rem;
             }
 
             .embed-card {
-                background: rgba(255,255,255,0.04);
-                border-radius: 12px;
-                padding: .6rem;
-                box-shadow: 0 8px 24px rgba(0,0,0,0.35);
-                display: flex;
-                flex-direction: column;
-                gap: .5rem;
-                min-height: 0;
+            background: rgba(255,255,255,0.04);
+            border-radius: 12px;
+            padding: .6rem;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+            display: flex;
+            flex-direction: column;
+            gap: .5rem;
+            min-height: 0;
             }
 
             .embed-title {
-                color: rgba(255,255,255,0.9);
-                font-size: .95rem;
-                margin: 0 .5rem;
+            color: rgba(255,255,255,0.9);
+            font-size: .95rem;
+            margin: 0 .5rem;
             }
 
             /* Responsive, modern aspect-ratio + fallback */
             .embed-wrapper {
-                position: relative;
-                width: 100%;
-                aspect-ratio: 16/9;
-                height: auto;
-                border-radius: 10px;
-                overflow: hidden;
-                background:#00000000;
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16/9;
+            height: auto;
+            border-radius: 10px;
+            overflow: hidden;
+            background:#00000000;
             }
             .embed-wrapper::before { content:""; display:block; padding-top:56.25%; } /* fallback for old browsers */
             .embed-wrapper iframe {
-                position: absolute;
-                inset: 0;
-                width: 100%;
-                height: 100%;
-                border: 0;
-                display: block;
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            border: 0;
+            display: block;
             }
 
             </style>
 
             <!-- Background: embedded YouTube video (positioned behind content) -->
             <div class="hero-video" aria-hidden="true">
-                <iframe
-                    src="https://www.youtube.com/embed/xAX0x_yO4xc?si=Euo-EYJss8dgxK9Y&mute=1&controls=0&rel=0&modestbranding=1&playsinline=1&autoplay=1&loop=1&playlist=xAX0x_yO4xc"
-                    title="Chase x Records - background"
-                    frameborder="0"
-                    referrerpolicy="strict-origin-when-cross-origin"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    allowfullscreen
-                ></iframe>
+            <!-- placeholder div for YouTube player; we use the API to avoid showing the default loading spinner.
+                 The iframe will be inserted by the API and revealed only once playback starts. -->
+            <div id="heroBgPlayer"></div>
             </div>
 
             <style>
             /* Replace prior .hero::before background with an absolutely positioned iframe video */
             .hero-video{
-                position: absolute;
-                inset: 0;
-                z-index: 1;
-                overflow: hidden;
-                pointer-events: none; /* keep interactions for foreground */
-                background: #000;
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            overflow: hidden;
+            pointer-events: none; /* keep interactions for foreground */
+            background: #000;
             }
 
-            /* Make iframe cover the hero area while preserving aspect ratio */
-            .hero-video iframe{
-                position: absolute;
-                top: 50%;
-                left: 50%;
-                /* 16:9 cover technique: make width large enough to cover height-first */
-                width: 177.78%; /* 100 * (16/9) */
-                height: 100%;
-                transform: translate(-50%, -50%);
-                border: 0;
-                display: block;
+            /* Player iframe default hidden; reveal when player actually starts playing */
+            .hero-video iframe {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            /* 16:9 cover technique: make width large enough to cover height-first */
+            width: 177.78%; /* 100 * (16/9) */
+            height: 100%;
+            transform: translate(-50%, -50%);
+            border: 0;
+            display: block;
+            opacity: 0;
+            transition: opacity 600ms ease;
+            will-change: opacity, transform;
+            }
+
+            /* When we know video is playing, fade it in */
+            .hero-video.ready iframe {
+            opacity: 1;
             }
 
             /* Overlay gradient to mimic previous darkened/background look */
             .hero-video::after{
-                content: "";
-                position: absolute;
-                inset: 0;
-                background: linear-gradient(180deg, rgba(6,6,10,0.45) 0%, rgba(6,6,10,0.6) 100%);
-                pointer-events: none;
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(6,6,10,0.45) 0%, rgba(6,6,10,0.6) 100%);
+            pointer-events: none;
             }
 
             /* Ensure hero-inner stays above the video */
             .hero-inner { position: relative; z-index: 2; }
 
             @media (max-width: 900px){
-                .hero-inner {
-                    grid-template-columns: 1fr;
-                    padding: 2rem 1rem;
-                }
-                .hero-embeds {
-                    grid-template-columns: 1fr 1fr;
-                }
+            .hero-inner {
+                grid-template-columns: 1fr;
+                padding: 2rem 1rem;
+            }
+            .hero-embeds {
+                grid-template-columns: 1fr 1fr;
+            }
             }
 
             @media (max-width: 560px){
-                .hero-embeds {
-                    grid-template-columns: 1fr;
-                }
-                .hero-cta { gap: .5rem; }
+            .hero-embeds {
+                grid-template-columns: 1fr;
+            }
+            .hero-cta { gap: .5rem; }
             }
         </style>
+
+        <script>
+            // Load YouTube IFrame API and create a player. Hide the iframe until playback begins
+            (function() {
+            // Avoid loading API multiple times on repeated includes
+            if (!window.YT_API_LOADING) {
+                window.YT_API_LOADING = true;
+                var tag = document.createElement('script');
+                tag.src = "https://www.youtube.com/iframe_api";
+                tag.async = true;
+                document.head.appendChild(tag);
+            }
+
+            // Create a global callback that the API invokes
+            window.onYouTubeIframeAPIReady = function() {
+                try {
+                new YT.Player('heroBgPlayer', {
+                    videoId: 'xAX0x_yO4xc',
+                    playerVars: {
+                    autoplay: 1,
+                    controls: 0,
+                    mute: 1,
+                    loop: 1,
+                    playlist: 'xAX0x_yO4xc',
+                    modestbranding: 1,
+                    playsinline: 1,
+                    rel: 0,
+                    iv_load_policy: 3
+                    },
+                    events: {
+                    onReady: function(e) {
+                        // Ensure playback requested (some browsers require user gesture; muted autoplay should work)
+                        try { e.target.playVideo(); } catch (err) {}
+                    },
+                    onStateChange: function(e) {
+                        // When the video is actually playing, fade the iframe in
+                        if (e.data === YT.PlayerState.PLAYING) {
+                        var hv = document.querySelector('.hero-video');
+                        if (hv && !hv.classList.contains('ready')) {
+                            hv.classList.add('ready');
+                        }
+                        }
+                    }
+                    }
+                });
+                } catch (err) {
+                // fail silently - we don't want a blocking error. If API fails, no spinner will be shown by us.
+                console.error('YouTube API player init failed', err);
+                }
+            };
+
+            // Safety: if API doesn't load within N seconds, reveal the iframe container to avoid permanent hidden state.
+            setTimeout(function() {
+                var hv = document.querySelector('.hero-video');
+                if (hv && !hv.classList.contains('ready')) {
+                // If API never emitted playing state, try to reveal whatever was loaded to avoid blank hero.
+                hv.classList.add('ready');
+                }
+            }, 8000);
+            })();
+        </script>
 
         <div class="hero-inner">
             <div class="hero-content">
@@ -764,8 +828,15 @@
     </section>
 
     <!-- CTA Section -->
-    <section class="about" style="background: var(--background);">
-        <div class="container" style="text-align: center;">
+    <section class="about" style="background: var(--background); position: relative; overflow: hidden;">
+        <!-- Background video (muted + playsinline so browsers allow autoplay) -->
+        <video class="about-bg-video" autoplay muted playsinline loop preload="auto" aria-hidden="true" poster="studio-poster.jpg">
+            <source src="studio-video.mp4" type="video/mp4">
+            <!-- Optional fallback -->
+            Your browser does not support the video tag.
+        </video>
+
+        <div class="container about-inner" style="position: relative; z-index: 2; text-align: center; padding: 3rem 1rem;">
             <h3 class="section-title">Ready to Create Something Amazing?</h3>
             <p style="color: var(--text-secondary); font-size: 1.2rem; margin-bottom: 2rem;">
                 Join the artists who trust Chase x Records for their creative vision.
@@ -775,6 +846,7 @@
                 <a href="about.html" class="btn btn-secondary">Learn About Us</a>
             </div>
         </div>
+
     </section>
 
     <!-- Footer -->
