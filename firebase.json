@@ -1,0 +1,23 @@
+{
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      ".firebaserc",
+      "**/node_modules/**",
+      "**/.*",
+      "**/*.md"
+    ],
+    "headers": [
+      {
+        "source": "**/*.@(mp3|wav|ogg)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=3600"
+          }
+        ]
+      }
+    ]
+  }
+}

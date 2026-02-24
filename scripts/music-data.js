@@ -30,7 +30,7 @@ class MusicDataRenderer {
                 <div class="track-card" data-track="${index}" data-category="${categories.join(' ')}">
                     <div class="track-artwork">
                         <img src="${track.artwork}" alt="${track.title}">
-                        <button class="play-btn-card" onclick="musicPlayer.playTrack(${index})">
+                        <button class="play-btn-card" type="button">
                             <i class="fas fa-play"></i>
                         </button>
                         ${badge ? `<div class="track-badge ${badge.type}">${badge.text}</div>` : ''}
@@ -39,7 +39,7 @@ class MusicDataRenderer {
                                 <button class="overlay-btn" title="Add to playlist">
                                     <i class="fas fa-plus"></i>
                                 </button>
-                                <button class="overlay-btn" title="Like" onclick="musicData.toggleLike('${track.id}')">
+                                <button class="overlay-btn" title="Like" data-like-track-id="${track.id}" type="button">
                                     <i class="far fa-heart"></i>
                                 </button>
                                 <button class="overlay-btn" title="Share">
@@ -145,6 +145,17 @@ class MusicDataRenderer {
                 this.handleSearch(e.target.value);
             });
         }
+
+        // Like button (event delegation because cards are rendered dynamically)
+        document.addEventListener('click', (e) => {
+            const likeBtn = e.target.closest('[data-like-track-id]');
+            if (!likeBtn) return;
+
+            const trackId = likeBtn.getAttribute('data-like-track-id');
+            if (!trackId) return;
+
+            this.toggleLike(trackId);
+        });
     }
 
     applyFilter(filter) {
@@ -182,7 +193,16 @@ class MusicDataRenderer {
     }
 }
 
+function initMusicDataRenderer() {
+    window.musicData = new MusicDataRenderer();
+}
+
 // Initialize music data renderer
 document.addEventListener('DOMContentLoaded', function() {
-    window.musicData = new MusicDataRenderer();
+    if (document.querySelector('[data-include]')) return
+    initMusicDataRenderer()
+});
+
+document.addEventListener('includes:loaded', function() {
+    initMusicDataRenderer()
 });

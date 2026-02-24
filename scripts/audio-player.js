@@ -55,7 +55,22 @@ class AudioPlayer {
   }
 
   loadTracksFromData() {
-    if (this.dataManager) {
+    // Prefer a preloaded track list (e.g. from Firestore page loader)
+    if (Array.isArray(window.__tracks) && window.__tracks.length > 0) {
+      this.tracks = window.__tracks.map((track) => ({
+        id: track.id,
+        title: track.title,
+        artist: track.artistName || 'Unknown Artist',
+        cover: track.artwork,
+        src: track.audioUrl || this.getFallbackAudioUrl(track.id),
+        duration: track.duration,
+        likes: track.likes || 0,
+        streams: track.streams || 0,
+        originalData: track,
+      }));
+
+      this.originalTrackOrder = [...this.tracks];
+    } else if (this.dataManager) {
       const publishedTracks = this.dataManager.getPublishedTracks();
       this.tracks = publishedTracks.map(track => {
         const artist = this.dataManager.getArtist(track.artist);
@@ -75,46 +90,13 @@ class AudioPlayer {
       
       this.originalTrackOrder = [...this.tracks];
     } else {
-      // Fallback to original tracks if dataManager not available
-      this.tracks = this.getDefaultTracks();
-      this.originalTrackOrder = [...this.tracks];
+      this.tracks = [];
+      this.originalTrackOrder = [];
     }
   }
 
-  getDefaultTracks() {
-    return [
-      {
-        id: 'default_1',
-        title: "Sunset Dreams",
-        artist: "Sarah Miles",
-        cover: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=80&h=80&fit=crop",
-        src: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
-        duration: "3:45",
-        likes: 2400,
-        streams: 15200
-      },
-      {
-        id: 'default_2',
-        title: "City Lights",
-        artist: "DJ Kato",
-        cover: "https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=80&h=80&fit=crop",
-        src: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
-        duration: "4:20",
-        likes: 8700,
-        streams: 45800
-      }
-    ];
-  }
-
   getFallbackAudioUrl(trackId) {
-    // Provide fallback audio URLs based on track ID or use a default
-    const defaultUrls = [
-      "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
-      "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
-      "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3"
-    ];
-    const index = trackId ? parseInt(trackId.replace(/\D/g, '')) % defaultUrls.length : 0;
-    return defaultUrls[index];
+    return ''
   }
 
   setupEventListeners() {

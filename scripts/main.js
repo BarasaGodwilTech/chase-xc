@@ -1,6 +1,6 @@
 // Main JavaScript - Global Scripts & DOM Management
 
-document.addEventListener("DOMContentLoaded", () => {
+function initApp() {
     initHeader()
     initNavigation()
     initSmoothScroll()
@@ -8,7 +8,18 @@ document.addEventListener("DOMContentLoaded", () => {
     initContactForm()
     initTrackCards()
     setActiveNavLink()
-    initMembership() // ADD THIS LINE
+    initMembership()
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    // If the page uses partial includes, wait for them so header elements exist.
+    // Otherwise run immediately.
+    if (document.querySelector('[data-include]')) return
+    initApp()
+})
+
+document.addEventListener('includes:loaded', () => {
+    initApp()
 })
 
 // Header Scroll Effect
@@ -247,11 +258,24 @@ function initTrackCards() {
         })
     })
 }
-// Membership functionality
-document.addEventListener('DOMContentLoaded', function() {
-    
-    
-    // Plan data
+
+function initMembership() {
+    const membershipModal = document.getElementById('membershipModal')
+    const planSelectButtons = document.querySelectorAll('.plan-select')
+    const membershipForm = document.getElementById('membershipForm')
+
+    if (!membershipModal || planSelectButtons.length === 0 || !membershipForm) return
+
+    const selectedPlanName = document.getElementById('selectedPlanName')
+    const selectedPlanPrice = document.getElementById('selectedPlanPrice')
+    const selectedPlanDescription = document.getElementById('selectedPlanDescription')
+    const billingCycle = document.getElementById('billingCycle')
+    const paymentInstructions = document.getElementById('paymentInstructions')
+    const instructionsTitle = document.getElementById('instructionsTitle')
+    const instructionsText = document.getElementById('instructionsText')
+    const transactionInput = document.getElementById('transactionInput')
+    const transactionId = document.getElementById('transactionId')
+
     const plans = {
         weekly: {
             name: 'Weekly Pass',
@@ -271,48 +295,147 @@ document.addEventListener('DOMContentLoaded', function() {
             period: 'year',
             description: '600 hours of studio time, unlimited mixing & mastering'
         }
-    };
-    
-    // Event listeners
+    }
+
+    function openMembershipModal(planType) {
+        const plan = plans[planType] || plans.monthly
+
+        if (selectedPlanName) selectedPlanName.textContent = `${plan.name} Plan`
+        if (selectedPlanPrice) selectedPlanPrice.textContent = `${plan.price} / ${plan.period}`
+        if (selectedPlanDescription) selectedPlanDescription.textContent = plan.description
+        if (billingCycle) billingCycle.value = planType
+
+        membershipModal.classList.add('active')
+        document.body.style.overflow = 'hidden'
+    }
+
+    function closeMembershipModal() {
+        membershipModal.classList.remove('active')
+        document.body.style.overflow = ''
+
+        membershipModal.querySelectorAll('.payment-option').forEach(opt => opt.classList.remove('selected'))
+        if (paymentInstructions) paymentInstructions.style.display = 'none'
+        if (transactionInput) transactionInput.style.display = 'none'
+        if (transactionId) transactionId.value = ''
+    }
+
+    function updatePaymentInstructions(method, amountText) {
+        if (!paymentInstructions || !instructionsTitle || !instructionsText) return
+
+        paymentInstructions.style.display = 'block'
+
+        const textByMethod = {
+            mtn: {
+                title: 'MTN Mobile Money',
+                text: `Send ${amountText} to the studio MTN number. Enter the transaction ID below after payment.`
+            },
+            airtel: {
+                title: 'Airtel Money',
+                text: `Send ${amountText} to the studio Airtel number. Enter the reference ID below after payment.`
+            },
+            card: {
+                title: 'Card Payment',
+                text: `Card payments are not yet automated. Please contact the studio to complete payment for ${amountText}.`
+            },
+            bank: {
+                title: 'Bank Transfer',
+                text: `Transfer ${amountText} to the studio bank account. Enter the transfer reference below.`
+            }
+        }
+
+        const content = textByMethod[method] || { title: 'Payment', text: '' }
+        instructionsTitle.textContent = content.title
+        instructionsText.textContent = content.text
+
+        const needsReference = method === 'mtn' || method === 'airtel' || method === 'bank'
+        if (transactionInput) transactionInput.style.display = needsReference ? 'block' : 'none'
+        if (transactionId) transactionId.required = needsReference
+    }
+
+    function getSelectedPaymentMethod() {
+        const selected = membershipModal.querySelector('.payment-option.selected')
+        return selected ? selected.getAttribute('data-method') : null
+    }
+
+    function processSubscription() {
+        const fullName = document.getElementById('fullName')?.value?.trim()
+        const email = document.getElementById('email')?.value?.trim()
+        const phone = document.getElementById('phone')?.value?.trim()
+        const cycle = billingCycle?.value || 'monthly'
+        const method = getSelectedPaymentMethod()
+        const ref = transactionId?.value?.trim()
+
+        if (!fullName || !email || !phone) {
+            alert('Please fill in all required fields.')
+            return
+        }
+
+        if (!method) {
+            alert('Please select a payment method.')
+            return
+        }
+
+        const needsReference = method === 'mtn' || method === 'airtel' || method === 'bank'
+        if (needsReference && !ref) {
+            alert('Please enter your Transaction ID / Reference.')
+            return
+        }
+
+        const record = {
+            id: `membership_${Date.now()}`,
+            fullName,
+            email,
+            phone,
+            billingCycle: cycle,
+            paymentMethod: method,
+            transactionId: ref || null,
+            timestamp: new Date().toISOString(),
+            status: 'pending'
+        }
+
+        const existing = JSON.parse(localStorage.getItem('membershipSubscriptions') || '[]')
+        existing.push(record)
+        localStorage.setItem('membershipSubscriptions', JSON.stringify(existing))
+
+        alert('Subscription submitted! We will confirm your payment shortly.')
+        membershipForm.reset()
+        closeMembershipModal()
+    }
+
     planSelectButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const planType = this.getAttribute('data-plan');
-            openMembershipModal(planType);
-        });
-    });
-    
-    // Payment option selection
-    membershipModal.addEventListener('click', function(e) {
-        if (e.target.classList.contains('payment-option')) {
-            document.querySelectorAll('.payment-option').forEach(opt => {
-                opt.classList.remove('selected');
-            });
-            e.target.classList.add('selected');
+        button.addEventListener('click', function () {
+            const planType = this.getAttribute('data-plan')
+            openMembershipModal(planType)
+        })
+    })
+
+    membershipModal.addEventListener('click', function (e) {
+        const option = e.target.closest('.payment-option')
+        if (option) {
+            membershipModal.querySelectorAll('.payment-option').forEach(opt => opt.classList.remove('selected'))
+            option.classList.add('selected')
+
+            const amountText = (selectedPlanPrice?.textContent || '').split('/')[0].trim() || 'the amount'
+            updatePaymentInstructions(option.getAttribute('data-method'), amountText)
+            return
         }
-    });
-    
-    // Close modal
-    membershipModal.addEventListener('click', function(e) {
+
         if (e.target.classList.contains('modal-close') || e.target.classList.contains('membership-modal')) {
-            closeMembershipModal();
+            closeMembershipModal()
         }
-    });
-    
-    // Form submission
-    const subscriptionForm = document.getElementById('subscriptionForm');
-    subscriptionForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        processSubscription();
-    });
-    
-    
-    // Close modal with Escape key
-    document.addEventListener('keydown', function(e) {
+    })
+
+    membershipForm.addEventListener('submit', function (e) {
+        e.preventDefault()
+        processSubscription()
+    })
+
+    document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape' && membershipModal.classList.contains('active')) {
-            closeMembershipModal();
+            closeMembershipModal()
         }
-    });
-});
+    })
+}
 
 // === MUSIC FILTERS FUNCTIONALITY ===
 class MusicFilters {
@@ -429,7 +552,11 @@ class MusicFilters {
 document.addEventListener('DOMContentLoaded', () => {
     // Initialize music filters
     new MusicFilters();
+    
+    // Initialize music search
+    new MusicSearch();
 });
+
 // === MUSIC SEARCH FUNCTIONALITY ===
 class MusicSearch {
     constructor() {
@@ -722,12 +849,3 @@ class MusicSearch {
         this.searchFilterToggle.classList.toggle('active');
     }
 }
-
-// Initialize music search when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-    // Initialize music filters
-    new MusicFilters();
-    
-    // Initialize music search
-    new MusicSearch();
-});

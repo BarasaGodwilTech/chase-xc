@@ -12,29 +12,8 @@
     <link rel="stylesheet" href="styles/components.css">
 </head>
 <body>
-    <header class="header" id="header">
-    <div class="header-container">
-        <div class="logo">
-            <a href="index.html" style="text-decoration: none;">
-                <h1><i class="fas fa-compact-disc"></i> Chase x Records</h1>
-            </a>
-        </div>
-        <nav class="nav" id="nav">
-            <a href="index.html" class="nav-link"><i class="fas fa-home"></i> Home</a>
-            <a href="services.html" class="nav-link"><i class="fas fa-sliders-h"></i> Services</a>
-            <a href="music.html" class="nav-link"><i class="fas fa-music"></i> Music</a>
-            <a href="artists.html" class="nav-link"><i class="fas fa-user-alt"></i> Artists</a>
-            <a href="savings.html" class="nav-link"><i class="fas fa-piggy-bank"></i> Savings</a>
-            <a href="about.html" class="nav-link"><i class="fas fa-info-circle"></i> About</a>
-            <a href="contact.html" class="nav-link"><i class="fas fa-envelope"></i> Contact</a>
-        </nav>
-        <button class="hamburger" id="hamburger">
-            <span></span>
-            <span></span>
-            <span></span>
-        </button>
-    </div>
-</header>
+    <script src="scripts/includes.js"></script>
+    <div data-include="partials/header.html"></div>
 
     <!-- Page Header -->
     <section class="hero" style="min-height: 40vh; margin-top: 80px;">
@@ -166,78 +145,7 @@
         </div>
     </section>
 
-    <footer class="footer">
-    <div class="container footer-content">
-        <div class="footer-section">
-            <h5><i class="fas fa-compact-disc"></i> Chase x Records</h5>
-            <p>Professional music production and recording studio.</p>
-            <div class="payment-methods">
-                <h6>Accepted Payment Methods</h6>
-                <div class="payment-icons">
-                    <div class="payment-icon" title="MTN Mobile Money">
-                        <i class="fas fa-mobile-alt"></i>
-                        <span>MTN MoMo</span>
-                    </div>
-                    <div class="payment-icon" title="Airtel Money">
-                        <i class="fas fa-wallet"></i>
-                        <span>Airtel Money</span>
-                    </div>
-                    <div class="payment-icon" title="Visa">
-                        <i class="fab fa-cc-visa"></i>
-                        <span>Visa</span>
-                    </div>
-                    <div class="payment-icon" title="Mastercard">
-                        <i class="fab fa-cc-mastercard"></i>
-                        <span>Mastercard</span>
-                    </div>
-                    <div class="payment-icon" title="Bank Transfer">
-                        <i class="fas fa-university"></i>
-                        <span>Bank Transfer</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="footer-section">
-            <h5>Quick Links</h5>
-            <ul>
-                <li><a href="services.html"><i class="fas fa-chevron-right"></i> Services</a></li>
-                <li><a href="music.html"><i class="fas fa-chevron-right"></i> Music</a></li>
-                <li><a href="artists.html"><i class="fas fa-chevron-right"></i> Artists</a></li>
-                <li><a href="savings.html"><i class="fas fa-chevron-right"></i> Savings</a></li>
-                <li><a href="contact.html"><i class="fas fa-chevron-right"></i> Contact</a></li>
-            </ul>
-        </div>
-        <div class="footer-section">
-            <h5>Contact Info</h5>
-            <div class="contact-info-footer">
-                <p><i class="fas fa-phone"></i> +256 757 858 462</p>
-                <p><i class="fas fa-envelope"></i> chasexbigoma@gmail.com</p>
-                <p><i class="fas fa-map-marker-alt"></i> Mbale, Uganda</p>
-            </div>
-            <h5 style="margin-top: 1.5rem;">Follow Us</h5>
-            <div class="footer-socials">
-                <a href="https://www.instagram.com/chase_xc_/" target="_blank">
-                    <i class="fab fa-instagram"></i>
-                </a>
-                <a href="https://www.youtube.com/@chasex1113" target="_blank">
-                    <i class="fab fa-youtube"></i>
-                </a>
-                <a href="https://open.spotify.com/artist/1gxLasEE8iDV3Coz8NosqX?si=29n8eLJrR0uQsQrSf-AlxA" target="_blank">
-                    <i class="fab fa-spotify"></i>
-                </a>
-                <a href="https://tiktok.com" target="_blank">
-                    <i class="fab fa-tiktok"></i>
-                </a>
-                <a href="https://x.com" target="_blank">
-                    <i class="fa-brands fa-square-x-twitter"></i>
-                </a>
-            </div>
-        </div>
-    </div>
-    <div class="footer-bottom">
-        <p>&copy; 2025 Chase x Records. All rights reserved | powered by barasagodwiltechnologies. </p>
-    </div>
-</footer>
+    <div data-include="partials/footer.html"></div>
 
     <script src="scripts/main.js"></script>
 </body>

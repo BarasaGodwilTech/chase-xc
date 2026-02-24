@@ -252,6 +252,17 @@
   cursor: pointer;
 }
 
+/* Ensure native dropdown options are readable (browser draws these outside DOM) */
+.form-group select option {
+  background: #ffffff;
+  color: #111827;
+}
+
+.form-group select optgroup {
+  background: #ffffff;
+  color: #111827;
+}
+
 .error-message {
   color: var(--accent);
   font-size: 0.85rem;

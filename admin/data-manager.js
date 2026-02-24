@@ -9,8 +9,8 @@ class DataManager {
         // Initialize default data structure if not exists
         if (!this.getData()) {
             const defaultData = {
-                artists: this.getDefaultArtists(),
-                tracks: this.getDefaultTracks(),
+                artists: [],
+                tracks: [],
                 settings: {
                     lastUpdated: new Date().toISOString()
                 }

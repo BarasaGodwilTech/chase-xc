@@ -4,14 +4,13 @@ class AdminPanel {
         this.currentSection = 'dashboard';
         this.dataManager = window.dataManager;
         this.editingItem = null;
-        
-        // Check if dataManager is available
+
         if (!this.dataManager) {
             console.error('DataManager not found!');
             this.showError('Data Manager not initialized. Please refresh the page.');
             return;
         }
-        
+
         this.init();
     }
 
@@ -20,19 +19,17 @@ class AdminPanel {
         this.setupEventListeners();
         this.showSection('dashboard');
         this.loadSectionData('dashboard');
-        
-        // Listen for data updates
+
         window.addEventListener('dataUpdated', () => {
             this.loadSectionData(this.currentSection);
         });
-        
+
         console.log('AdminPanel initialized successfully');
     }
 
     setupEventListeners() {
         console.log('Setting up event listeners...');
-        
-        // Navigation
+
         document.querySelectorAll('.nav-item[data-target]').forEach(item => {
             item.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -42,33 +39,28 @@ class AdminPanel {
             });
         });
 
-        // Mobile navigation toggle
         const navToggle = document.getElementById('navToggle');
         if (navToggle) {
             navToggle.addEventListener('click', () => {
-                document.querySelector('.nav-content').classList.toggle('active');
+                document.querySelector('.nav-content')?.classList.toggle('active');
             });
         }
 
-        // Basic button handlers
         document.getElementById('logoutBtn')?.addEventListener('click', (e) => {
             e.preventDefault();
             this.handleLogout();
         });
 
-        // Add new buttons
         document.getElementById('addTrackBtn')?.addEventListener('click', () => {
             this.addNewTrack();
         });
 
-        // Simple music management
         this.setupBasicMusicManagement();
 
         console.log('Event listeners setup complete');
     }
 
     setupBasicMusicManagement() {
-        // Method tabs
         document.addEventListener('click', (e) => {
             if (e.target.closest('.method-tab')) {
                 const tab = e.target.closest('.method-tab');
@@ -77,105 +69,122 @@ class AdminPanel {
             }
         });
 
-        // Simple form submission for audio upload
-        document.getElementById('audioUploadForm')?.addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.handleSimpleAudioUpload();
-        });
+        const audioUploadArea = document.getElementById('audioUploadArea');
+        const audioFileInput = document.getElementById('audioFile');
+        const fileInfo = document.getElementById('fileInfo');
+
+        if (audioUploadArea && audioFileInput) {
+            audioUploadArea.addEventListener('click', () => {
+                audioFileInput.click();
+            });
+
+            audioFileInput.addEventListener('change', () => {
+                if (!fileInfo) return;
+                const f = audioFileInput.files && audioFileInput.files[0];
+                const titleInput = document.getElementById('trackTitle');
+                const releaseDateInput = document.getElementById('releaseDate');
+                const durationInput = document.getElementById('trackDuration');
+
+                if (!f) {
+                    fileInfo.classList.remove('show');
+                    fileInfo.textContent = '';
+                    if (durationInput) durationInput.value = '';
+                    return;
+                }
+
+                fileInfo.classList.add('show');
+                fileInfo.textContent = `${f.name} (${Math.round(f.size / 1024 / 1024 * 10) / 10} MB)`;
+
+                if (titleInput && !titleInput.value) {
+                    const base = f.name.replace(/\.[^/.]+$/, '');
+                    const cleaned = base.replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim();
+                    titleInput.value = cleaned;
+                }
+
+                if (releaseDateInput && !releaseDateInput.value) {
+                    releaseDateInput.value = new Date().toISOString().split('T')[0];
+                }
+
+                if (durationInput) {
+                    durationInput.value = '';
+                    try {
+                        const objectUrl = URL.createObjectURL(f);
+                        const audioProbe = new Audio();
+                        audioProbe.preload = 'metadata';
+                        audioProbe.src = objectUrl;
+                        audioProbe.addEventListener('loadedmetadata', () => {
+                            URL.revokeObjectURL(objectUrl);
+                            const seconds = audioProbe.duration;
+                            if (!seconds || !isFinite(seconds)) return;
+                            const mins = Math.floor(seconds / 60);
+                            const secs = Math.floor(seconds % 60);
+                            durationInput.value = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+                        }, { once: true });
+                        audioProbe.addEventListener('error', () => {
+                            URL.revokeObjectURL(objectUrl);
+                        }, { once: true });
+                    } catch (_) {
+                        // ignore
+                    }
+                }
+            });
+        }
+
+        const uploadArtworkBtn = document.getElementById('uploadArtworkBtn');
+        const artworkInput = document.getElementById('trackArtwork');
+        const artworkPreview = document.getElementById('artworkPreview');
+
+        if (uploadArtworkBtn && artworkInput) {
+            uploadArtworkBtn.addEventListener('click', () => {
+                artworkInput.click();
+            });
+        }
+
+        if (artworkInput && artworkPreview) {
+            artworkInput.addEventListener('change', () => {
+                const f = artworkInput.files && artworkInput.files[0];
+                if (!f) return;
+                const url = URL.createObjectURL(f);
+                artworkPreview.classList.add('has-image');
+                artworkPreview.style.backgroundImage = `url('${url}')`;
+            });
+        }
     }
 
     switchUploadMethod(method) {
         console.log('Switching to method:', method);
-        
-        // Update tabs
+
         document.querySelectorAll('.method-tab').forEach(tab => {
             tab.classList.remove('active');
         });
-        
-        const activeTab = document.querySelector(`[data-method="${method}"]`);
-        if (activeTab) {
-            activeTab.classList.add('active');
-        }
 
-        // Update content
+        const activeTab = document.querySelector(`[data-method="${method}"]`);
+        if (activeTab) activeTab.classList.add('active');
+
         document.querySelectorAll('.method-content').forEach(content => {
             content.classList.remove('active');
         });
-        
+
         const activeContent = document.getElementById(`${method}Form`);
-        if (activeContent) {
-            activeContent.classList.add('active');
-        }
-    }
-
-    handleSimpleAudioUpload() {
-        const formData = new FormData(document.getElementById('audioUploadForm'));
-        const title = formData.get('trackTitle');
-        const artist = formData.get('trackArtist');
-        const genre = formData.get('trackGenre');
-
-        if (!title || !artist || !genre) {
-            this.showNotification('Please fill in all required fields', 'error');
-            return;
-        }
-
-        const trackData = {
-            title: title,
-            artist: artist,
-            genre: genre,
-            duration: '3:45',
-            streams: 0,
-            likes: 0,
-            downloads: 0,
-            status: 'published',
-            artwork: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=400&fit=crop',
-            audioUrl: '/placeholder.mp3',
-            releaseDate: new Date().toISOString().split('T')[0],
-            description: 'New track uploaded via admin panel'
-        };
-
-        this.dataManager.saveTrack(trackData);
-        this.showNotification('Track uploaded successfully!', 'success');
-        
-        // Reset form
-        document.getElementById('audioUploadForm').reset();
-        
-        // Refresh tracks if on that section
-        if (this.currentSection === 'tracks') {
-            this.loadTracks();
-        }
+        if (activeContent) activeContent.classList.add('active');
     }
 
     showSection(sectionId) {
         console.log('Showing section:', sectionId);
-        
-        // Update navigation
-        document.querySelectorAll('.nav-item').forEach(item => {
-            item.classList.remove('active');
-        });
-        
-        const activeNavItem = document.querySelector(`[data-target="${sectionId}"]`);
-        if (activeNavItem) {
-            activeNavItem.classList.add('active');
-        }
 
-        // Update sections
-        document.querySelectorAll('.admin-section').forEach(section => {
-            section.classList.remove('active');
-        });
-        
+        document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+        document.querySelector(`[data-target="${sectionId}"]`)?.classList.add('active');
+
+        document.querySelectorAll('.admin-section').forEach(section => section.classList.remove('active'));
+
         const activeSection = document.getElementById(sectionId);
-        if (activeSection) {
-            activeSection.classList.add('active');
-        } else {
+        if (!activeSection) {
             console.error('Section not found:', sectionId);
             return;
         }
+        activeSection.classList.add('active');
 
-        // Update page title
         this.updatePageTitle(sectionId);
-
-        // Load section data
         this.currentSection = sectionId;
         this.loadSectionData(sectionId);
     }
@@ -186,47 +195,45 @@ class AdminPanel {
             payments: 'Payment Management',
             artists: 'Artist Management',
             tracks: 'Track Management',
-            'music-management': 'Music Management'
+            'music-management': 'Music Management',
+            projects: 'Projects'
+        };
+
+        const subtitles = {
+            dashboard: 'Welcome to your admin dashboard',
+            payments: 'Manage and track all payments',
+            artists: 'Manage artist profiles and content',
+            tracks: 'Manage music tracks and releases',
+            'music-management': 'Upload and manage music tracks',
+            projects: 'Manage studio projects and deliverables'
         };
 
         const pageTitle = document.getElementById('pageTitle');
         const pageSubtitle = document.getElementById('pageSubtitle');
 
-        if (pageTitle) {
-            pageTitle.textContent = titles[sectionId] || 'Admin Panel';
-        }
-
-        if (pageSubtitle) {
-            const subtitles = {
-                dashboard: 'Welcome to your admin dashboard',
-                payments: 'Manage and track all payments',
-                artists: 'Manage artist profiles and content',
-                tracks: 'Manage music tracks and releases',
-                'music-management': 'Upload and manage music tracks'
-            };
-            pageSubtitle.textContent = subtitles[sectionId] || 'Manage your studio operations';
-        }
+        if (pageTitle) pageTitle.textContent = titles[sectionId] || 'Admin Panel';
+        if (pageSubtitle) pageSubtitle.textContent = subtitles[sectionId] || 'Manage your studio operations';
     }
 
     loadSectionData(sectionId) {
         console.log('Loading section data:', sectionId);
         this.showLoading();
 
-        // Simulate loading time
         setTimeout(() => {
             try {
-                switch(sectionId) {
+                switch (sectionId) {
                     case 'dashboard':
                         this.renderDashboard();
                         break;
                     case 'artists':
-                        this.loadArtists();
                         break;
                     case 'tracks':
                         this.loadTracks();
                         break;
                     case 'music-management':
                         this.loadArtistsForSelect();
+                        break;
+                    case 'projects':
                         break;
                     case 'payments':
                         this.loadPayments();
@@ -246,11 +253,10 @@ class AdminPanel {
         const artists = this.dataManager.getAllArtists();
         const tracks = this.dataManager.getAllTracks();
         const publishedTracks = this.dataManager.getPublishedTracks();
-        
+
         const totalStreams = tracks.reduce((sum, track) => sum + (track.streams || 0), 0);
         const totalRevenue = Math.round(totalStreams * 0.003);
-        
-        // Update stats
+
         const totalRevenueEl = document.getElementById('totalRevenue');
         const totalArtistsEl = document.getElementById('totalArtists');
         const activeProjectsEl = document.getElementById('activeProjects');
@@ -260,8 +266,6 @@ class AdminPanel {
         if (totalArtistsEl) totalArtistsEl.textContent = artists.length;
         if (activeProjectsEl) activeProjectsEl.textContent = publishedTracks.length;
         if (pendingPaymentsEl) pendingPaymentsEl.textContent = '0';
-
-        console.log('Dashboard rendered successfully');
     }
 
     loadArtists() {
@@ -273,7 +277,6 @@ class AdminPanel {
         }
 
         const artists = this.dataManager.getAllArtists();
-        
         if (artists.length === 0) {
             container.innerHTML = '<tr><td colspan="7" class="text-center">No artists found</td></tr>';
             return;
@@ -282,7 +285,7 @@ class AdminPanel {
         container.innerHTML = artists.map(artist => {
             const tracks = this.dataManager.getTracksByArtist(artist.id);
             const totalStreams = tracks.reduce((sum, track) => sum + (track.streams || 0), 0);
-            
+
             return `
                 <tr>
                     <td>
@@ -312,8 +315,6 @@ class AdminPanel {
                 </tr>
             `;
         }).join('');
-
-        console.log('Artists loaded:', artists.length);
     }
 
     loadTracks() {
@@ -325,7 +326,6 @@ class AdminPanel {
         }
 
         const tracks = this.dataManager.getAllTracks();
-        
         if (tracks.length === 0) {
             container.innerHTML = '<tr><td colspan="7" class="text-center">No tracks found</td></tr>';
             return;
@@ -362,60 +362,37 @@ class AdminPanel {
                 </tr>
             `;
         }).join('');
-
-        console.log('Tracks loaded:', tracks.length);
     }
 
     loadArtistsForSelect() {
         const artistSelect = document.getElementById('trackArtist');
-        if (artistSelect) {
-            const artists = this.dataManager.getAllArtists();
-            artistSelect.innerHTML = '<option value="">Select Artist</option>' +
-                artists.map(artist => 
-                    `<option value="${artist.id}">${artist.name}</option>`
-                ).join('');
-        }
+        if (!artistSelect) return;
+        const artists = this.dataManager.getAllArtists();
+        artistSelect.innerHTML = '<option value="">Select Artist</option>' + artists.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
     }
 
     loadPayments() {
         const table = document.getElementById('paymentsTable');
-        if (table) {
-            // Simple sample payments
-            const payments = [
-                {
-                    id: 'TX001',
-                    artist: 'Sarah Miles',
-                    amount: 1800000,
-                    service: 'Music Production',
-                    date: '2025-03-15',
-                    status: 'completed'
-                },
-                {
-                    id: 'TX002',
-                    artist: 'DJ Kato',
-                    amount: 2500000,
-                    service: 'Mixing & Mastering',
-                    date: '2025-03-10',
-                    status: 'pending'
-                }
-            ];
-            
-            table.innerHTML = payments.map(payment => `
-                <tr>
-                    <td>${payment.id}</td>
-                    <td>${payment.artist}</td>
-                    <td>UGX ${this.formatNumber(payment.amount)}</td>
-                    <td>${payment.service}</td>
-                    <td>${payment.date}</td>
-                    <td><span class="status-badge status-${payment.status}">${payment.status}</span></td>
-                    <td>
-                        <button class="btn btn-primary btn-sm" onclick="adminPanel.viewPayment('${payment.id}')">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                    </td>
-                </tr>
-            `).join('');
-        }
+        if (!table) return;
+        const payments = [
+            { id: 'TX001', artist: 'Sarah Miles', amount: 1800000, service: 'Music Production', date: '2025-03-15', status: 'completed' },
+            { id: 'TX002', artist: 'DJ Kato', amount: 2500000, service: 'Mixing & Mastering', date: '2025-03-10', status: 'pending' }
+        ];
+        table.innerHTML = payments.map(payment => `
+            <tr>
+                <td>${payment.id}</td>
+                <td>${payment.artist}</td>
+                <td>UGX ${this.formatNumber(payment.amount)}</td>
+                <td>${payment.service}</td>
+                <td>${payment.date}</td>
+                <td><span class="status-badge status-${payment.status}">${payment.status}</span></td>
+                <td>
+                    <button class="btn btn-primary btn-sm" onclick="adminPanel.viewPayment('${payment.id}')">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </td>
+            </tr>
+        `).join('');
     }
 
     // Basic CRUD operations
@@ -467,6 +444,12 @@ class AdminPanel {
 
     viewPayment(paymentId) {
         alert(`Viewing payment: ${paymentId}`);
+    }
+
+    addNewArtist() {
+        // Basic placeholder until Firestore-backed artist creation UI is implemented
+        this.showNotification('Artist creation will be added next. For now, create artists in Firestore or we will add an inline form.', 'info');
+        this.showSection('artists');
     }
 
     addNewTrack() {

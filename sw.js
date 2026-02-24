@@ -1,21 +1,52 @@
-const CACHE_NAME = 'studio-verifier-v1';
+const CACHE_NAME = 'studio-verifier-v2';
 const urlsToCache = [
-  '/studio-verifier.html',
-  '/styles/components.css',
-  '/scripts/studio-verifier.js',
-  '/manifest.json'
+  'studio-verifier.html',
+  'styles/components.css',
+  'scripts/studio-verifier.js',
+  'manifest.json',
 ];
 
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll(urlsToCache))
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(urlsToCache))
+  );
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    Promise.all([
+      caches.keys().then((keys) =>
+        Promise.all(
+          keys
+            .filter((key) => key !== CACHE_NAME)
+            .map((key) => caches.delete(key))
+        )
+      ),
+      self.clients.claim(),
+    ])
   );
 });
 
 self.addEventListener('fetch', (event) => {
+  const req = event.request;
+
+  // Only handle GET requests (avoid interfering with form submits, etc.)
+  if (req.method !== 'GET') return;
+
+  // Only cache same-origin requests
+  const url = new URL(req.url);
+  if (url.origin !== self.location.origin) return;
+
   event.respondWith(
-    caches.match(event.request)
-      .then((response) => response || fetch(event.request))
+    caches.match(req).then((cached) => {
+      if (cached) return cached;
+      return fetch(req).then((res) => {
+        // Best-effort runtime cache (keeps existing behavior of caching what was requested)
+        const copy = res.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(req, copy)).catch(() => {});
+        return res;
+      });
+    })
   );
 });
