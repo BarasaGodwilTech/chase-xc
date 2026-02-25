@@ -169,6 +169,14 @@ function closeAddArtistModal() {
   modal.setAttribute('aria-hidden', 'true')
 }
 
+function schedulePopulateArtistSelect(selectedId = '') {
+  // Other scripts may overwrite the select when switching sections.
+  // Schedule a repopulate after the UI finishes switching.
+  setTimeout(() => {
+    populateArtistSelect(selectedId).catch(console.error)
+  }, 350)
+}
+
 function setArtistImagePreview(file) {
   const preview = document.getElementById('artistImagePreview')
   if (!preview) return
@@ -227,6 +235,7 @@ function restoreAudioUploadDraft(draft) {
 
 async function handleAddArtistSubmit(e) {
   e.preventDefault()
+  console.log('[admin-firebase] Add artist submit')
   const form = e.currentTarget
   const fd = new FormData(form)
 
@@ -243,10 +252,22 @@ async function handleAddArtistSubmit(e) {
   let imageUrl = ''
   try {
     if (imageFile && imageFile instanceof File && imageFile.size > 0) {
-      const now = Date.now()
-      const ext = safeFileExt(imageFile.name) || 'jpg'
-      const path = `artists/${now}.${ext}`
-      imageUrl = await uploadFileToStorage(path, imageFile)
+      try {
+        const now = Date.now()
+        const ext = safeFileExt(imageFile.name) || 'jpg'
+        const path = `artists/${now}.${ext}`
+        imageUrl = await uploadFileToStorage(path, imageFile)
+      } catch (uploadErr) {
+        console.error(uploadErr)
+
+        const msg =
+          'Artist image upload failed. This usually means Firebase Storage is not enabled or Storage rules block uploads.\n\n' +
+          'I can still save the artist WITHOUT an image. Continue?'
+
+        const ok = confirm(msg)
+        if (!ok) return
+        imageUrl = ''
+      }
     }
 
     const ref = await addDoc(collection(db, 'artists'), {
@@ -366,6 +387,13 @@ async function handleAudioUploadSubmit(e) {
 }
 
 function initAdminFirebase() {
+  console.log('[admin-firebase] init')
+  try {
+    const bucket = (storage && storage.app && storage.app.options && storage.app.options.storageBucket) || ''
+    if (bucket) console.log('[admin-firebase] storageBucket:', bucket)
+  } catch (_) {
+    // ignore
+  }
   const audioUploadForm = document.getElementById('audioUploadForm')
   if (audioUploadForm) {
     audioUploadForm.addEventListener('submit', handleAudioUploadSubmit)
@@ -373,6 +401,25 @@ function initAdminFirebase() {
 
   // Populate dropdown from Firestore
   populateArtistSelect().catch(console.error)
+
+  // Re-populate when navigating to Music Management (prevents other scripts from removing __add_new__)
+  document.querySelector('[data-target="music-management"]')?.addEventListener('click', () => {
+    schedulePopulateArtistSelect()
+  })
+  document.getElementById('addTrackBtn')?.addEventListener('click', () => {
+    schedulePopulateArtistSelect()
+  })
+
+  // Observe the select; if any script overwrites it, restore base options.
+  const trackArtistSelect = document.getElementById('trackArtist')
+  if (trackArtistSelect && 'MutationObserver' in window) {
+    const mo = new MutationObserver(() => {
+      // This is cheap (only checks presence); if missing, repopulate from Firestore.
+      const hasAddNew = Array.from(trackArtistSelect.options).some((o) => o.value === '__add_new__')
+      if (!hasAddNew) schedulePopulateArtistSelect()
+    })
+    mo.observe(trackArtistSelect, { childList: true })
+  }
 
   // Populate artists table from Firestore
   renderArtistsTable().catch(console.error)
@@ -427,6 +474,8 @@ function initAdminFirebase() {
   const addArtistForm = document.getElementById('addArtistForm')
   if (addArtistForm) {
     addArtistForm.addEventListener('submit', handleAddArtistSubmit)
+  } else {
+    console.error('[admin-firebase] addArtistForm not found; Save Artist will not work')
   }
 }
 
