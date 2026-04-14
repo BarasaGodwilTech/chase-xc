@@ -763,7 +763,8 @@ section {
 /* Footer */
 .footer {
   background: var(--surface);
-  border-top: 1px solid var(--border);
+  border-top: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
   padding: var(--spacing-xl) 0;
 }
 
@@ -810,7 +811,8 @@ section {
 .footer-bottom {
   text-align: center;
   padding-top: var(--spacing-lg);
-  border-top: 1px solid var(--border);
+  border-top: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
   color: var(--text-secondary);
 }
 
@@ -983,7 +985,7 @@ section {
 
             /* Optional: reduce motion for users who prefer reduced motion */
             @media (prefers-reduced-motion: reduce) {
-                .about-bg-video { animation: none; autoplay: false; }
+                .about-bg-video { animation: none; }
             }
 
             /* Small screens: reduce padding for the inner container */

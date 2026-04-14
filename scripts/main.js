@@ -9,6 +9,7 @@ function initApp() {
     initTrackCards()
     setActiveNavLink()
     initMembership()
+    initFooterCtaRotator()
 }
 
 document.addEventListener("DOMContentLoaded", () => {

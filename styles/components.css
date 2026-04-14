@@ -732,6 +732,257 @@
     }
 }
 
+.footer-cta {
+    background: var(--surface);
+    position: relative;
+    padding: var(--spacing-2xl) 0 0;
+    margin-bottom: -96px;
+    z-index: 3;
+}
+
+.footer-cta-card {
+    position: relative;
+    overflow: hidden;
+    border-radius: 18px;
+    border: none;
+    background: linear-gradient(135deg, rgba(236, 72, 153, 0.55) 0%, rgba(168, 85, 247, 0.45) 45%, rgba(26, 31, 58, 0.15) 100%);
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    gap: var(--spacing-xl);
+    padding: clamp(1.5rem, 3vw, 2.5rem);
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 74%, rgba(0, 0, 0, 0.25) 90%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 0%, #000 74%, rgba(0, 0, 0, 0.25) 90%, transparent 100%);
+}
+
+.footer-cta-title {
+    font-family: var(--font-heading);
+    font-size: clamp(2rem, 3.5vw, 3.2rem);
+    line-height: 1.05;
+    margin: 0 0 1rem;
+    letter-spacing: 0.5px;
+}
+
+.footer-cta-title span {
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.footer-cta-text {
+    color: rgba(255, 255, 255, 0.75);
+    max-width: 52ch;
+    margin: 0 0 1.25rem;
+}
+
+.footer-cta-copy {
+    transition: opacity 260ms ease, transform 260ms ease;
+}
+
+.footer-cta-copy.is-swapping {
+    opacity: 0;
+    transform: translateY(10px);
+}
+
+.footer-cta-form {
+    margin: 0;
+}
+
+.footer-cta-label {
+    display: block;
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+.footer-cta-inputrow {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: min(520px, 100%);
+    padding: 0.35rem 0.35rem 0.35rem 0.2rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.22);
+}
+
+.footer-cta-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    padding: 0.7rem 0.25rem;
+    outline: none;
+}
+
+.footer-cta-input::placeholder {
+    color: rgba(255, 255, 255, 0.45);
+}
+
+.footer-cta-input:focus {
+    outline: none;
+}
+
+.footer-cta-inputrow:focus-within {
+    border-bottom-color: rgba(0, 212, 255, 0.65);
+}
+
+.footer-cta-submit {
+    width: 48px;
+    height: 48px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: radial-gradient(circle at 30% 30%, rgba(0, 212, 255, 0.35), rgba(236, 72, 153, 0.2) 55%, rgba(10, 14, 39, 0.15) 100%);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease, background 220ms ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.footer-cta-submit:hover {
+    transform: translateY(-2px);
+    border-color: rgba(0, 212, 255, 0.45);
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.38);
+}
+
+.footer-cta-submit:active {
+    transform: translateY(0);
+}
+
+.footer-cta-submit::before {
+    content: "";
+    position: absolute;
+    inset: -6px;
+    border-radius: 999px;
+    background: radial-gradient(circle, rgba(0, 212, 255, 0.26), transparent 60%);
+    opacity: 0;
+    transform: scale(0.92);
+    transition: opacity 200ms ease, transform 200ms ease;
+    pointer-events: none;
+}
+
+.footer-cta-submit:hover::before {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.footer-cta-right {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.footer-cta-art {
+    width: min(280px, 100%);
+    aspect-ratio: 1 / 1;
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    background: radial-gradient(circle at 30% 30%, rgba(0, 212, 255, 0.35), rgba(236, 72, 153, 0.18) 50%, rgba(10, 14, 39, 0) 72%);
+    filter: drop-shadow(0 25px 50px rgba(0, 0, 0, 0.55));
+}
+
+.footer-cta-image {
+    width: min(260px, 88%);
+    height: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 18px 30px rgba(0, 0, 0, 0.35));
+    transform: rotate(-10deg);
+}
+
+.footer {
+    position: relative;
+    z-index: 1;
+    padding-top: calc(var(--spacing-xl) + 96px);
+}
+
+.footer::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 48px;
+    background: linear-gradient(to bottom, rgba(26, 31, 58, 0) 0%, rgba(26, 31, 58, 0.35) 55%, var(--surface) 100%);
+    pointer-events: none;
+}
+
+.footer-signup {
+    display: flex;
+    justify-content: flex-end;
+    align-items: flex-start;
+}
+
+.btn-footer {
+    padding: 0.85rem 1.6rem;
+    border-radius: 999px;
+    background: linear-gradient(135deg, rgba(236, 72, 153, 0.95) 0%, rgba(168, 85, 247, 0.85) 55%, rgba(0, 212, 255, 0.85) 120%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #0a0e27;
+    box-shadow: 0 20px 55px rgba(236, 72, 153, 0.18), 0 18px 40px rgba(0, 212, 255, 0.12);
+    transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
+}
+
+.btn-footer:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 24px 65px rgba(236, 72, 153, 0.22), 0 22px 55px rgba(0, 212, 255, 0.18);
+    filter: brightness(1.05);
+}
+
+.btn-footer:active {
+    transform: translateY(0);
+}
+
+@media (min-width: 769px) {
+    .footer-content {
+        grid-template-columns: repeat(3, minmax(250px, 1fr)) auto;
+        align-items: start;
+    }
+
+    .footer-signup {
+        justify-content: flex-end;
+        align-items: flex-start;
+    }
+}
+
+@media (max-width: 768px) {
+    .footer-cta-card {
+        grid-template-columns: 1fr;
+    }
+
+    .footer-cta-right {
+        order: -1;
+        justify-content: flex-start;
+    }
+
+    .footer-cta-art {
+        width: 190px;
+    }
+
+    .footer-cta-image {
+        width: min(190px, 86%);
+        transform: rotate(-8deg);
+    }
+}
+
+@media (max-width: 480px) {
+    .footer-content {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-lg);
+    }
+
+    .footer-cta {
+        margin-bottom: -72px;
+    }
+
+    .footer {
+        padding-top: calc(var(--spacing-xl) + 72px);
+    }
+
+    .footer-signup {
+        justify-content: center;
+    }
+}
+
 /* Payment Modal Styles */
 .modal {
     position: fixed;
