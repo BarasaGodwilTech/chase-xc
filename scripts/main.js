@@ -15,6 +15,7 @@ function initApp() {
     initHomeHero()
     initContactHero()
     initMusicHero()
+    initArtistsHero()
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -1179,6 +1180,67 @@ function initMusicHero() {
             if (embedCard) {
                 embedCard.style.transform = 'translate(0, 0)'
             }
+        }
+    })
+}
+
+function initArtistsHero() {
+    const hero = document.querySelector('[data-artists-hero]')
+    if (!hero) return
+
+    const spotlight = hero.querySelector('.artists-hero-spotlight')
+    const floats = hero.querySelectorAll('.artists-hero-float')
+
+    let mouseX = 0
+    let mouseY = 0
+    let currentX = 0
+    let currentY = 0
+
+    // Track mouse movement for spotlight
+    document.addEventListener('mousemove', (e) => {
+        const rect = hero.getBoundingClientRect()
+        const centerX = rect.left + rect.width / 2
+        const centerY = rect.top + rect.height / 2
+
+        mouseX = (e.clientX - centerX) / rect.width
+        mouseY = (e.clientY - centerY) / rect.height
+    })
+
+    // Smooth animation
+    function animate() {
+        // Smooth interpolation
+        currentX += (mouseX - currentX) * 0.08
+        currentY += (mouseY - currentY) * 0.08
+
+        // Move spotlight
+        if (spotlight) {
+            const spotlightX = currentX * 200
+            const spotlightY = currentY * 200
+            spotlight.style.transform = `translate(${spotlightX}px, ${spotlightY}px)`
+        }
+
+        // Apply parallax to floating elements with different speeds
+        floats.forEach((float, index) => {
+            const speed = 1 + (index * 0.3)
+            const floatX = currentX * 25 * speed
+            const floatY = currentY * 25 * speed
+            float.style.transform = `translate(${floatX}px, ${floatY}px)`
+        })
+
+        requestAnimationFrame(animate)
+    }
+
+    animate()
+
+    // Pause animations when tab is not visible
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            if (spotlight) {
+                spotlight.style.transform = 'translate(0, 0)'
+            }
+            floats.forEach(float => {
+                float.style.transform = 'translate(0, 0)'
+            })
         }
     })
 }
