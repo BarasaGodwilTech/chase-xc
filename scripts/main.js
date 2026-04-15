@@ -10,6 +10,11 @@ function initApp() {
     setActiveNavLink()
     initMembership()
     initFooterCtaRotator()
+    initServicesHero()
+    initAboutHero()
+    initHomeHero()
+    initContactHero()
+    initMusicHero()
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -758,11 +763,9 @@ class MusicSearch {
             this.showNoResultsMessage();
         } else {
             tracks.forEach((card, index) => {
-                setTimeout(() => {
-                    card.style.display = 'block';
-                    card.classList.remove('filter-hidden');
-                    card.classList.add('filter-visible');
-                }, index * 50);
+                card.style.display = 'block';
+                card.classList.remove('filter-hidden');
+                card.classList.add('filter-visible');
             });
         }
     }
@@ -849,4 +852,333 @@ class MusicSearch {
         this.searchFilters.classList.toggle('show');
         this.searchFilterToggle.classList.toggle('active');
     }
+}
+
+function initFooterCtaRotator() {
+    const root = document.querySelector('[data-footer-cta-rotator]')
+    if (!root) return
+
+    const copy = root.querySelector('.footer-cta-copy')
+    const title = root.querySelector('.footer-cta-title')
+    const text = root.querySelector('.footer-cta-text')
+
+    if (!copy || !title || !text) return
+
+    const items = [
+        {
+            titleHtml: 'Don’t Miss A<br><span>Beat!</span>',
+            text: 'Don’t miss out on the latest music news, exclusive offers and promotions, and new releases by signing up for our newsletter. Stay in the loop with the freshest music and be the first to know about upcoming events, artist spotlights, and more. Sign up now and never miss a beat!'
+        },
+        {
+            titleHtml: 'New Drops<br><span>Weekly</span>',
+            text: 'Get fresh releases, behind-the-scenes studio moments, and exclusive early previews—delivered straight to your inbox.'
+        },
+        {
+            titleHtml: 'Studio Deals<br><span>Inside</span>',
+            text: 'Be the first to hear about limited-time recording packages, mixing discounts, and special offers for artists.'
+        },
+        {
+            titleHtml: 'Events &<br><span>Sessions</span>',
+            text: 'Stay updated on upcoming events, artist spotlights, and sessions happening at Chase x Records.'
+        }
+    ]
+
+    let index = 0
+    let timer = null
+
+    function setItem(i) {
+        const item = items[i]
+        title.innerHTML = item.titleHtml
+        text.textContent = item.text
+    }
+
+    function swapNext() {
+        copy.classList.add('is-swapping')
+
+        window.setTimeout(() => {
+            index = (index + 1) % items.length
+            setItem(index)
+            copy.style.transform = 'translateY(18px)'
+            copy.classList.remove('is-swapping')
+
+            window.requestAnimationFrame(() => {
+                window.setTimeout(() => {
+                    copy.style.transform = ''
+                }, 16)
+            })
+        }, 300)
+    }
+
+    setItem(index)
+
+    timer = window.setInterval(swapNext, 7000)
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            if (timer) window.clearInterval(timer)
+            timer = null
+            return
+        }
+
+        if (!timer) timer = window.setInterval(swapNext, 7000)
+    })
+}
+
+function initServicesHero() {
+    const hero = document.querySelector('[data-services-hero]')
+    if (!hero) return
+
+    const imageWrapper = hero.querySelector('.services-hero-image-wrapper')
+    const floats = hero.querySelectorAll('.services-hero-float')
+    const image = hero.querySelector('.services-hero-image')
+
+    if (!imageWrapper) return
+
+    let mouseX = 0
+    let mouseY = 0
+    let currentX = 0
+    let currentY = 0
+
+    // Track mouse movement
+    document.addEventListener('mousemove', (e) => {
+        const rect = hero.getBoundingClientRect()
+        const centerX = rect.left + rect.width / 2
+        const centerY = rect.top + rect.height / 2
+
+        mouseX = (e.clientX - centerX) / rect.width
+        mouseY = (e.clientY - centerY) / rect.height
+    })
+
+    // Smooth parallax animation
+    function animate() {
+        // Smooth interpolation
+        currentX += (mouseX - currentX) * 0.05
+        currentY += (mouseY - currentY) * 0.05
+
+        // Apply parallax to image
+        if (image) {
+            const imageX = currentX * 20
+            const imageY = currentY * 20
+            image.style.transform = `translate(${imageX}px, ${imageY}px) rotateX(${currentY * 5}deg) rotateY(${currentX * -5}deg)`
+        }
+
+        // Apply parallax to floating elements with different speeds
+        floats.forEach((float, index) => {
+            const speed = 1 + (index * 0.5)
+            const floatX = currentX * 30 * speed
+            const floatY = currentY * 30 * speed
+            float.style.transform = `translate(${floatX}px, ${floatY}px)`
+        })
+
+        requestAnimationFrame(animate)
+    }
+
+    animate()
+
+    // Add hover tilt effect to image wrapper
+    if (imageWrapper) {
+        imageWrapper.addEventListener('mouseenter', () => {
+            imageWrapper.style.transition = 'transform 0.3s ease'
+        })
+
+        imageWrapper.addEventListener('mouseleave', () => {
+            imageWrapper.style.transition = 'transform 0.5s ease'
+            if (image) {
+                image.style.transform = 'translate(0, 0) rotateX(0) rotateY(0)'
+            }
+            floats.forEach(float => {
+                float.style.transform = 'translate(0, 0)'
+            })
+            mouseX = 0
+            mouseY = 0
+            currentX = 0
+            currentY = 0
+        })
+    }
+
+    // Pause animations when tab is not visible
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            // Reset transforms when hidden
+            if (image) {
+                image.style.transform = 'translate(0, 0) rotateX(0) rotateY(0)'
+            }
+            floats.forEach(float => {
+                float.style.transform = 'translate(0, 0)'
+            })
+        }
+    })
+}
+
+function initHomeHero() {
+    const hero = document.querySelector('[data-home-hero]')
+    if (!hero) return
+
+    const floats = hero.querySelectorAll('.home-hero-float')
+    const embedCards = hero.querySelectorAll('.home-hero-embed-card')
+
+    let mouseX = 0
+    let mouseY = 0
+    let currentX = 0
+    let currentY = 0
+
+    // Track mouse movement
+    document.addEventListener('mousemove', (e) => {
+        const rect = hero.getBoundingClientRect()
+        const centerX = rect.left + rect.width / 2
+        const centerY = rect.top + rect.height / 2
+
+        mouseX = (e.clientX - centerX) / rect.width
+        mouseY = (e.clientY - centerY) / rect.height
+    })
+
+    // Smooth parallax animation
+    function animate() {
+        // Smooth interpolation
+        currentX += (mouseX - currentX) * 0.05
+        currentY += (mouseY - currentY) * 0.05
+
+        // Apply parallax to floating elements with different speeds
+        floats.forEach((float, index) => {
+            const speed = 1 + (index * 0.5)
+            const floatX = currentX * 30 * speed
+            const floatY = currentY * 30 * speed
+            float.style.transform = `translate(${floatX}px, ${floatY}px)`
+        })
+
+        // Apply subtle parallax to embed cards
+        embedCards.forEach((card, index) => {
+            const speed = 0.5 + (index * 0.25)
+            const cardX = currentX * 10 * speed
+            const cardY = currentY * 10 * speed
+            card.style.transform = `translate(${cardX}px, ${cardY}px)`
+        })
+
+        requestAnimationFrame(animate)
+    }
+
+    animate()
+
+    // Pause animations when tab is not visible
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            floats.forEach(float => {
+                float.style.transform = 'translate(0, 0)'
+            })
+            embedCards.forEach(card => {
+                card.style.transform = 'translate(0, 0)'
+            })
+        }
+    })
+}
+
+function initContactHero() {
+    const hero = document.querySelector('[data-contact-hero]')
+    if (!hero) return
+
+    const iconCircles = hero.querySelectorAll('.contact-hero-icon-circle')
+
+    let mouseX = 0
+    let mouseY = 0
+    let currentX = 0
+    let currentY = 0
+
+    // Track mouse movement
+    document.addEventListener('mousemove', (e) => {
+        const rect = hero.getBoundingClientRect()
+        const centerX = rect.left + rect.width / 2
+        const centerY = rect.top + rect.height / 2
+
+        mouseX = (e.clientX - centerX) / rect.width
+        mouseY = (e.clientY - centerY) / rect.height
+    })
+
+    // Smooth parallax animation
+    function animate() {
+        // Smooth interpolation
+        currentX += (mouseX - currentX) * 0.05
+        currentY += (mouseY - currentY) * 0.05
+
+        // Apply parallax to icon circles with different speeds
+        iconCircles.forEach((circle, index) => {
+            const speed = 1 + (index * 0.5)
+            const circleX = currentX * 30 * speed
+            const circleY = currentY * 30 * speed
+            circle.style.transform = `translate(${circleX}px, ${circleY}px)`
+        })
+
+        requestAnimationFrame(animate)
+    }
+
+    animate()
+
+    // Pause animations when tab is not visible
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            iconCircles.forEach(circle => {
+                circle.style.transform = 'translate(0, 0)'
+            })
+        }
+    })
+}
+
+function initMusicHero() {
+    const hero = document.querySelector('[data-music-hero]')
+    if (!hero) return
+
+    const floats = hero.querySelectorAll('.music-hero-float')
+    const embedCard = hero.querySelector('.music-hero-embed-card')
+
+    let mouseX = 0
+    let mouseY = 0
+    let currentX = 0
+    let currentY = 0
+
+    // Track mouse movement
+    document.addEventListener('mousemove', (e) => {
+        const rect = hero.getBoundingClientRect()
+        const centerX = rect.left + rect.width / 2
+        const centerY = rect.top + rect.height / 2
+
+        mouseX = (e.clientX - centerX) / rect.width
+        mouseY = (e.clientY - centerY) / rect.height
+    })
+
+    // Smooth parallax animation
+    function animate() {
+        // Smooth interpolation
+        currentX += (mouseX - currentX) * 0.05
+        currentY += (mouseY - currentY) * 0.05
+
+        // Apply parallax to floating elements with different speeds
+        floats.forEach((float, index) => {
+            const speed = 1 + (index * 0.5)
+            const floatX = currentX * 30 * speed
+            const floatY = currentY * 30 * speed
+            float.style.transform = `translate(${floatX}px, ${floatY}px)`
+        })
+
+        // Apply subtle parallax to embed card
+        if (embedCard) {
+            const cardX = currentX * 10
+            const cardY = currentY * 10
+            embedCard.style.transform = `translate(${cardX}px, ${cardY}px)`
+        }
+
+        requestAnimationFrame(animate)
+    }
+
+    animate()
+
+    // Pause animations when tab is not visible
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            floats.forEach(float => {
+                float.style.transform = 'translate(0, 0)'
+            })
+            if (embedCard) {
+                embedCard.style.transform = 'translate(0, 0)'
+            }
+        }
+    })
 }

@@ -16,41 +16,113 @@
     <div data-include="partials/header.html"></div>
 
     <!-- Page Header -->
-    <section class="hero" style="min-height: 40vh; margin-top: 80px;">
-        <div class="hero-content">
-            <h2 class="hero-title" style="font-size: 3rem;">Our Services</h2>
-            <p class="hero-tagline">Professional music production services for artists at every level</p>
+    <section class="services-hero" data-services-hero>
+        <div class="services-hero-container">
+            <div class="services-hero-left">
+                <div class="services-hero-content">
+                    <span class="services-hero-badge">
+                        <i class="fas fa-star"></i> Professional Studio
+                    </span>
+                    <h1 class="services-hero-title">
+                        <span class="services-hero-title-line">Craft Your</span>
+                        <span class="services-hero-title-line services-hero-title-accent">Sound</span>
+                        <span class="services-hero-title-line">With Excellence</span>
+                    </h1>
+                    <p class="services-hero-subtitle">
+                        From production to mastering, we transform your creative vision into professional, radio-ready music.
+                    </p>
+                    <div class="services-hero-cta">
+                        <a href="#production" class="btn btn-primary services-hero-btn">
+                            <span>Explore Services</span>
+                            <i class="fas fa-arrow-right"></i>
+                        </a>
+                        <a href="contact.html" class="btn btn-secondary services-hero-btn-outline">
+                            <span>Get Quote</span>
+                        </a>
+                    </div>
+                    <div class="services-hero-stats">
+                        <div class="services-hero-stat">
+                            <span class="services-hero-stat-number">500+</span>
+                            <span class="services-hero-stat-label">Projects</span>
+                        </div>
+                        <div class="services-hero-stat-divider"></div>
+                        <div class="services-hero-stat">
+                            <span class="services-hero-stat-number">100%</span>
+                            <span class="services-hero-stat-label">Satisfaction</span>
+                        </div>
+                        <div class="services-hero-stat-divider"></div>
+                        <div class="services-hero-stat">
+                            <span class="services-hero-stat-number">24/7</span>
+                            <span class="services-hero-stat-label">Support</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="services-hero-right">
+                <div class="services-hero-image-wrapper">
+                    <div class="services-hero-image-shape"></div>
+                    <img src="images/headphonesonmixer.jpg" alt="Headphones on mixer" class="services-hero-image">
+                    <div class="services-hero-float services-hero-float-1">
+                        <i class="fas fa-music"></i>
+                    </div>
+                    <div class="services-hero-float services-hero-float-2">
+                        <i class="fas fa-headphones"></i>
+                    </div>
+                    <div class="services-hero-float services-hero-float-3">
+                        <i class="fas fa-compact-disc"></i>
+                    </div>
+                    <div class="services-hero-float services-hero-float-4">
+                        <i class="fas fa-sliders-h"></i>
+                    </div>
+                    <div class="services-hero-glow"></div>
+                    <div class="services-hero-wave services-hero-wave-1"></div>
+                    <div class="services-hero-wave services-hero-wave-2"></div>
+                    <div class="services-hero-wave services-hero-wave-3"></div>
+                </div>
+            </div>
         </div>
-        <div class="hero-background"></div>
+        <div class="services-hero-bg">
+            <div class="services-hero-gradient"></div>
+            <div class="services-hero-noise"></div>
+        </div>
     </section>
 
     <!-- Services Details -->
-    <section class="services" id="production">
+    <section class="services-detail-section" id="production">
         <div class="container">
-            <div class="service-detail">
-                <div class="service-content">
-                    <div class="service-icon-large"><i class="fas fa-headphones-alt"></i></div>
+            <div class="service-detail-card service-detail-card-left">
+                <div class="service-detail-visual">
+                    <div class="service-visual-icon">
+                        <i class="fas fa-headphones-alt"></i>
+                    </div>
+                    <div class="service-visual-bg"></div>
+                </div>
+                <div class="service-detail-info">
+                    <span class="service-badge">Production</span>
                     <h3>Music Production</h3>
                     <p>From initial concept to final master, we provide comprehensive music production services. Our team works closely with you to bring your creative vision to life.</p>
-                    <ul>
-                        <li>Beat making and composition</li>
-                        <li>Arrangement and orchestration</li>
-                        <li>Sound design and synthesis</li>
-                        <li>Professional recording sessions</li>
-                        <li>Creative direction and coaching</li>
+                    <ul class="service-list">
+                        <li><i class="fas fa-check-circle"></i> Beat making and composition</li>
+                        <li><i class="fas fa-check-circle"></i> Arrangement and orchestration</li>
+                        <li><i class="fas fa-check-circle"></i> Sound design and synthesis</li>
+                        <li><i class="fas fa-check-circle"></i> Professional recording sessions</li>
+                        <li><i class="fas fa-check-circle"></i> Creative direction and coaching</li>
                     </ul>
-                    <div class="service-features">
-                        <div class="feature">
-                            <h4>Starting at UGX 1,800,000</h4>
-                            <p>Per track</p>
+                    <div class="service-pricing">
+                        <div class="pricing-item">
+                            <span class="pricing-label">Starting at</span>
+                            <span class="pricing-value">UGX 1,800,000</span>
+                            <span class="pricing-unit">/track</span>
                         </div>
-                        <div class="feature">
-                            <h4>2-4 Weeks</h4>
-                            <p>Turnaround time</p>
+                        <div class="pricing-divider"></div>
+                        <div class="pricing-item">
+                            <span class="pricing-label">Turnaround</span>
+                            <span class="pricing-value">2-4 Weeks</span>
                         </div>
-                        <div class="feature">
-                            <h4>Unlimited Revisions</h4>
-                            <p>Until you're satisfied</p>
+                        <div class="pricing-divider"></div>
+                        <div class="pricing-item">
+                            <span class="pricing-label">Revisions</span>
+                            <span class="pricing-value">Unlimited</span>
                         </div>
                     </div>
                 </div>
@@ -58,65 +130,84 @@
         </div>
     </section>
 
-    <section class="music" id="mixing">
+    <section class="services-detail-section" id="mixing">
         <div class="container">
-            <div class="service-detail">
-                <div class="service-content">
-                    <div class="service-icon-large"><i class="fas fa-sliders-h"></i></div>
+            <div class="service-detail-card service-detail-card-right">
+                <div class="service-detail-info">
+                    <span class="service-badge">Mixing & Mastering</span>
                     <h3>Mixing & Mastering</h3>
                     <p>Transform your raw recordings into professional, radio-ready tracks with our expert mixing and mastering services.</p>
-                    <ul>
-                        <li>Balance and level adjustment</li>
-                        <li>EQ and frequency management</li>
-                        <li>Compression and dynamics control</li>
-                        <li>Spatial effects and automation</li>
-                        <li>Final mastering for all platforms</li>
+                    <ul class="service-list">
+                        <li><i class="fas fa-check-circle"></i> Balance and level adjustment</li>
+                        <li><i class="fas fa-check-circle"></i> EQ and frequency management</li>
+                        <li><i class="fas fa-check-circle"></i> Compression and dynamics control</li>
+                        <li><i class="fas fa-check-circle"></i> Spatial effects and automation</li>
+                        <li><i class="fas fa-check-circle"></i> Final mastering for all platforms</li>
                     </ul>
-                    <div class="service-features">
-                        <div class="feature">
-                            <h4>Starting at UGX 900,000</h4>
-                            <p>Mixing per track</p>
+                    <div class="service-pricing">
+                        <div class="pricing-item">
+                            <span class="pricing-label">Mixing</span>
+                            <span class="pricing-value">UGX 900,000</span>
+                            <span class="pricing-unit">/track</span>
                         </div>
-                        <div class="feature">
-                            <h4>UGX 360,000</h4>
-                            <p>Mastering per track</p>
+                        <div class="pricing-divider"></div>
+                        <div class="pricing-item">
+                            <span class="pricing-label">Mastering</span>
+                            <span class="pricing-value">UGX 360,000</span>
+                            <span class="pricing-unit">/track</span>
                         </div>
-                        <div class="feature">
-                            <h4>1-2 Weeks</h4>
-                            <p>Turnaround time</p>
+                        <div class="pricing-divider"></div>
+                        <div class="pricing-item">
+                            <span class="pricing-label">Turnaround</span>
+                            <span class="pricing-value">1-2 Weeks</span>
                         </div>
                     </div>
+                </div>
+                <div class="service-detail-visual">
+                    <div class="service-visual-icon">
+                        <i class="fas fa-sliders-h"></i>
+                    </div>
+                    <div class="service-visual-bg"></div>
                 </div>
             </div>
         </div>
     </section>
 
-    <section class="services" id="vocal">
+    <section class="services-detail-section" id="vocal">
         <div class="container">
-            <div class="service-detail">
-                <div class="service-content">
-                    <div class="service-icon-large"><i class="fas fa-microphone-alt"></i></div>
+            <div class="service-detail-card service-detail-card-left">
+                <div class="service-detail-visual">
+                    <div class="service-visual-icon">
+                        <i class="fas fa-microphone-alt"></i>
+                    </div>
+                    <div class="service-visual-bg"></div>
+                </div>
+                <div class="service-detail-info">
+                    <span class="service-badge">Vocal Production</span>
                     <h3>Vocal Production</h3>
                     <p>Professional vocal tuning, editing, and production to make your vocals shine in the mix.</p>
-                    <ul>
-                        <li>Pitch correction and tuning</li>
-                        <li>Timing and rhythm adjustment</li>
-                        <li>Vocal comping and editing</li>
-                        <li>Harmony and backing vocal arrangement</li>
-                        <li>Vocal effects and processing</li>
+                    <ul class="service-list">
+                        <li><i class="fas fa-check-circle"></i> Pitch correction and tuning</li>
+                        <li><i class="fas fa-check-circle"></i> Timing and rhythm adjustment</li>
+                        <li><i class="fas fa-check-circle"></i> Vocal comping and editing</li>
+                        <li><i class="fas fa-check-circle"></i> Harmony and backing vocal arrangement</li>
+                        <li><i class="fas fa-check-circle"></i> Vocal effects and processing</li>
                     </ul>
-                    <div class="service-features">
-                        <div class="feature">
-                            <h4>Starting at UGX 540,000</h4>
-                            <p>Per vocal track</p>
+                    <div class="service-pricing">
+                        <div class="pricing-item">
+                            <span class="pricing-label">Starting at</span>
+                            <span class="pricing-value">UGX 540,000</span>
+                            <span class="pricing-unit">/vocal track</span>
                         </div>
-                        <div class="feature">
-                            <h4>3-5 Days</h4>
-                            <p>Turnaround time</p>
+                        <div class="pricing-divider"></div>
+                        <div class="pricing-item">
+                            <span class="pricing-label">Turnaround</span>
+                            <span class="pricing-value">3-5 Days</span>
                         </div>
-                        <div class="feature">
-                            <h4>Industry Standards</h4>
-                            <p>Auto-Tune, Melodyne, etc.</p>
+                        <div class="pricing-divider"></div>
+                        <div class="pricing-item">
+                            <span class="pricing-label">Tools</span>
+                            <span class="pricing-value">Auto-Tune, Melodyne</span>
                         </div>
                     </div>
                 </div>
@@ -124,124 +215,178 @@
         </div>
     </section>
 
-    <section class="services" id="lessons">
-    <div class="container">
-        <div class="service-detail">
-            <div class="service-content">
-                <div class="service-icon-large">
-                    <i class="fas fa-graduation-cap"></i>
-                </div>
-                <h3>Music Lessons</h3>
-                <p>Professional music education for all skill levels. Learn from experienced instructors in a supportive studio environment.</p>
-                
-                <div class="lessons-categories">
-                    <div class="lesson-category">
-                        <h4><i class="fas fa-sliders-h"></i> Vocal Lessons</h4>
-                        <ul>
-                            <li><i class="fas fa-check"></i> Breath control and vocal technique</li>
-                            <li><i class="fas fa-check"></i> Pitch training and ear development</li>
-                            <li><i class="fas fa-check"></i> Performance skills and stage presence</li>
-                            <li><i class="fas fa-check"></i> Vocal health and maintenance</li>
-                            <li><i class="fas fa-check"></i> Genre-specific styling (Pop, R&B, Gospel, etc.)</li>
-                        </ul>
-                    </div>
+    <section class="services-detail-section" id="lessons">
+        <div class="container">
+            <div class="service-detail-card service-detail-card-right">
+                <div class="service-detail-info">
+                    <span class="service-badge">Education</span>
+                    <h3>Music Lessons</h3>
+                    <p>Professional music education for all skill levels. Learn from experienced instructors in a supportive studio environment.</p>
                     
-                    <div class="lesson-category">
-                        <h4><i class="fas fa-guitar"></i> Instrument Lessons</h4>
-                        <ul>
-                            <li><i class="fas fa-check"></i> Piano & Keyboard (Beginner to Advanced)</li>
-                            <li><i class="fas fa-check"></i> Guitar (Acoustic, Electric, Bass)</li>
-                            <li><i class="fas fa-check"></i> Drums & Percussion</li>
-                            <li><i class="fas fa-check"></i> Traditional Ugandan Instruments</li>
-                            <li><i class="fas fa-check"></i> Music theory and composition</li>
-                        </ul>
+                    <div class="lessons-categories">
+                        <div class="lesson-category">
+                            <h4><i class="fas fa-microphone"></i> Vocal Lessons</h4>
+                            <ul>
+                                <li><i class="fas fa-check-circle"></i> Breath control and vocal technique</li>
+                                <li><i class="fas fa-check-circle"></i> Pitch training and ear development</li>
+                                <li><i class="fas fa-check-circle"></i> Performance skills and stage presence</li>
+                                <li><i class="fas fa-check-circle"></i> Vocal health and maintenance</li>
+                                <li><i class="fas fa-check-circle"></i> Genre-specific styling</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="lesson-category">
+                            <h4><i class="fas fa-guitar"></i> Instrument Lessons</h4>
+                            <ul>
+                                <li><i class="fas fa-check-circle"></i> Piano & Keyboard (Beginner to Advanced)</li>
+                                <li><i class="fas fa-check-circle"></i> Guitar (Acoustic, Electric, Bass)</li>
+                                <li><i class="fas fa-check-circle"></i> Drums & Percussion</li>
+                                <li><i class="fas fa-check-circle"></i> Traditional Ugandan Instruments</li>
+                                <li><i class="fas fa-check-circle"></i> Music theory and composition</li>
+                            </ul>
+                        </div>
                     </div>
-                </div>
 
-                <div class="service-features">
-                    <div class="feature">
-                        <h4>Starting at UGX 50,000</h4>
-                        <p>Per hour session</p>
+                    <div class="service-pricing">
+                        <div class="pricing-item">
+                            <span class="pricing-label">Starting at</span>
+                            <span class="pricing-value">UGX 50,000</span>
+                            <span class="pricing-unit">/hour</span>
+                        </div>
+                        <div class="pricing-divider"></div>
+                        <div class="pricing-item">
+                            <span class="pricing-label">Package</span>
+                            <span class="pricing-value">UGX 180,000</span>
+                            <span class="pricing-unit">4 sessions</span>
+                        </div>
+                        <div class="pricing-divider"></div>
+                        <div class="pricing-item">
+                            <span class="pricing-label">Schedule</span>
+                            <span class="pricing-value">Flexible</span>
+                        </div>
                     </div>
-                    <div class="feature">
-                        <h4>Flexible Scheduling</h4>
-                        <p>Weekdays & Weekends</p>
-                    </div>
-                    <div class="feature">
-                        <h4>All Ages Welcome</h4>
-                        <p>Kids, Teens & Adults</p>
-                    </div>
-                    <div class="feature">
-                        <h4>Package Deals</h4>
-                        <p>4 sessions: UGX 180,000</p>
+
+                    <div class="lesson-benefits">
+                        <h4>Why Learn With Us?</h4>
+                        <div class="benefits-grid">
+                            <div class="benefit">
+                                <i class="fas fa-user-graduate"></i>
+                                <h5>Certified Instructors</h5>
+                                <p>Learn from professionally trained musicians</p>
+                            </div>
+                            <div class="benefit">
+                                <i class="fas fa-music"></i>
+                                <h5>Professional Equipment</h5>
+                                <p>Access to studio-quality instruments</p>
+                            </div>
+                            <div class="benefit">
+                                <i class="fas fa-calendar-alt"></i>
+                                <h5>Flexible Schedule</h5>
+                                <p>Lessons tailored to your availability</p>
+                            </div>
+                            <div class="benefit">
+                                <i class="fas fa-record-vinyl"></i>
+                                <h5>Performance Opportunities</h5>
+                                <p>Showcase your skills in studio recordings</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                
-                <div class="lesson-benefits">
-                    <h4>Why Learn With Us?</h4>
-                    <div class="benefits-grid">
-                        <div class="benefit">
-                            <i class="fas fa-user-graduate"></i>
-                            <h5>Certified Instructors</h5>
-                            <p>Learn from professionally trained musicians</p>
-                        </div>
-                        <div class="benefit">
-                            <i class="fas fa-music"></i>
-                            <h5>Professional Equipment</h5>
-                            <p>Access to studio-quality instruments</p>
-                        </div>
-                        <div class="benefit">
-                            <i class="fas fa-calendar-alt"></i>
-                            <h5>Flexible Schedule</h5>
-                            <p>Lessons tailored to your availability</p>
-                        </div>
-                        <div class="benefit">
-                            <i class="fas fa-record-vinyl"></i>
-                            <h5>Performance Opportunities</h5>
-                            <p>Showcase your skills in studio recordings</p>
-                        </div>
+                <div class="service-detail-visual">
+                    <div class="service-visual-icon">
+                        <i class="fas fa-graduation-cap"></i>
                     </div>
+                    <div class="service-visual-bg"></div>
                 </div>
             </div>
         </div>
-    </div>
-</section>
+    </section>
 
     <!-- Additional Services -->
-    <section class="music">
+    <section class="additional-services-section">
         <div class="container">
-            <h3 class="section-title">Additional Services</h3>
-            <div class="services-grid">
-                <div class="service-card">
-                    <div class="service-icon"><i class="fas fa-edit"></i></div>
+            <div class="section-header">
+                <h3 class="section-title">Additional Services</h3>
+                <p class="section-subtitle">Complement your project with our specialized offerings</p>
+            </div>
+            <div class="additional-services-grid">
+                <div class="additional-service-card">
+                    <div class="additional-service-icon">
+                        <i class="fas fa-edit"></i>
+                    </div>
                     <h4>Songwriting</h4>
                     <p>Collaborative songwriting sessions to develop your ideas into complete songs.</p>
-                    <p class="service-price">UGX 270,000/hour</p>
+                    <div class="additional-service-price">
+                        <span class="price-value">UGX 270,000</span>
+                        <span class="price-unit">/hour</span>
+                    </div>
                 </div>
-                <div class="service-card">
-                    <div class="service-icon"><i class="fas fa-history"></i></div>
+                <div class="additional-service-card">
+                    <div class="additional-service-icon">
+                        <i class="fas fa-history"></i>
+                    </div>
                     <h4>Audio Restoration</h4>
                     <p>Clean and restore vintage recordings with cutting-edge techniques.</p>
-                    <p class="service-price">UGX 720,000/project</p>
+                    <div class="additional-service-price">
+                        <span class="price-value">UGX 720,000</span>
+                        <span class="price-unit">/project</span>
+                    </div>
                 </div>
-                <div class="service-card">
-                    <div class="service-icon"><i class="fas fa-users"></i></div>
+                <div class="additional-service-card">
+                    <div class="additional-service-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
                     <h4>Session Musicians</h4>
                     <p>Professional session players for guitar, bass, keys, strings, and more.</p>
-                    <p class="service-price">UGX 180,000-540,000/track</p>
+                    <div class="additional-service-price">
+                        <span class="price-value">UGX 180,000-540,000</span>
+                        <span class="price-unit">/track</span>
+                    </div>
                 </div>
             </div>
         </div>
     </section>
 
     <!-- CTA Section -->
-    <section class="about" style="background: var(--background);">
-        <div class="container" style="text-align: center;">
-            <h3 class="section-title">Ready to Get Started?</h3>
-            <p style="color: var(--text-secondary); font-size: 1.2rem; margin-bottom: 2rem;">
-                Contact us to discuss your project and get a custom quote.
-            </p>
-            <a href="contact.html" class="btn btn-primary">Get in Touch</a>
+    <section class="services-cta-section">
+        <div class="services-cta-container">
+            <div class="services-cta-content">
+                <div class="services-cta-icon">
+                    <i class="fas fa-rocket"></i>
+                </div>
+                <h3 class="services-cta-title">Ready to Create Something Amazing?</h3>
+                <p class="services-cta-subtitle">
+                    Let's bring your musical vision to life. Contact us today to discuss your project and get a custom quote tailored to your needs.
+                </p>
+                <div class="services-cta-buttons">
+                    <a href="contact.html" class="btn btn-primary services-cta-btn-primary">
+                        <span>Start Your Project</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </a>
+                    <a href="#production" class="btn btn-secondary services-cta-btn-secondary">
+                        <span>View Services</span>
+                    </a>
+                </div>
+                <div class="services-cta-features">
+                    <div class="cta-feature">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Free Consultation</span>
+                    </div>
+                    <div class="cta-feature">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Custom Quotes</span>
+                    </div>
+                    <div class="cta-feature">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Quick Response</span>
+                    </div>
+                </div>
+            </div>
+            <div class="services-cta-decoration">
+                <div class="cta-decoration-circle cta-decoration-circle-1"></div>
+                <div class="cta-decoration-circle cta-decoration-circle-2"></div>
+                <div class="cta-decoration-circle cta-decoration-circle-3"></div>
+            </div>
         </div>
     </section>
 

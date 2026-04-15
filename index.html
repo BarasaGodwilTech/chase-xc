@@ -16,163 +16,106 @@
     <div data-include="partials/header.html"></div>
 
     <!-- Hero Section -->
-    <section class="hero" id="hero" aria-labelledby="heroTitle" style="position:relative; overflow:hidden;">
-        <style>
-            /* Scoped hero styles - responsive layout + responsive embeds */
-            .hero-inner {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 3rem 1.25rem;
-            display: grid;
-            grid-template-columns: 1fr 420px;
-            gap: 2rem;
-            align-items: center;
-            position: relative;
-            z-index: 2;
-            }
-
-            .hero-content {
-            color: #fff;
-            }
-
-            .hero-title {
-            margin: 0 0 .5rem 0;
-            font-size: clamp(1.6rem, 4vw, 3rem);
-            letter-spacing: 1px;
-            line-height: 1.05;
-            }
-
-            .hero-tagline {
-            margin: 0 0 1.25rem 0;
-            color: rgba(255, 255, 255, 0.76);
-            font-size: clamp(1rem, 2.2vw, 1.25rem);
-            }
-
-            .hero-cta {
-            display: flex;
-            gap: .75rem;
-            flex-wrap: wrap;
-            margin-top: 1rem;
-            }
-
-            /* Embed card area (right column) */
-            .hero-embeds {
-            display: grid;
-            grid-auto-rows: 1fr;
-            gap: 1rem;
-            }
-
-            .embed-card {
-            background: rgba(255,255,255,0.04);
-            border-radius: 12px;
-            padding: .6rem;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.35);
-            display: flex;
-            flex-direction: column;
-            gap: .5rem;
-            min-height: 0;
-            }
-
-            .embed-title {
-            color: rgba(255,255,255,0.9);
-            font-size: .95rem;
-            margin: 0 .5rem;
-            }
-
-            /* Responsive, modern aspect-ratio + fallback */
-            .embed-wrapper {
-            position: relative;
-            width: 100%;
-            aspect-ratio: 16/9;
-            height: auto;
-            border-radius: 10px;
-            overflow: hidden;
-            background:#00000000;
-            }
-            .embed-wrapper::before { content:""; display:block; padding-top:56.25%; } /* fallback for old browsers */
-            .embed-wrapper iframe {
-            position: absolute;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            border: 0;
-            display: block;
-            }
-
-            </style>
-
-            <!-- Background: embedded YouTube video (positioned behind content) -->
-            <div class="hero-video" aria-hidden="true">
-            <!-- placeholder div for YouTube player; we use the API to avoid showing the default loading spinner.
-                 The iframe will be inserted by the API and revealed only once playback starts. -->
+    <section class="home-hero" data-home-hero id="hero" aria-labelledby="heroTitle">
+        <!-- Background: embedded YouTube video (positioned behind content) -->
+        <div class="home-hero-video" aria-hidden="true">
             <div id="heroBgPlayer"></div>
+        </div>
+        <div class="home-hero-bg-overlay"></div>
+
+        <div class="home-hero-container">
+            <div class="home-hero-left">
+                <div class="home-hero-content">
+                    <span class="home-hero-badge">
+                        <i class="fas fa-star"></i> Professional Studio
+                    </span>
+                    <h1 class="home-hero-title" id="heroTitle">
+                        <span class="home-hero-title-line">CHASE x</span>
+                        <span class="home-hero-title-line home-hero-title-accent">RECORDS</span>
+                    </h1>
+                    <p class="home-hero-subtitle">
+                        Where Sound Meets Vision — professional production, mixing & membership plans tailored to your creative journey.
+                    </p>
+                    <div class="home-hero-cta">
+                        <a href="contact.html" class="btn btn-primary home-hero-btn-primary">
+                            <span>Book a Session</span>
+                            <i class="fas fa-arrow-right"></i>
+                        </a>
+                        <a href="music.html" class="btn btn-secondary home-hero-btn-secondary">
+                            <span>Listen Now</span>
+                        </a>
+                    </div>
+                    <div class="home-hero-stats">
+                        <div class="home-hero-stat">
+                            <span class="home-hero-stat-number">500+</span>
+                            <span class="home-hero-stat-label">Projects</span>
+                        </div>
+                        <div class="home-hero-stat-divider"></div>
+                        <div class="home-hero-stat">
+                            <span class="home-hero-stat-number">100%</span>
+                            <span class="home-hero-stat-label">Satisfaction</span>
+                        </div>
+                        <div class="home-hero-stat-divider"></div>
+                        <div class="home-hero-stat">
+                            <span class="home-hero-stat-number">24/7</span>
+                            <span class="home-hero-stat-label">Support</span>
+                        </div>
+                    </div>
+                </div>
             </div>
+            <div class="home-hero-right">
+                <div class="home-hero-embeds">
+                    <div class="home-hero-embed-card">
+                        <div class="embed-card-header">
+                            <i class="fas fa-user-music"></i>
+                            <h3>Artist Spotlight</h3>
+                        </div>
+                        <div class="embed-wrapper">
+                            <iframe
+                                title="Chase x Records - Artist (Spotify)"
+                                src="https://open.spotify.com/embed/artist/1gxLasEE8iDV3Coz8NosqX?utm_source=generator"
+                                loading="lazy"
+                                referrerpolicy="strict-origin-when-cross-origin"
+                                allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                            ></iframe>
+                        </div>
+                    </div>
+                    <div class="home-hero-embed-card">
+                        <div class="embed-card-header">
+                            <i class="fas fa-compact-disc"></i>
+                            <h3>Latest Release</h3>
+                        </div>
+                        <div class="embed-wrapper">
+                            <iframe
+                                title="Chase x Records - Album (Spotify)"
+                                src="https://open.spotify.com/embed/album/39fFMXy2GNHUhASF8qv9sf?utm_source=generator"
+                                loading="lazy"
+                                referrerpolicy="strict-origin-when-cross-origin"
+                                allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                            ></iframe>
+                        </div>
+                    </div>
+                </div>
+                <div class="home-hero-float home-hero-float-1">
+                    <i class="fas fa-music"></i>
+                </div>
+                <div class="home-hero-float home-hero-float-2">
+                    <i class="fas fa-headphones"></i>
+                </div>
+                <div class="home-hero-float home-hero-float-3">
+                    <i class="fas fa-sliders-h"></i>
+                </div>
+                <div class="home-hero-float home-hero-float-4">
+                    <i class="fas fa-microphone"></i>
+                </div>
+                <div class="home-hero-glow"></div>
+            </div>
+        </div>
+    </section>
 
-            <style>
-            /* Replace prior .hero::before background with an absolutely positioned iframe video */
-            .hero-video{
-            position: absolute;
-            inset: 0;
-            z-index: 1;
-            overflow: hidden;
-            pointer-events: none; /* keep interactions for foreground */
-            background: #000;
-            }
-
-            /* Player iframe default hidden; reveal when player actually starts playing */
-            .hero-video iframe {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            /* 16:9 cover technique: make width large enough to cover height-first */
-            width: 177.78%; /* 100 * (16/9) */
-            height: 100%;
-            transform: translate(-50%, -50%);
-            border: 0;
-            display: block;
-            opacity: 0;
-            transition: opacity 600ms ease;
-            will-change: opacity, transform;
-            }
-
-            /* When we know video is playing, fade it in */
-            .hero-video.ready iframe {
-            opacity: 1;
-            }
-
-            /* Overlay gradient to mimic previous darkened/background look */
-            .hero-video::after{
-            content: "";
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(180deg, rgba(6,6,10,0.45) 0%, rgba(6,6,10,0.6) 100%);
-            pointer-events: none;
-            }
-
-            /* Ensure hero-inner stays above the video */
-            .hero-inner { position: relative; z-index: 2; }
-
-            @media (max-width: 900px){
-            .hero-inner {
-                grid-template-columns: 1fr;
-                padding: 2rem 1rem;
-            }
-            .hero-embeds {
-                grid-template-columns: 1fr 1fr;
-            }
-            }
-
-            @media (max-width: 560px){
-            .hero-embeds {
-                grid-template-columns: 1fr;
-            }
-            .hero-cta { gap: .5rem; }
-            }
-        </style>
-
-        <script>
-            // Load YouTube IFrame API and create a player. Hide the iframe until playback begins
-            (function() {
+    <script>
+        // Load YouTube IFrame API and create a player. Hide the iframe until playback begins
+        (function() {
             // Avoid loading API multiple times on repeated includes
             if (!window.YT_API_LOADING) {
                 window.YT_API_LOADING = true;
@@ -185,230 +128,212 @@
             // Create a global callback that the API invokes
             window.onYouTubeIframeAPIReady = function() {
                 try {
-                new YT.Player('heroBgPlayer', {
-                    videoId: 'xAX0x_yO4xc',
-                    playerVars: {
-                    autoplay: 1,
-                    controls: 0,
-                    mute: 1,
-                    loop: 1,
-                    playlist: 'xAX0x_yO4xc',
-                    modestbranding: 1,
-                    playsinline: 1,
-                    rel: 0,
-                    iv_load_policy: 3
-                    },
-                    events: {
-                    onReady: function(e) {
-                        // Ensure playback requested (some browsers require user gesture; muted autoplay should work)
-                        try { e.target.playVideo(); } catch (err) {}
-                    },
-                    onStateChange: function(e) {
-                        // When the video is actually playing, fade the iframe in
-                        if (e.data === YT.PlayerState.PLAYING) {
-                        var hv = document.querySelector('.hero-video');
-                        if (hv && !hv.classList.contains('ready')) {
-                            hv.classList.add('ready');
+                    new YT.Player('heroBgPlayer', {
+                        videoId: 'xAX0x_yO4xc',
+                        playerVars: {
+                            autoplay: 1,
+                            controls: 0,
+                            mute: 1,
+                            loop: 1,
+                            playlist: 'xAX0x_yO4xc',
+                            modestbranding: 1,
+                            playsinline: 1,
+                            rel: 0,
+                            iv_load_policy: 3
+                        },
+                        events: {
+                            onReady: function(e) {
+                                try { e.target.playVideo(); } catch (err) {}
+                            },
+                            onStateChange: function(e) {
+                                if (e.data === YT.PlayerState.PLAYING) {
+                                    var hv = document.querySelector('.home-hero-video');
+                                    if (hv && !hv.classList.contains('ready')) {
+                                        hv.classList.add('ready');
+                                    }
+                                }
+                            }
                         }
-                        }
-                    }
-                    }
-                });
+                    });
                 } catch (err) {
-                // fail silently - we don't want a blocking error. If API fails, no spinner will be shown by us.
-                console.error('YouTube API player init failed', err);
+                    console.error('YouTube API player init failed', err);
                 }
             };
 
-            // Safety: if API doesn't load within N seconds, reveal the iframe container to avoid permanent hidden state.
             setTimeout(function() {
-                var hv = document.querySelector('.hero-video');
+                var hv = document.querySelector('.home-hero-video');
                 if (hv && !hv.classList.contains('ready')) {
-                // If API never emitted playing state, try to reveal whatever was loaded to avoid blank hero.
-                hv.classList.add('ready');
+                    hv.classList.add('ready');
                 }
             }, 8000);
-            })();
-        </script>
-
-        <div class="hero-inner">
-            <div class="hero-content">
-                <h2 id="heroTitle" class="hero-title">CHASE x RECORDS</h2>
-                <p class="hero-tagline">Where Sound Meets Vision — professional production, mixing & membership plans.</p>
-
-                <div class="hero-cta">
-                    <a class="btn btn-primary" href="contact.html">Book a Session</a>
-                    <a class="btn btn-secondary" href="music.html">Listen Now</a>
-                </div>
-            </div>
-
-            <div class="hero-embeds" aria-hidden="false">
-                <div class="embed-card" role="group" aria-labelledby="artistEmbedTitle">
-                    <h3 id="artistEmbedTitle" class="embed-title">Artist Spotlight</h3>
-                    <div class="embed-wrapper" aria-hidden="false">
-                        <iframe
-                            title="Chase x Records - Artist (Spotify)"
-                            src="https://open.spotify.com/embed/artist/1gxLasEE8iDV3Coz8NosqX?utm_source=generator"
-                            loading="lazy"
-                            referrerpolicy="strict-origin-when-cross-origin"
-                            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-                        ></iframe>
-                    </div>
-                </div>
-
-                <div class="embed-card" role="group" aria-labelledby="albumEmbedTitle">
-                    <h3 id="albumEmbedTitle" class="embed-title">Latest Release</h3>
-                    <div class="embed-wrapper" aria-hidden="false">
-                        <iframe
-                            title="Chase x Records - Album (Spotify)"
-                            src="https://open.spotify.com/embed/album/39fFMXy2GNHUhASF8qv9sf?utm_source=generator"
-                            loading="lazy"
-                            referrerpolicy="strict-origin-when-cross-origin"
-                            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-                        ></iframe>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
+        })();
+    </script>
 
     <!-- Services Preview -->
-    <section class="services" id="services">
+    <section class="home-services-section" id="services">
         <div class="container">
-            <h3 class="section-title">Our Services</h3>
-            <div class="services-grid">
-                <div class="service-card">
-                    <div class="service-icon">
+            <div class="section-header">
+                <h3 class="section-title">Our Services</h3>
+                <p class="section-subtitle">Professional music production services tailored to your creative vision</p>
+            </div>
+            <div class="home-services-grid">
+                <div class="home-service-card">
+                    <div class="home-service-icon">
                         <i class="fas fa-headphones-alt"></i>
                     </div>
                     <h4>Music Production</h4>
                     <p>Full production from concept to final mix. We bring your vision to life.</p>
-                    <a href="services.html#production" class="btn btn-secondary" style="margin-top: 1rem; padding: 0.5rem 1rem;">
-                        <i class="fas fa-arrow-right"></i> Learn More
+                    <div class="home-service-features">
+                        <span class="service-feature-tag">Beat Making</span>
+                        <span class="service-feature-tag">Arrangement</span>
+                        <span class="service-feature-tag">Recording</span>
+                    </div>
+                    <a href="services.html#production" class="home-service-link">
+                        <span>Learn More</span>
+                        <i class="fas fa-arrow-right"></i>
                     </a>
                 </div>
-                <div class="service-card">
-                    <div class="service-icon">
+                <div class="home-service-card">
+                    <div class="home-service-icon">
                         <i class="fas fa-sliders-h"></i>
                     </div>
                     <h4>Mixing & Mastering</h4>
                     <p>Professional mixing and mastering for radio-ready sound quality.</p>
-                    <a href="services.html#mixing" class="btn btn-secondary" style="margin-top: 1rem; padding: 0.5rem 1rem;">
-                        <i class="fas fa-arrow-right"></i> Learn More
+                    <div class="home-service-features">
+                        <span class="service-feature-tag">Balance</span>
+                        <span class="service-feature-tag">EQ</span>
+                        <span class="service-feature-tag">Mastering</span>
+                    </div>
+                    <a href="services.html#mixing" class="home-service-link">
+                        <span>Learn More</span>
+                        <i class="fas fa-arrow-right"></i>
                     </a>
                 </div>
-                <div class="service-card">
-                    <div class="service-icon">
+                <div class="home-service-card">
+                    <div class="home-service-icon">
                         <i class="fas fa-microphone-alt"></i>
                     </div>
-                    <h4>Vocal Tuning</h4>
+                    <h4>Vocal Production</h4>
                     <p>Precise vocal editing and tuning with industry-standard tools.</p>
-                    <a href="services.html#vocal" class="btn btn-secondary" style="margin-top: 1rem; padding: 0.5rem 1rem;">
-                        <i class="fas fa-arrow-right"></i> Learn More
+                    <div class="home-service-features">
+                        <span class="service-feature-tag">Tuning</span>
+                        <span class="service-feature-tag">Editing</span>
+                        <span class="service-feature-tag">Effects</span>
+                    </div>
+                    <a href="services.html#vocal" class="home-service-link">
+                        <span>Learn More</span>
+                        <i class="fas fa-arrow-right"></i>
                     </a>
                 </div>
-                <div class="service-card">
-                    <div class="service-icon">
+                <div class="home-service-card">
+                    <div class="home-service-icon">
                         <i class="fas fa-graduation-cap"></i>
                     </div>
                     <h4>Music Lessons</h4>
                     <p>Vocal & instrument training for all levels with certified instructors.</p>
-                    <div class="lesson-tags">
-                        <span class="lesson-tag">Vocals</span>
-                        <span class="lesson-tag">Piano</span>
-                        <span class="lesson-tag">Guitar</span>
-                        <span class="lesson-tag">Drums</span>
+                    <div class="home-service-features">
+                        <span class="service-feature-tag">Vocals</span>
+                        <span class="service-feature-tag">Piano</span>
+                        <span class="service-feature-tag">Guitar</span>
+                        <span class="service-feature-tag">Drums</span>
                     </div>
-                    <a href="services.html#lessons" class="btn btn-secondary" style="margin-top: 1rem; padding: 0.5rem 1rem;">
-                        <i class="fas fa-arrow-right"></i> Learn More
+                    <a href="services.html#lessons" class="home-service-link">
+                        <span>Learn More</span>
+                        <i class="fas fa-arrow-right"></i>
                     </a>
                 </div>
             </div>
-            <div style="text-align: center; margin-top: 3rem;">
+            <div class="section-cta">
                 <a href="services.html" class="btn btn-primary">View All Services</a>
             </div>
         </div>
     </section>
 
     <!-- Studio Membership Section -->
-<section class="membership" id="membership">
+<section class="home-membership-section" id="membership">
     <div class="container">
-        <h3 class="section-title">Studio Membership Plans</h3>
-        <p class="section-subtitle">Unlock exclusive benefits with our flexible subscription plans</p>
+        <div class="section-header">
+            <h3 class="section-title">Studio Membership Plans</h3>
+            <p class="section-subtitle">Unlock exclusive benefits with our flexible subscription plans</p>
+        </div>
         
         <div class="membership-plans">
-            <div class="plan-card">
-                <div class="plan-header">
-                    <h4>Weekly Pass</h4>
-                    <div class="plan-price">
-                        <span class="price">UGX 150,000</span>
-                        <span class="period">/ week</span>
+            <div class="membership-plan-card">
+                <div class="plan-visual">
+                    <div class="plan-icon">
+                        <i class="fas fa-calendar-week"></i>
                     </div>
                 </div>
-                <div class="plan-features">
-                    <ul>
-                        <li><i class="fas fa-check"></i> 10 hours of studio time</li>
-                        <li><i class="fas fa-check"></i> Basic mixing for 2 tracks</li>
-                        <li><i class="fas fa-check"></i> Equipment rental included</li>
-                        <li><i class="fas fa-check"></i> Engineer assistance</li>
-                        <li><i class="fas fa-times"></i> Mastering services</li>
-                        <li><i class="fas fa-times"></i> Vocal tuning sessions</li>
+                <div class="plan-content">
+                    <span class="plan-badge">Starter</span>
+                    <h4>Weekly Pass</h4>
+                    <div class="plan-price">
+                        <span class="price-value">UGX 150,000</span>
+                        <span class="price-period">/ week</span>
+                    </div>
+                    <ul class="plan-features">
+                        <li><i class="fas fa-check-circle"></i> 10 hours of studio time</li>
+                        <li><i class="fas fa-check-circle"></i> Basic mixing for 2 tracks</li>
+                        <li><i class="fas fa-check-circle"></i> Equipment rental included</li>
+                        <li><i class="fas fa-check-circle"></i> Engineer assistance</li>
                     </ul>
-                </div>
-                <div class="plan-actions">
                     <button class="btn btn-outline plan-select" data-plan="weekly" data-amount="150000">
                         Select Plan
                     </button>
                 </div>
             </div>
             
-            <div class="plan-card popular">
-                <div class="plan-badge">Most Popular</div>
-                <div class="plan-header">
+            <div class="membership-plan-card plan-card-featured">
+                <div class="plan-visual">
+                    <div class="plan-icon">
+                        <i class="fas fa-crown"></i>
+                    </div>
+                    <div class="plan-badge-popular">Most Popular</div>
+                </div>
+                <div class="plan-content">
+                    <span class="plan-badge">Pro</span>
                     <h4>Monthly Pro</h4>
                     <div class="plan-price">
-                        <span class="price">UGX 500,000</span>
-                        <span class="period">/ month</span>
+                        <span class="price-value">UGX 500,000</span>
+                        <span class="price-period">/ month</span>
                     </div>
                     <div class="plan-savings">Save UGX 100,000</div>
-                </div>
-                <div class="plan-features">
-                    <ul>
-                        <li><i class="fas fa-check"></i> 50 hours of studio time</li>
-                        <li><i class="fas fa-check"></i> Unlimited mixing sessions</li>
-                        <li><i class="fas fa-check"></i> Premium equipment access</li>
-                        <li><i class="fas fa-check"></i> Dedicated engineer</li>
-                        <li><i class="fas fa-check"></i> Mastering for 5 tracks</li>
-                        <li><i class="fas fa-check"></i> 4 vocal tuning sessions</li>
+                    <ul class="plan-features">
+                        <li><i class="fas fa-check-circle"></i> 50 hours of studio time</li>
+                        <li><i class="fas fa-check-circle"></i> Unlimited mixing sessions</li>
+                        <li><i class="fas fa-check-circle"></i> Premium equipment access</li>
+                        <li><i class="fas fa-check-circle"></i> Dedicated engineer</li>
+                        <li><i class="fas fa-check-circle"></i> Mastering for 5 tracks</li>
+                        <li><i class="fas fa-check-circle"></i> 4 vocal tuning sessions</li>
                     </ul>
-                </div>
-                <div class="plan-actions">
                     <button class="btn btn-primary plan-select" data-plan="monthly" data-amount="500000">
                         Select Plan
                     </button>
                 </div>
             </div>
             
-            <div class="plan-card">
-                <div class="plan-header">
+            <div class="membership-plan-card">
+                <div class="plan-visual">
+                    <div class="plan-icon">
+                        <i class="fas fa-gem"></i>
+                    </div>
+                </div>
+                <div class="plan-content">
+                    <span class="plan-badge">Elite</span>
                     <h4>Yearly Elite</h4>
                     <div class="plan-price">
-                        <span class="price">UGX 5,000,000</span>
-                        <span class="period">/ year</span>
+                        <span class="price-value">UGX 5,000,000</span>
+                        <span class="price-period">/ year</span>
                     </div>
                     <div class="plan-savings">Save UGX 1,000,000</div>
-                </div>
-                <div class="plan-features">
-                    <ul>
-                        <li><i class="fas fa-check"></i> 600 hours of studio time</li>
-                        <li><i class="fas fa-check"></i> Unlimited mixing & mastering</li>
-                        <li><i class="fas fa-check"></i> VIP equipment priority</li>
-                        <li><i class="fas fa-check"></i> Personal producer sessions</li>
-                        <li><i class="fas fa-check"></i> Unlimited vocal tuning</li>
-                        <li><i class="fas fa-check"></i> 2 free music videos</li>
+                    <ul class="plan-features">
+                        <li><i class="fas fa-check-circle"></i> 600 hours of studio time</li>
+                        <li><i class="fas fa-check-circle"></i> Unlimited mixing & mastering</li>
+                        <li><i class="fas fa-check-circle"></i> VIP equipment priority</li>
+                        <li><i class="fas fa-check-circle"></i> Personal producer sessions</li>
+                        <li><i class="fas fa-check-circle"></i> Unlimited vocal tuning</li>
+                        <li><i class="fas fa-check-circle"></i> 2 free music videos</li>
                     </ul>
-                </div>
-                <div class="plan-actions">
                     <button class="btn btn-outline plan-select" data-plan="yearly" data-amount="5000000">
                         Select Plan
                     </button>
@@ -420,27 +345,39 @@
             <h4>All Members Enjoy:</h4>
             <div class="benefits-grid">
                 <div class="benefit-item">
-                    <i class="fas fa-coffee"></i>
+                    <div class="benefit-icon">
+                        <i class="fas fa-coffee"></i>
+                    </div>
                     <span>Complimentary refreshments</span>
                 </div>
                 <div class="benefit-item">
-                    <i class="fas fa-wifi"></i>
+                    <div class="benefit-icon">
+                        <i class="fas fa-wifi"></i>
+                    </div>
                     <span>High-speed internet</span>
                 </div>
                 <div class="benefit-item">
-                    <i class="fas fa-parking"></i>
+                    <div class="benefit-icon">
+                        <i class="fas fa-parking"></i>
+                    </div>
                     <span>Free parking</span>
                 </div>
                 <div class="benefit-item">
-                    <i class="fas fa-users"></i>
+                    <div class="benefit-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
                     <span>Artist networking events</span>
                 </div>
                 <div class="benefit-item">
-                    <i class="fas fa-calendar-alt"></i>
+                    <div class="benefit-icon">
+                        <i class="fas fa-calendar-alt"></i>
+                    </div>
                     <span>Flexible scheduling</span>
                 </div>
                 <div class="benefit-item">
-                    <i class="fas fa-headset"></i>
+                    <div class="benefit-icon">
+                        <i class="fas fa-headset"></i>
+                    </div>
                     <span>24/7 support</span>
                 </div>
             </div>
@@ -806,25 +743,54 @@
     </section>
 
     <!-- CTA Section -->
-    <section class="about" style="background: var(--background); position: relative; overflow: hidden;">
+    <section class="home-cta-section">
         <!-- Background video (muted + playsinline so browsers allow autoplay) -->
-        <video class="about-bg-video" autoplay muted playsinline loop preload="auto" aria-hidden="true" poster="studio-poster.jpg">
+        <video class="home-cta-bg-video" autoplay muted playsinline loop preload="auto" aria-hidden="true" poster="studio-poster.jpg">
             <source src="studio-video.mp4" type="video/mp4">
             <!-- Optional fallback -->
             Your browser does not support the video tag.
         </video>
+        <div class="home-cta-bg-overlay"></div>
 
-        <div class="container about-inner" style="position: relative; z-index: 2; text-align: center; padding: 3rem 1rem;">
-            <h3 class="section-title">Ready to Create Something Amazing?</h3>
-            <p style="color: var(--text-secondary); font-size: 1.2rem; margin-bottom: 2rem;">
-                Join the artists who trust Chase x Records for their creative vision.
-            </p>
-            <div class="hero-cta">
-                <a href="contact.html" class="btn btn-primary">Start Your Project</a>
-                <a href="about.html" class="btn btn-secondary">Learn About Us</a>
+        <div class="home-cta-container">
+            <div class="home-cta-content">
+                <div class="home-cta-icon">
+                    <i class="fas fa-rocket"></i>
+                </div>
+                <h3 class="home-cta-title">Ready to Create Something Amazing?</h3>
+                <p class="home-cta-subtitle">
+                    Join the artists who trust Chase x Records for their creative vision. Let's bring your musical ideas to life.
+                </p>
+                <div class="home-cta-buttons">
+                    <a href="contact.html" class="btn btn-primary home-cta-btn-primary">
+                        <span>Start Your Project</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </a>
+                    <a href="about.html" class="btn btn-secondary home-cta-btn-secondary">
+                        <span>Learn About Us</span>
+                    </a>
+                </div>
+                <div class="home-cta-features">
+                    <div class="cta-feature">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Free Consultation</span>
+                    </div>
+                    <div class="cta-feature">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Professional Quality</span>
+                    </div>
+                    <div class="cta-feature">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Quick Turnaround</span>
+                    </div>
+                </div>
+            </div>
+            <div class="home-cta-decoration">
+                <div class="cta-decoration-circle cta-decoration-circle-1"></div>
+                <div class="cta-decoration-circle cta-decoration-circle-2"></div>
+                <div class="cta-decoration-circle cta-decoration-circle-3"></div>
             </div>
         </div>
-
     </section>
 
     <div data-include="partials/footer.html"></div>

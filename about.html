@@ -16,37 +16,169 @@
     <div data-include="partials/header.html"></div>
 
     <!-- Page Header -->
-    <section class="hero" style="min-height: 40vh; margin-top: 80px;">
-        <div class="hero-content">
-            <h2 class="hero-title" style="font-size: 3rem;">About Us</h2>
-            <p class="hero-tagline">The story behind Chase x Records</p>
+    <section class="about-hero" data-about-hero>
+        <div class="about-hero-container">
+            <div class="about-hero-left">
+                <div class="about-hero-content">
+                    <span class="about-hero-badge">
+                        <i class="fas fa-heart"></i> Since 2018
+                    </span>
+                    <h1 class="about-hero-title">
+                        <span class="about-hero-title-line">Where</span>
+                        <span class="about-hero-title-line about-hero-title-accent">Creativity</span>
+                        <span class="about-hero-title-line">Meets Excellence</span>
+                    </h1>
+                    <p class="about-hero-subtitle">
+                        From a small home studio to a premier music production facility, we've been transforming creative visions into professional sound for artists worldwide.
+                    </p>
+                    <div class="about-hero-cta">
+                        <a href="#team" class="btn btn-primary about-hero-btn">
+                            <span>Meet Our Team</span>
+                            <i class="fas fa-users"></i>
+                        </a>
+                        <a href="#studio" class="btn btn-secondary about-hero-btn-outline">
+                            <span>Our Studio</span>
+                        </a>
+                    </div>
+                    <div class="about-hero-story">
+                        <div class="about-hero-story-icon">
+                            <i class="fas fa-quote-left"></i>
+                        </div>
+                        <p class="about-hero-story-text">
+                            "Great music starts with understanding the artist's vision. We believe in creating a collaborative environment where creativity can flourish without technical limitations."
+                        </p>
+                        <p class="about-hero-story-author">— Chase Williams, Founder</p>
+                    </div>
+                </div>
+            </div>
+            <div class="about-hero-right">
+                <div class="about-hero-image-wrapper">
+                    <div class="about-hero-image-shape"></div>
+                    <img src="images/manwithheadphones.png" alt="Man with headphones" class="about-hero-image">
+                    <div class="about-hero-float about-hero-float-1">
+                        <i class="fas fa-microphone"></i>
+                    </div>
+                    <div class="about-hero-float about-hero-float-2">
+                        <i class="fas fa-guitar"></i>
+                    </div>
+                    <div class="about-hero-float about-hero-float-3">
+                        <i class="fas fa-record-vinyl"></i>
+                    </div>
+                    <div class="about-hero-float about-hero-float-4">
+                        <i class="fas fa-heart"></i>
+                    </div>
+                    <div class="about-hero-glow"></div>
+                    <div class="about-hero-particle about-hero-particle-1"></div>
+                    <div class="about-hero-particle about-hero-particle-2"></div>
+                    <div class="about-hero-particle about-hero-particle-3"></div>
+                </div>
+            </div>
         </div>
-        <div class="hero-background"></div>
+        <div class="about-hero-bg">
+            <div class="about-hero-gradient"></div>
+            <div class="about-hero-noise"></div>
+        </div>
     </section>
 
     <!-- About Content -->
-    <section class="about">
-        <div class="container about-content">
-            <div class="about-image">
-                <img src="/studio.avif?height=500&width=400" alt="Studio Environment">
-            </div>
-            <div class="about-text">
+    <section class="about-story-section" id="story">
+        <div class="container">
+            <div class="section-header">
                 <h3 class="section-title">Our Story</h3>
-                <p>Chase x Records was founded in 2018 by producer and audio engineer Chase Williams. What started as a small home studio has grown into a premier music production facility serving artists worldwide.</p>
-                <p>Our philosophy is simple: great music starts with understanding the artist's vision. We believe in creating a collaborative environment where creativity can flourish without technical limitations.</p>
-                
-                <div class="stats-grid">
-                    <div class="stat">
-                        <h4>200+</h4>
-                        <p>Projects Completed</p>
+                <p class="section-subtitle">From a home studio to a world-class production facility</p>
+            </div>
+            <div class="about-story-content">
+                <div class="about-story-card">
+                    <div class="story-visual">
+                        <div class="story-year-badge">
+                            <i class="fas fa-calendar-alt"></i>
+                            <span>2018</span>
+                        </div>
+                        <img src="/studio.avif?height=500&width=400" alt="Studio Environment" class="story-image">
                     </div>
-                    <div class="stat">
-                        <h4>50+</h4>
-                        <p>Artists Worked With</p>
+                    <div class="story-content">
+                        <div class="story-icon">
+                            <i class="fas fa-lightbulb"></i>
+                        </div>
+                        <h4 class="story-title">The Beginning</h4>
+                        <p class="story-text">
+                            Chase x Records was founded in 2018 by producer and audio engineer Charo Samuel Emma What started as a small home studio has grown into a premier music production facility serving artists worldwide.
+                        </p>
+                        <div class="story-features">
+                            <div class="story-feature">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Humble Beginnings</span>
+                            </div>
+                            <div class="story-feature">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Pure Passion</span>
+                            </div>
+                            <div class="story-feature">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Artist-Focused</span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="stat">
-                        <h4>5M+</h4>
-                        <p>Streams Generated</p>
+                </div>
+                <div class="about-story-card about-story-card-reverse">
+                    <div class="story-visual">
+                        <div class="story-year-badge story-year-badge-accent">
+                            <i class="fas fa-rocket"></i>
+                            <span>Growth</span>
+                        </div>
+                        <img src="/studio.avif?height=500&width=400" alt="Studio Growth" class="story-image">
+                    </div>
+                    <div class="story-content">
+                        <div class="story-icon story-icon-accent">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <h4 class="story-title">Our Philosophy</h4>
+                        <p class="story-text">
+                            Great music starts with understanding the artist's vision. We believe in creating a collaborative environment where creativity can flourish without technical limitations.
+                        </p>
+                        <div class="story-features">
+                            <div class="story-feature">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Collaborative Approach</span>
+                            </div>
+                            <div class="story-feature">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Creative Freedom</span>
+                            </div>
+                            <div class="story-feature">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Technical Excellence</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="about-story-stats">
+                <div class="story-stat-card">
+                    <div class="story-stat-icon">
+                        <i class="fas fa-project-diagram"></i>
+                    </div>
+                    <div class="story-stat-content">
+                        <span class="story-stat-number">200+</span>
+                        <span class="story-stat-label">Projects Completed</span>
+                    </div>
+                </div>
+                <div class="story-stat-card">
+                    <div class="story-stat-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="story-stat-content">
+                        <span class="story-stat-number">50+</span>
+                        <span class="story-stat-label">Artists Worked With</span>
+                    </div>
+                </div>
+                <div class="story-stat-card">
+                    <div class="story-stat-icon">
+                        <i class="fas fa-stream"></i>
+                    </div>
+                    <div class="story-stat-content">
+                        <span class="story-stat-number">5M+</span>
+                        <span class="story-stat-label">Streams Generated</span>
                     </div>
                 </div>
             </div>
@@ -54,91 +186,231 @@
     </section>
 
     <!-- Team Section -->
-    <section class="music">
+    <section class="about-team-section" id="team">
         <div class="container">
-            <h3 class="section-title">Our Team</h3>
-            <div class="artists-grid">
-                <div class="artist-card">
-                    <div class="artist-image">
-                        <img src="/chase.jpg?height=250&width=250" alt="Chase Williams">
+            <div class="section-header">
+                <h3 class="section-title">Our Team</h3>
+                <p class="section-subtitle">Meet the creative minds behind the magic</p>
+            </div>
+            <div class="about-team-grid">
+                <div class="team-member-card">
+                    <div class="team-member-visual">
+                        <div class="team-member-badge">
+                            <i class="fas fa-crown"></i>
+                            <span>Founder</span>
+                        </div>
+                        <img src="/chase.jpg?height=250&width=250" alt="Chase Williams" class="team-member-image">
                     </div>
-                    <h4>Charo samuel emma</h4>
-                    <p class="artist-genre">Founder & Lead Producer</p>
-                    <p class="artist-bio">With over 12 years in the industry, Chase brings expertise in multiple genres and a passion for artist development.</p>
+                    <div class="team-member-content">
+                        <h4 class="team-member-name">Charo Samuel Emma</h4>
+                        <p class="team-member-role">Founder & Lead Producer</p>
+                        <p class="team-member-bio">With over 12 years in the industry, brings expertise in multiple genres and a passion for artist development.</p>
+                        <div class="team-member-skills">
+                            <span class="team-skill">Production</span>
+                            <span class="team-skill">Mixing</span>
+                            <span class="team-skill">Artist Dev</span>
+                        </div>
+                        <div class="team-member-social">
+                            <a href="#" class="social-link"><i class="fab fa-instagram"></i></a>
+                            <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
+                            <a href="#" class="social-link"><i class="fab fa-linkedin"></i></a>
+                        </div>
+                    </div>
                 </div>
-                <!--<div class="artist-card">
-                    <div class="artist-image">
-                        <img src="/me.jpeg?height=250&width=250" alt="Sarah Chen">
+                <!--<div class="team-member-card">
+                    <div class="team-member-visual">
+                        <div class="team-member-badge team-member-badge-accent">
+                            <i class="fas fa-sliders-h"></i>
+                            <span>Engineer</span>
+                        </div>
+                        <img src="/me.jpeg?height=250&width=250" alt="Barasa Godwill" class="team-member-image">
                     </div>
-                    <h4>Barasa Godwill</h4>
-                    <p class="artist-genre">Mixing Engineer</p>
-                    <p class="artist-bio">Specializing in vocal production and modern mixing techniques, Sarah ensures every track sounds its best.</p>
+                    <div class="team-member-content">
+                        <h4 class="team-member-name">Barasa Godwill</h4>
+                        <p class="team-member-role">Mixing Engineer</p>
+                        <p class="team-member-bio">Specializing in vocal production and modern mixing techniques, ensures every track sounds its best.</p>
+                        <div class="team-member-skills">
+                            <span class="team-skill">Mixing</span>
+                            <span class="team-skill">Vocals</span>
+                            <span class="team-skill">Mastering</span>
+                        </div>
+                        <div class="team-member-social">
+                            <a href="#" class="social-link"><i class="fab fa-instagram"></i></a>
+                            <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
+                            <a href="#" class="social-link"><i class="fab fa-linkedin"></i></a>
+                        </div>
+                    </div>
                 </div>
-                <div class="artist-card">
-                    <div class="artist-image">
-                        <img src="/man.avif?height=250&width=250" alt="Mike Rodriguez">
+                <div class="team-member-card">
+                    <div class="team-member-visual">
+                        <div class="team-member-badge team-member-badge-secondary">
+                            <i class="fas fa-music"></i>
+                            <span>Engineer</span>
+                        </div>
+                        <img src="/man.avif?height=250&width=250" alt="Mike Rodriguez" class="team-member-image">
                     </div>
-                    <h4>Mike Rodriguez</h4>
-                    <p class="artist-genre">Mastering Engineer</p>
-                    <p class="artist-bio">With an ear for detail, Mike perfects the final sound for distribution across all streaming platforms.</p>
+                    <div class="team-member-content">
+                        <h4 class="team-member-name">Mike Rodriguez</h4>
+                        <p class="team-member-role">Mastering Engineer</p>
+                        <p class="team-member-bio">With an ear for detail, perfects the final sound for distribution across all streaming platforms.</p>
+                        <div class="team-member-skills">
+                            <span class="team-skill">Mastering</span>
+                            <span class="team-skill">Quality</span>
+                            <span class="team-skill">Distribution</span>
+                        </div>
+                        <div class="team-member-social">
+                            <a href="#" class="social-link"><i class="fab fa-instagram"></i></a>
+                            <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
+                            <a href="#" class="social-link"><i class="fab fa-linkedin"></i></a>
+                        </div>
+                    </div>
                 </div>
-                <div class="artist-card">
-                    <div class="artist-image">
-                        <img src="/man2 (2).jpg?height=250&width=250" alt="Jasmine Lee">
+                <div class="team-member-card">
+                    <div class="team-member-visual">
+                        <div class="team-member-badge team-member-badge-accent">
+                            <i class="fas fa-calendar-check"></i>
+                            <span>Manager</span>
+                        </div>
+                        <img src="/man2 (2).jpg?height=250&width=250" alt="Jasmine Lee" class="team-member-image">
                     </div>
-                    <h4>Jasmine Lee</h4>
-                    <p class="artist-genre">Studio Manager</p>
-                    <p class="artist-bio">Jasmine coordinates sessions and ensures every artist has a seamless experience from start to finish.</p>
+                    <div class="team-member-content">
+                        <h4 class="team-member-name">Jasmine Lee</h4>
+                        <p class="team-member-role">Studio Manager</p>
+                        <p class="team-member-bio">Coordinates sessions and ensures every artist has a seamless experience from start to finish.</p>
+                        <div class="team-member-skills">
+                            <span class="team-skill">Management</span>
+                            <span class="team-skill">Coordination</span>
+                            <span class="team-skill">Support</span>
+                        </div>
+                        <div class="team-member-social">
+                            <a href="#" class="social-link"><i class="fab fa-instagram"></i></a>
+                            <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
+                            <a href="#" class="social-link"><i class="fab fa-linkedin"></i></a>
+                        </div>
+                    </div>
                 </div>-->
             </div>
         </div>
     </section>
 
     <!-- Studio Features -->
-    <section class="services">
+    <section class="about-studio-section" id="studio">
         <div class="container">
-            <h3 class="section-title">Our Studio</h3>
-            <div class="services-grid">
-                <div class="service-card">
-                    <div class="service-icon"><i class="fas fa-sliders-h"></i></div>
-                    <h4>State-of-the-Art Equipment</h4>
-                    <p>Professional-grade analog and digital gear for the highest quality recordings.</p>
+            <div class="section-header">
+                <h3 class="section-title">Our Studio</h3>
+                <p class="section-subtitle">Where technology meets creativity</p>
+            </div>
+            <div class="about-studio-grid">
+                <div class="studio-feature-card">
+                    <div class="studio-feature-icon">
+                        <i class="fas fa-sliders-h"></i>
+                    </div>
+                    <h4 class="studio-feature-title">State-of-the-Art Equipment</h4>
+                    <p class="studio-feature-description">Professional-grade analog and digital gear for the highest quality recordings.</p>
+                    <div class="studio-feature-tags">
+                        <span class="feature-tag">Analog</span>
+                        <span class="feature-tag">Digital</span>
+                        <span class="feature-tag">Premium</span>
+                    </div>
                 </div>
-                <div class="service-card">
-                    <div class="service-icon"><i class="fas fa-volume-up"></i></div>
-                    <h4>Acoustically Treated Spaces</h4>
-                    <p>Multiple recording rooms designed for optimal sound isolation and acoustics.</p>
+                <div class="studio-feature-card">
+                    <div class="studio-feature-icon">
+                        <i class="fas fa-volume-up"></i>
+                    </div>
+                    <h4 class="studio-feature-title">Acoustically Treated Spaces</h4>
+                    <p class="studio-feature-description">Multiple recording rooms designed for optimal sound isolation and acoustics.</p>
+                    <div class="studio-feature-tags">
+                        <span class="feature-tag">Isolation</span>
+                        <span class="feature-tag">Acoustics</span>
+                        <span class="feature-tag">Soundproof</span>
+                    </div>
                 </div>
-                <div class="service-card">
-                    <div class="service-icon"><i class="fas fa-laptop-code"></i></div>
-                    <h4>Latest Software</h4>
-                    <p>All industry-standard DAWs and plugins for modern music production.</p>
+                <div class="studio-feature-card">
+                    <div class="studio-feature-icon">
+                        <i class="fas fa-laptop-code"></i>
+                    </div>
+                    <h4 class="studio-feature-title">Latest Software</h4>
+                    <p class="studio-feature-description">All industry-standard DAWs and plugins for modern music production.</p>
+                    <div class="studio-feature-tags">
+                        <span class="feature-tag">DAWs</span>
+                        <span class="feature-tag">Plugins</span>
+                        <span class="feature-tag">Modern</span>
+                    </div>
                 </div>
-                <div class="service-card">
-                    <div class="service-icon"><i class="fas fa-guitar"></i></div>
-                    <h4>Instrument Collection</h4>
-                    <p>Access to a wide range of instruments and vintage gear.</p>
+                <div class="studio-feature-card">
+                    <div class="studio-feature-icon">
+                        <i class="fas fa-guitar"></i>
+                    </div>
+                    <h4 class="studio-feature-title">Instrument Collection</h4>
+                    <p class="studio-feature-description">Access to a wide range of instruments and vintage gear.</p>
+                    <div class="studio-feature-tags">
+                        <span class="feature-tag">Vintage</span>
+                        <span class="feature-tag">Diverse</span>
+                        <span class="feature-tag">Quality</span>
+                    </div>
                 </div>
             </div>
         </div>
     </section>
 
     <!-- Testimonials -->
-    <section class="testimonials">
+    <section class="about-testimonials-section">
         <div class="container">
-            <h3 class="section-title">Client Testimonials</h3>
-            <div class="testimonials-carousel">
-                <div class="testimonial-slide">
-                    <p class="testimonial-text">"Chase x Records transformed my sound. The production quality is unmatched, and the creative energy is infectious."</p>
-                    <p class="testimonial-author">— Maria Chen, Singer-Songwriter</p>
+            <div class="section-header">
+                <h3 class="section-title">Client Testimonials</h3>
+                <p class="section-subtitle">What artists say about working with us</p>
+            </div>
+            <div class="about-testimonials-carousel">
+                <div class="about-testimonial-slide">
+                    <div class="testimonial-card">
+                        <div class="testimonial-icon">
+                            <i class="fas fa-quote-left"></i>
+                        </div>
+                        <p class="testimonial-text">"Chase x Records transformed my sound. The production quality is unmatched, and the creative energy is infectious."</p>
+                        <div class="testimonial-author-info">
+                            <div class="testimonial-avatar">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="testimonial-author-details">
+                                <p class="testimonial-author">Maria Chen</p>
+                                <p class="testimonial-role">Singer-Songwriter</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="testimonial-slide">
-                    <p class="testimonial-text">"Working with Chase was a game-changer for our album. Professional, creative, and truly dedicated to the craft."</p>
-                    <p class="testimonial-author">— The Vibe Collective, Producer</p>
+                <div class="about-testimonial-slide">
+                    <div class="testimonial-card">
+                        <div class="testimonial-icon">
+                            <i class="fas fa-quote-left"></i>
+                        </div>
+                        <p class="testimonial-text">"Working with Chase was a game-changer for our album. Professional, creative, and truly dedicated to the craft."</p>
+                        <div class="testimonial-author-info">
+                            <div class="testimonial-avatar">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div class="testimonial-author-details">
+                                <p class="testimonial-author">The Vibe Collective</p>
+                                <p class="testimonial-role">Producer</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="testimonial-slide">
-                    <p class="testimonial-text">"The mix they delivered was pristine. Chase understands modern production standards perfectly."</p>
-                    <p class="testimonial-author">— Jordan Miles, Hip-Hop Artist</p>
+                <div class="about-testimonial-slide">
+                    <div class="testimonial-card">
+                        <div class="testimonial-icon">
+                            <i class="fas fa-quote-left"></i>
+                        </div>
+                        <p class="testimonial-text">"The mix they delivered was pristine. Chase understands modern production standards perfectly."</p>
+                        <div class="testimonial-author-info">
+                            <div class="testimonial-avatar">
+                                <i class="fas fa-microphone"></i>
+                            </div>
+                            <div class="testimonial-author-details">
+                                <p class="testimonial-author">Jordan Miles</p>
+                                <p class="testimonial-role">Hip-Hop Artist</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="carousel-dots" id="carouselDots"></div>

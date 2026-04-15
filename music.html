@@ -16,29 +16,67 @@
     <div data-include="partials/header.html"></div>
 
     <!-- Page Header -->
-    <section class="hero" style="min-height: 50vh; margin-top: 80px;">
-        <video class="about-bg-video" autoplay muted playsinline loop preload="auto" aria-hidden="true" poster="studio-poster.jpg">
-            <source src="studio-video.mp4" type="video/mp4">
-            <!-- Optional fallback -->
-            Your browser does not support the video tag.
-        </video>
-        <div class="hero-content">
-            <h2 class="hero-title" style="font-size: 3.5rem;">Our Music</h2>
-            <p class="hero-tagline">Discover tracks produced at Chase x Records</p>
-            <div class="spotify-tab">
-                <iframe data-testid="embed-iframe" style="border-radius:12px" src="https://open.spotify.com/embed/artist/1gxLasEE8iDV3Coz8NosqX?utm_source=generator&theme=0" width="50%" height="152" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+    <section class="music-hero" data-music-hero>
+        <div class="music-hero-video-bg">
+            <video class="music-hero-video" autoplay muted playsinline loop preload="auto" aria-hidden="true" poster="studio-poster.jpg">
+                <source src="studio-video.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+            <div class="music-hero-video-overlay"></div>
+        </div>
+        <div class="music-hero-container">
+            <div class="music-hero-left">
+                <div class="music-hero-content">
+                    <span class="music-hero-badge">
+                        <i class="fas fa-music"></i> Our Music
+                    </span>
+                    <h1 class="music-hero-title">
+                        <span class="music-hero-title-line">Discover</span>
+                        <span class="music-hero-title-line music-hero-title-accent">Our Sound</span>
+                        <span class="music-hero-title-line">Collection</span>
+                    </h1>
+                    <p class="music-hero-subtitle">
+                        Explore tracks produced at Chase x Records. From Afro-Pop to Electronic, discover our diverse musical catalog featuring talented artists and innovative productions.
+                    </p>
+                    <div class="music-hero-cta">
+                        <a href="#musicSection" class="btn btn-primary music-hero-btn-primary">
+                            <span>Explore Music</span>
+                            <i class="fas fa-play-circle"></i>
+                        </a>
+                        <a href="https://open.spotify.com/embed/artist/1gxLasEE8iDV3Coz8NosqX" target="_blank" class="btn btn-secondary music-hero-btn-secondary">
+                            <span>Listen on Spotify</span>
+                            <i class="fab fa-spotify"></i>
+                        </a>
+                    </div>
+                </div>
             </div>
-            <div class="hero-actions">
-                <button class="btn btn-primary" id="exploreMusic">
-                    <i class="fas fa-play-circle"></i> Explore Music
-                </button>
-                
-                <a href="https://open.spotify.com/embed/artist/1gxLasEE8iDV3Coz8NosqX" class="btn btn-primary">
-                   <i class="fas fa-headphones"></i> Listen on Spotify
-                </a>
+            <div class="music-hero-right">
+                <div class="music-hero-image-wrapper">
+                    <div class="music-hero-image-shape"></div>
+                    <img src="images/headphonesonmixer.jpg" alt="Headphones on mixer" class="music-hero-image">
+                    <div class="music-hero-float music-hero-float-1">
+                        <i class="fas fa-music"></i>
+                    </div>
+                    <div class="music-hero-float music-hero-float-2">
+                        <i class="fas fa-headphones"></i>
+                    </div>
+                    <div class="music-hero-float music-hero-float-3">
+                        <i class="fas fa-compact-disc"></i>
+                    </div>
+                    <div class="music-hero-float music-hero-float-4">
+                        <i class="fas fa-microphone"></i>
+                    </div>
+                    <div class="music-hero-glow"></div>
+                    <div class="music-hero-wave music-hero-wave-1"></div>
+                    <div class="music-hero-wave music-hero-wave-2"></div>
+                    <div class="music-hero-wave music-hero-wave-3"></div>
+                </div>
             </div>
         </div>
-        <div class="hero-background" style="background: linear-gradient(135deg, rgba(0, 212, 255, 0.2), rgba(168, 85, 247, 0.2));"></div>
+        <div class="music-hero-bg">
+            <div class="music-hero-gradient"></div>
+            <div class="music-hero-noise"></div>
+        </div>
     </section>
 
     <!-- Floating Music Player -->
