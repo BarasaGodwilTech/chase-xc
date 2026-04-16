@@ -1,4 +1,4 @@
-import { fetchPublishedTracks, fetchArtistById } from './data/content-repo.js'
+import { fetchPublishedTracks, fetchArtistById, fetchArtists } from './data/content-repo.js'
 
 function formatNumber(num) {
   if (typeof num !== 'number') return '0'
@@ -143,6 +143,159 @@ async function initMusicPage() {
 
   grid.innerHTML = cards.join('')
   if (resultsCount) resultsCount.textContent = `${tracks.length} track${tracks.length !== 1 ? 's' : ''}`
+}
+
+async function renderLatestReleases(tracks) {
+  const container = document.getElementById('latestReleases')
+  if (!container) return
+
+  // Get the 3 most recent published tracks
+  const latestTracks = tracks
+    .filter(track => track.status === 'published')
+    .sort((a, b) => new Date(b.releaseDate || 0) - new Date(a.releaseDate || 0))
+    .slice(0, 3)
+
+  if (latestTracks.length === 0) {
+    container.innerHTML = '<p class="text-center">No latest releases yet</p>'
+    return
+  }
+
+  container.innerHTML = latestTracks.map(track => {
+    const releaseDate = track.releaseDate ? new Date(track.releaseDate) : new Date()
+    const month = releaseDate.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()
+    const day = releaseDate.getDate()
+
+    return `
+      <div class="release-item">
+        <div class="release-date-circle">
+          <span>${month}</span>
+          <strong>${day}</strong>
+        </div>
+        <div class="release-content">
+          <div class="release-artwork">
+            <img src="${track.artwork || ''}" alt="${track.title || ''}">
+          </div>
+          <div class="release-info">
+            <h4>${track.title || ''} - Single</h4>
+            <p>${track.artistName || 'Unknown Artist'} • ${track.genre || ''} • ${track.duration || ''}</p>
+            <div class="release-stats">
+              <span>${formatNumber(track.streams || 0)} plays</span>
+              <span>${formatNumber(track.likes || 0)} likes</span>
+            </div>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="window.audioPlayer?.loadTrackByData('${track.id}')">Listen</button>
+        </div>
+      </div>
+    `
+  }).join('')
+}
+
+async function renderGenreCards(tracks) {
+  const container = document.getElementById('genreGrid')
+  if (!container) return
+
+  // Extract unique genres and count tracks
+  const genreStats = new Map()
+  tracks.forEach(track => {
+    if (track.genre) {
+      const stats = genreStats.get(track.genre) || { tracks: 0, streams: 0 }
+      stats.tracks += 1
+      stats.streams += track.streams || 0
+      genreStats.set(track.genre, stats)
+    }
+  })
+
+  if (genreStats.size === 0) {
+    container.innerHTML = '<p class="text-center">No genres available yet</p>'
+    return
+  }
+
+  // Genre icons mapping
+  const genreIcons = {
+    'Afro-Pop': 'fa-headphones-alt',
+    'Dancehall': 'fa-microphone-alt',
+    'R&B': 'fa-solid fa-piano',
+    'Electronic': 'fa-music',
+    'Afrobeat': 'fa-drum',
+    'Afro-House': 'fa-compact-disc'
+  }
+
+  container.innerHTML = Array.from(genreStats.entries()).map(([genre, stats]) => {
+    const icon = genreIcons[genre] || 'fa-music'
+    return `
+      <div class="service-card genre-card">
+        <div class="service-icon"><i class="fas ${icon}"></i></div>
+        <h4>${genre}</h4>
+        <p>Music in the ${genre} genre</p>
+        <span class="track-count">${stats.tracks} tracks</span>
+        <div class="genre-stats">
+          <span>${formatNumber(stats.streams)} Streams</span>
+        </div>
+        <button class="btn btn-sm btn-outline">Explore</button>
+      </div>
+    `
+  }).join('')
+}
+
+async function initMusicPage() {
+  const grid = document.getElementById('musicGrid')
+  const resultsCount = document.getElementById('resultsCount')
+
+  let tracks
+  try {
+    tracks = await fetchPublishedTracks()
+  } catch (e) {
+    console.error(e)
+    if (grid) grid.innerHTML = ''
+    if (resultsCount) resultsCount.textContent = '0 tracks'
+    return
+  }
+
+  if (!Array.isArray(tracks) || tracks.length === 0) {
+    if (grid) grid.innerHTML = ''
+    if (resultsCount) resultsCount.textContent = '0 tracks'
+    window.__tracks = []
+    
+    // Still render empty states for other sections
+    await renderLatestReleases([])
+    await renderGenreCards([])
+    return
+  }
+
+  const artistCache = new Map()
+  async function resolveArtistName(track) {
+    const id = track.artist
+    if (!id) return track.artistName || 'Unknown Artist'
+    if (artistCache.has(id)) return artistCache.get(id)
+    const artist = await fetchArtistById(id)
+    const name = artist?.name || track.artistName || 'Unknown Artist'
+    artistCache.set(id, name)
+    return name
+  }
+
+  const cards = []
+  const normalizedTracks = []
+  for (let i = 0; i < tracks.length; i++) {
+    const name = await resolveArtistName(tracks[i])
+    const normalized = {
+      ...tracks[i],
+      artistName: name,
+    }
+    normalizedTracks.push(normalized)
+    cards.push(renderTrackCard(normalized, i, name))
+  }
+
+  // Used by audio-player.js (which prefers window.__tracks when present)
+  window.__tracks = normalizedTracks
+
+  if (grid) grid.innerHTML = cards.join('')
+  if (resultsCount) resultsCount.textContent = `${tracks.length} track${tracks.length !== 1 ? 's' : ''}`
+
+  // Render Latest Releases section
+  await renderLatestReleases(normalizedTracks)
+
+  // Render Genre cards section
+  await renderGenreCards(normalizedTracks)
 }
 
 function boot() {

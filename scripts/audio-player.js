@@ -55,7 +55,7 @@ class AudioPlayer {
   }
 
   loadTracksFromData() {
-    // Prefer a preloaded track list (e.g. from Firestore page loader)
+    // Prefer Firebase data from window.__tracks (loaded by music-page.js)
     if (Array.isArray(window.__tracks) && window.__tracks.length > 0) {
       this.tracks = window.__tracks.map((track) => ({
         id: track.id,
@@ -70,6 +70,7 @@ class AudioPlayer {
       }));
 
       this.originalTrackOrder = [...this.tracks];
+      console.log('[AudioPlayer] Loaded', this.tracks.length, 'tracks from Firebase (window.__tracks)');
     } else if (this.dataManager) {
       const publishedTracks = this.dataManager.getPublishedTracks();
       this.tracks = publishedTracks.map(track => {
@@ -89,9 +90,11 @@ class AudioPlayer {
       });
       
       this.originalTrackOrder = [...this.tracks];
+      console.log('[AudioPlayer] Loaded', this.tracks.length, 'tracks from localStorage dataManager');
     } else {
       this.tracks = [];
       this.originalTrackOrder = [];
+      console.log('[AudioPlayer] No tracks found - no Firebase data or dataManager available');
     }
   }
 
