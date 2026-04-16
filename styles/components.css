@@ -5975,7 +5975,7 @@ border: none;
 .home-hero-bg-overlay {
     position: absolute;
     inset: 0;
-    background: linear-gradient(135deg, rgba(6, 6, 10, 0.85) 0%, rgba(6, 6, 10, 0.75) 100%);
+    background: linear-gradient(135deg, rgba(6, 6, 10, 0.65) 0%, rgba(6, 6, 10, 0.55) 100%);
     pointer-events: none;
     z-index: 2;
 }
@@ -6033,6 +6033,31 @@ border: none;
 
 .home-hero-title-line {
     display: block;
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.95) 0%,
+        rgba(255, 255, 255, 0.88) 25%,
+        rgba(200, 240, 255, 0.92) 50%,
+        rgba(255, 255, 255, 0.88) 75%,
+        rgba(255, 255, 255, 0.95) 100%
+    );
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    background-size: 150% 150%;
+    animation: liquidGlass 8s ease-in-out infinite;
+    filter:
+        drop-shadow(0 1px 3px rgba(0, 0, 0, 0.6))
+        drop-shadow(0 0 4px rgba(0, 212, 255, 0.15));
+}
+
+@keyframes liquidGlass {
+    0%, 100% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
 }
 
 .home-hero-title-accent {

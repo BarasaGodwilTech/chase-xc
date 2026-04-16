@@ -17,9 +17,12 @@
 
     <!-- Hero Section -->
     <section class="home-hero" data-home-hero id="hero" aria-labelledby="heroTitle">
-        <!-- Background: embedded YouTube video (positioned behind content) -->
+        <!-- Background: local video (positioned behind content) -->
         <div class="home-hero-video" aria-hidden="true">
-            <div id="heroBgPlayer"></div>
+            <video class="home-hero-bg-video" autoplay muted playsinline loop preload="auto" aria-hidden="true">
+                <source src="videos/Chase Xc -Blessed.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
         </div>
         <div class="home-hero-bg-overlay"></div>
 
@@ -30,7 +33,7 @@
                         <i class="fas fa-star"></i> Professional Studio
                     </span>
                     <h1 class="home-hero-title" id="heroTitle">
-                        <span class="home-hero-title-line">CHASE x</span>
+                        <span class="home-hero-title-line">CHASE X</span>
                         <span class="home-hero-title-line home-hero-title-accent">RECORDS</span>
                     </h1>
                     <p class="home-hero-subtitle">
@@ -114,59 +117,13 @@
     </section>
 
     <script>
-        // Load YouTube IFrame API and create a player. Hide the iframe until playback begins
-        (function() {
-            // Avoid loading API multiple times on repeated includes
-            if (!window.YT_API_LOADING) {
-                window.YT_API_LOADING = true;
-                var tag = document.createElement('script');
-                tag.src = "https://www.youtube.com/iframe_api";
-                tag.async = true;
-                document.head.appendChild(tag);
+        // Add ready class to hero video after a short delay
+        setTimeout(function() {
+            var hv = document.querySelector('.home-hero-video');
+            if (hv && !hv.classList.contains('ready')) {
+                hv.classList.add('ready');
             }
-
-            // Create a global callback that the API invokes
-            window.onYouTubeIframeAPIReady = function() {
-                try {
-                    new YT.Player('heroBgPlayer', {
-                        videoId: 'xAX0x_yO4xc',
-                        playerVars: {
-                            autoplay: 1,
-                            controls: 0,
-                            mute: 1,
-                            loop: 1,
-                            playlist: 'xAX0x_yO4xc',
-                            modestbranding: 1,
-                            playsinline: 1,
-                            rel: 0,
-                            iv_load_policy: 3
-                        },
-                        events: {
-                            onReady: function(e) {
-                                try { e.target.playVideo(); } catch (err) {}
-                            },
-                            onStateChange: function(e) {
-                                if (e.data === YT.PlayerState.PLAYING) {
-                                    var hv = document.querySelector('.home-hero-video');
-                                    if (hv && !hv.classList.contains('ready')) {
-                                        hv.classList.add('ready');
-                                    }
-                                }
-                            }
-                        }
-                    });
-                } catch (err) {
-                    console.error('YouTube API player init failed', err);
-                }
-            };
-
-            setTimeout(function() {
-                var hv = document.querySelector('.home-hero-video');
-                if (hv && !hv.classList.contains('ready')) {
-                    hv.classList.add('ready');
-                }
-            }, 8000);
-        })();
+        }, 1000);
     </script>
 
     <!-- Services Preview -->
