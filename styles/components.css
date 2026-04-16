@@ -6521,9 +6521,9 @@ border: none;
 @media (max-width: 768px) {
     .home-hero {
         min-height: auto;
-        padding: 3rem 0;
-        aspect-ratio: 16/9;
-        max-height: 80vh;
+        padding: 2rem 0;
+        aspect-ratio: 2/1;
+        max-height: 50vh;
     }
 
     .home-hero-video video {
@@ -6600,9 +6600,9 @@ border: none;
 
 @media (max-width: 480px) {
     .home-hero {
-        padding: 2rem 0;
-        aspect-ratio: 16/10;
-        max-height: 75vh;
+        padding: 1.5rem 0;
+        aspect-ratio: 2.5/1;
+        max-height: 50vh;
     }
 
     .home-hero-container {
