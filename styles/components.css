@@ -6513,11 +6513,6 @@ border: none;
     .home-hero-float {
         display: none;
     }
-
-    .home-hero-social {
-        left: 50%;
-        transform: translateX(-50%);
-    }
 }
 
 /* Landscape orientation for mobile devices */

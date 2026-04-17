@@ -1222,6 +1222,9 @@ function initVideoAutoplay() {
 }
 
 function initSingleVideo(video) {
+    // Change to auto preload for instant playback
+    video.preload = 'auto'
+    
     const playPromise = video.play()
     
     if (playPromise !== undefined) {
@@ -1232,13 +1235,33 @@ function initSingleVideo(video) {
             
             setTimeout(() => {
                 video.play().catch(e => console.log('Video still not playing:', e))
-            }, 1000)
+            }, 100)
         })
     }
     
-    // Ensure video loops
+    // Ensure video loops seamlessly
     video.addEventListener('ended', () => {
+        video.currentTime = 0
         video.play().catch(e => console.log('Video replay failed:', e))
+    })
+    
+    // Ensure sufficient buffering
+    video.addEventListener('loadedmetadata', () => {
+        // Force buffer more data
+        if (video.buffered.length > 0) {
+            video.currentTime = 0
+        }
+    })
+    
+    // Monitor buffering and ensure smooth playback
+    video.addEventListener('waiting', () => {
+        console.log('Video buffering, attempting to resume')
+        // Try to resume playback if stuck buffering
+        setTimeout(() => {
+            if (video.paused && video.readyState >= 2) {
+                video.play().catch(e => console.log('Resume failed:', e))
+            }
+        }, 500)
     })
 }
 
@@ -1246,8 +1269,35 @@ function initVideoSequence(video) {
     const sequence = JSON.parse(video.getAttribute('data-video-sequence'))
     let currentIndex = parseInt(video.getAttribute('data-current-segment')) || 0
     let hasEndedListenerTriggered = false
+    const shouldPrebuffer = video.getAttribute('data-prebuffer') === 'true'
     
-    console.log('Video sequence initialized:', sequence)
+    // Create hidden video element for pre-buffering
+    let bufferVideo = null
+    if (shouldPrebuffer) {
+        bufferVideo = document.createElement('video')
+        bufferVideo.muted = true
+        bufferVideo.preload = 'auto'
+        bufferVideo.style.display = 'none'
+        document.body.appendChild(bufferVideo)
+    }
+    
+    console.log('Video sequence initialized:', sequence, 'Prebuffer:', shouldPrebuffer)
+    
+    function getNextIndex(index) {
+        const next = index + 1
+        return next >= sequence.length ? 0 : next
+    }
+    
+    function preloadSegment(index) {
+        if (!shouldPrebuffer || !bufferVideo) return
+        
+        const nextIndex = getNextIndex(index)
+        if (bufferVideo.src !== sequence[nextIndex]) {
+            bufferVideo.src = sequence[nextIndex]
+            bufferVideo.load()
+            console.log('Pre-buffering segment:', nextIndex, sequence[nextIndex])
+        }
+    }
     
     function playSegment(index) {
         hasEndedListenerTriggered = false
@@ -1261,8 +1311,20 @@ function initVideoSequence(video) {
         video.setAttribute('data-current-segment', currentIndex)
         console.log('Playing segment:', currentIndex, sequence[currentIndex])
         
-        video.src = sequence[currentIndex]
-        video.load()
+        // If pre-buffered segment is ready, use it
+        if (shouldPrebuffer && bufferVideo && bufferVideo.src === sequence[currentIndex] && bufferVideo.readyState >= 3) {
+            console.log('Using pre-buffered segment')
+            video.src = bufferVideo.src
+            video.load()
+        } else {
+            video.src = sequence[currentIndex]
+            video.load()
+        }
+        
+        // Start buffering the next segment immediately
+        if (shouldPrebuffer) {
+            setTimeout(() => preloadSegment(currentIndex), 500)
+        }
         
         video.play().catch(error => {
             console.log('Video segment autoplay prevented:', error)
@@ -1279,8 +1341,8 @@ function initVideoSequence(video) {
     video.addEventListener('ended', () => {
         if (!hasEndedListenerTriggered) {
             hasEndedListenerTriggered = true
-            console.log('Video segment ended (ended event), playing next:', currentIndex + 1)
-            playSegment(currentIndex + 1)
+            console.log('Video segment ended (ended event), playing next:', getNextIndex(currentIndex))
+            playSegment(getNextIndex(currentIndex))
         }
     })
     
@@ -1288,11 +1350,11 @@ function initVideoSequence(video) {
     video.addEventListener('timeupdate', () => {
         if (video.duration > 0 && !hasEndedListenerTriggered) {
             const timeRemaining = video.duration - video.currentTime
-            // Trigger when 0.3 seconds remaining
-            if (timeRemaining <= 0.3) {
+            // Trigger when 0.5 seconds remaining (increased for smoother transition)
+            if (timeRemaining <= 0.5) {
                 hasEndedListenerTriggered = true
-                console.log('Video near end (timeupdate), playing next:', currentIndex + 1)
-                playSegment(currentIndex + 1)
+                console.log('Video near end (timeupdate), playing next:', getNextIndex(currentIndex))
+                playSegment(getNextIndex(currentIndex))
             }
         }
     })
@@ -1300,6 +1362,10 @@ function initVideoSequence(video) {
     // Also use loadedmetadata to ensure video is ready
     video.addEventListener('loadedmetadata', () => {
         console.log('Video metadata loaded, duration:', video.duration)
+        // Ensure video is buffered enough
+        if (video.buffered.length > 0) {
+            video.currentTime = 0
+        }
     })
     
     // Handle errors
@@ -1307,6 +1373,13 @@ function initVideoSequence(video) {
         console.log('Video segment error:', e, video.error)
         hasEndedListenerTriggered = false
         // Try next segment on error
-        playSegment(currentIndex + 1)
+        playSegment(getNextIndex(currentIndex))
+    })
+    
+    // Cleanup buffer video on page unload
+    window.addEventListener('beforeunload', () => {
+        if (bufferVideo && bufferVideo.parentNode) {
+            bufferVideo.parentNode.removeChild(bufferVideo)
+        }
     })
 }

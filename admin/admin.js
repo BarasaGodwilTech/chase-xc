@@ -245,21 +245,49 @@ class AdminPanel {
         const resultsContainer = document.getElementById('spotifyResults');
         
         try {
-            // Use DuckDuckGo API to search for the song + spotify
-            const searchQuery = encodeURIComponent(`${query} site:open.spotify.com/track`);
-            const searchUrl = `https://api.duckduckgo.com/?q=${searchQuery}&format=json&pretty=1`;
+            // Try multiple search queries to find more related songs
+            const searchQueries = [
+                `${query} site:open.spotify.com/track`,
+                `"${query}" site:open.spotify.com/track`,
+                `${query.replace(/\s+/g, ' ')} spotify`
+            ];
             
-            const response = await fetch(searchUrl);
-            const data = await response.json();
+            let allResults = [];
             
-            // Extract Spotify URLs from results
-            const spotifyResults = this.extractSpotifyUrlsFromResults(data, query);
+            for (const searchQuery of searchQueries) {
+                const encodedQuery = encodeURIComponent(searchQuery);
+                const searchUrl = `https://api.duckduckgo.com/?q=${encodedQuery}&format=json&pretty=1`;
+                
+                try {
+                    const response = await fetch(searchUrl);
+                    const data = await response.json();
+                    
+                    // Extract Spotify URLs from results
+                    const results = this.extractSpotifyUrlsFromResults(data, query);
+                    allResults = allResults.concat(results);
+                } catch (e) {
+                    console.log('Search query failed:', searchQuery, e);
+                }
+            }
+            
+            // Remove duplicates and limit results
+            const uniqueResults = [];
+            const seenUrls = new Set();
+            for (const result of allResults) {
+                if (!seenUrls.has(result.url)) {
+                    seenUrls.add(result.url);
+                    uniqueResults.push(result);
+                }
+            }
+            
+            const spotifyResults = uniqueResults.slice(0, 10); // Show up to 10 results
             
             if (spotifyResults.length > 0) {
                 // Display found Spotify links
                 resultsContainer.innerHTML = `
                     <div class="spotify-search-info">
-                        <p><i class="fas fa-check-circle" style="color: #1DB954;"></i> Found ${spotifyResults.length} result(s) on Spotify:</p>
+                        <p><i class="fas fa-check-circle" style="color: #1DB954;"></i> Found ${spotifyResults.length} result(s) on Spotify for "${query}":</p>
+                        <p class="text-muted">Click on a result to import it</p>
                     </div>
                     ${spotifyResults.map(result => `
                         <div class="spotify-track" onclick="adminPanel.selectSpotifyResult('${result.url}')">

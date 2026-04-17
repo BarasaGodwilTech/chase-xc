@@ -19,7 +19,7 @@
     <section class="home-hero" data-home-hero id="hero" aria-labelledby="heroTitle">
         <!-- Background: local video (positioned behind content) -->
         <div class="home-hero-video" aria-hidden="true">
-            <video class="home-hero-bg-video" autoplay muted playsinline preload="auto" aria-hidden="true" poster="chase-vid.jpg" data-video-sequence='["videos/Chase-Xc-Blessed-part1.mp4", "videos/Chase-Xc-Blessed-part2.mp4", "videos/Chase-Xc-Blessed-part3.mp4"]' data-current-segment="0">
+            <video class="home-hero-bg-video" autoplay muted playsinline preload="metadata" aria-hidden="true" data-video-sequence='["videos/Chase-Xc-Blessed-part1.mp4", "videos/Chase-Xc-Blessed-part2.mp4", "videos/Chase-Xc-Blessed-part3.mp4"]' data-current-segment="0" data-prebuffer="true">
                 <source src="videos/Chase-Xc-Blessed-part1.mp4" type="video/mp4">
                 Your browser does not support the video tag.
             </video>
@@ -99,16 +99,13 @@
             </div>
         </div>
         <div class="home-hero-social">
-            <a href="https://instagram.com" target="_blank" class="home-hero-social-link" aria-label="Instagram">
+            <a href="https://www.instagram.com/chase_xc_/" target="_blank" class="home-hero-social-link" aria-label="Instagram">
                 <i class="fab fa-instagram"></i>
             </a>
-            <a href="https://twitter.com" target="_blank" class="home-hero-social-link" aria-label="Twitter">
-                <i class="fab fa-twitter"></i>
-            </a>
-            <a href="https://youtube.com" target="_blank" class="home-hero-social-link" aria-label="YouTube">
+            <a href="https://www.youtube.com/@chasex1113" target="_blank" class="home-hero-social-link" aria-label="YouTube">
                 <i class="fab fa-youtube"></i>
             </a>
-            <a href="https://tiktok.com" target="_blank" class="home-hero-social-link" aria-label="TikTok">
+            <a href="https://www.tiktok.com/@chasexc_" target="_blank" class="home-hero-social-link" aria-label="TikTok">
                 <i class="fab fa-tiktok"></i>
             </a>
         </div>
@@ -700,7 +697,7 @@
     <!-- CTA Section -->
     <section class="home-cta-section">
         <!-- Background video (muted + playsinline so browsers allow autoplay) -->
-        <video class="home-cta-bg-video" autoplay muted playsinline loop preload="auto" aria-hidden="true" poster="studio-poster.jpg" loading="lazy">
+        <video class="home-cta-bg-video" autoplay muted playsinline loop preload="metadata" aria-hidden="true">
             <source src="studio-video.mp4" type="video/mp4">
             <!-- Optional fallback -->
             Your browser does not support the video tag.
