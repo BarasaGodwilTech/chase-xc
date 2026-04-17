@@ -859,21 +859,20 @@ class AdminPanel {
     }
 
     addNewArtist() {
-        // Basic placeholder until Firestore-backed artist creation UI is implemented
         this.showNotification('Artist creation will be added next. For now, create artists in Firestore or we will add an inline form.', 'info');
         this.showSection('artists');
     }
 
     addNewTrack() {
-        // Switch to music management and show upload form
         this.showSection('music-management');
-        this.switchUploadMethod('upload');
     }
 
     // Utility methods
     showNotification(message, type = 'info') {
+        console.log(`[Notification] ${type}: ${message}`);
         const notification = document.createElement('div');
         notification.className = `notification notification-${type}`;
+        notification.style.zIndex = '99999';
         notification.innerHTML = `
             <div class="notification-content">
                 <i class="fas fa-${this.getNotificationIcon(type)}"></i>
@@ -947,7 +946,6 @@ class AdminPanel {
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, initializing AdminPanel...');
-    
     // Check if we're on an admin page
     if (document.querySelector('.admin-page')) {
         window.adminPanel = new AdminPanel();
