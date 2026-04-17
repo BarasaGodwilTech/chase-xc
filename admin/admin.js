@@ -56,6 +56,7 @@ class AdminPanel {
         });
 
         this.setupBasicMusicManagement();
+        this.setupSpotifyImport();
 
         console.log('Event listeners setup complete');
     }
