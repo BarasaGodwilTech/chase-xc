@@ -11,7 +11,6 @@ function initApp() {
     initMembership()
     initFooterCtaRotator()
     initServicesHero()
-    initAboutHero()
     initHomeHero()
     initContactHero()
     initMusicHero()
@@ -32,12 +31,32 @@ document.addEventListener('includes:loaded', () => {
 // Header Scroll Effect
 function initHeader() {
     const header = document.getElementById("header")
+    let lastScrollY = window.scrollY
+    let ticking = false
 
     window.addEventListener("scroll", () => {
-        if (window.scrollY > 100) {
-            header.classList.add("scrolled")
-        } else {
-            header.classList.remove("scrolled")
+        if (!ticking) {
+            window.requestAnimationFrame(() => {
+                const currentScrollY = window.scrollY
+
+                // Add/remove scrolled class for background effect
+                if (currentScrollY > 100) {
+                    header.classList.add("scrolled")
+                } else {
+                    header.classList.remove("scrolled")
+                }
+
+                // Hide header when scrolling down, show when scrolling up
+                if (currentScrollY > lastScrollY && currentScrollY > 100) {
+                    header.classList.add("hidden")
+                } else if (currentScrollY < lastScrollY) {
+                    header.classList.remove("hidden")
+                }
+
+                lastScrollY = currentScrollY
+                ticking = false
+            })
+            ticking = true
         }
     })
 }
@@ -1226,8 +1245,13 @@ function initSingleVideo(video) {
 function initVideoSequence(video) {
     const sequence = JSON.parse(video.getAttribute('data-video-sequence'))
     let currentIndex = parseInt(video.getAttribute('data-current-segment')) || 0
+    let hasEndedListenerTriggered = false
+    
+    console.log('Video sequence initialized:', sequence)
     
     function playSegment(index) {
+        hasEndedListenerTriggered = false
+        
         if (index >= sequence.length) {
             // Loop back to first segment
             index = 0
@@ -1235,22 +1259,17 @@ function initVideoSequence(video) {
         
         currentIndex = index
         video.setAttribute('data-current-segment', currentIndex)
+        console.log('Playing segment:', currentIndex, sequence[currentIndex])
+        
         video.src = sequence[currentIndex]
         video.load()
         
-        const playPromise = video.play()
-        
-        if (playPromise !== undefined) {
-            playPromise.catch(error => {
-                console.log('Video segment autoplay prevented:', error)
-                video.muted = true
-                video.setAttribute('playsinline', '')
-                
-                setTimeout(() => {
-                    video.play().catch(e => console.log('Video segment still not playing:', e))
-                }, 1000)
-            })
-        }
+        video.play().catch(error => {
+            console.log('Video segment autoplay prevented:', error)
+            video.muted = true
+            video.setAttribute('playsinline', '')
+            video.play().catch(e => console.log('Video segment still not playing:', e))
+        })
     }
     
     // Play first segment
@@ -1258,12 +1277,35 @@ function initVideoSequence(video) {
     
     // When segment ends, play next one
     video.addEventListener('ended', () => {
-        playSegment(currentIndex + 1)
+        if (!hasEndedListenerTriggered) {
+            hasEndedListenerTriggered = true
+            console.log('Video segment ended (ended event), playing next:', currentIndex + 1)
+            playSegment(currentIndex + 1)
+        }
+    })
+    
+    // Fallback: use timeupdate to detect when video is near end
+    video.addEventListener('timeupdate', () => {
+        if (video.duration > 0 && !hasEndedListenerTriggered) {
+            const timeRemaining = video.duration - video.currentTime
+            // Trigger when 0.3 seconds remaining
+            if (timeRemaining <= 0.3) {
+                hasEndedListenerTriggered = true
+                console.log('Video near end (timeupdate), playing next:', currentIndex + 1)
+                playSegment(currentIndex + 1)
+            }
+        }
+    })
+    
+    // Also use loadedmetadata to ensure video is ready
+    video.addEventListener('loadedmetadata', () => {
+        console.log('Video metadata loaded, duration:', video.duration)
     })
     
     // Handle errors
     video.addEventListener('error', (e) => {
-        console.log('Video segment error:', e)
+        console.log('Video segment error:', e, video.error)
+        hasEndedListenerTriggered = false
         // Try next segment on error
         playSegment(currentIndex + 1)
     })
