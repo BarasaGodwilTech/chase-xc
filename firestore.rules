@@ -1,0 +1,66 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to check if user is admin (you can customize this based on your auth system)
+    function isAdmin() {
+      return isAuthenticated(); // For now, any authenticated user can write
+      // In production, you might want: return request.auth.token.admin == true;
+    }
+    
+    // Helper function to validate track data
+    function isValidTrackData() {
+      return request.resource.data.title is string &&
+             request.resource.data.title.size() > 0 &&
+             request.resource.data.artist is string &&
+             request.resource.data.artist.size() > 0 &&
+             request.resource.data.genre is string &&
+             request.resource.data.genre.size() > 0 &&
+             request.resource.data.status in ['published', 'draft'];
+    }
+    
+    // Helper function to validate artist data
+    function isValidArtistData() {
+      return request.resource.data.name is string &&
+             request.resource.data.name.size() > 0 &&
+             request.resource.data.status in ['active', 'inactive'];
+    }
+    
+    // Artists collection
+    match /artists/{artistId} {
+      // Public read access for music page
+      allow read: if true;
+      
+      // Write access for authenticated users (admin panel)
+      allow create: if isAdmin() && isValidArtistData();
+      allow update: if isAdmin() && isValidArtistData();
+      allow delete: if isAdmin();
+    }
+    
+    // Tracks collection
+    match /tracks/{trackId} {
+      // Public read access for music page (only published tracks)
+      allow read: if resource.data.status == 'published' || isAdmin();
+      
+      // Write access for authenticated users (admin panel)
+      allow create: if isAdmin() && isValidTrackData();
+      allow update: if isAdmin() && isValidTrackData();
+      allow delete: if isAdmin();
+    }
+    
+    // Allow list queries for published tracks
+    match /tracks/{trackId} {
+      allow list: if true;
+    }
+    
+    // Allow list queries for artists
+    match /artists/{artistId} {
+      allow list: if true;
+    }
+  }
+}

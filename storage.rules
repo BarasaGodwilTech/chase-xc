@@ -1,0 +1,43 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to check if user is admin
+    function isAdmin() {
+      return isAuthenticated(); // For now, any authenticated user can write
+      // In production, you might want: return request.auth.token.admin == true;
+    }
+    
+    // Artist images folder
+    match /artists/{allPaths=**} {
+      // Public read access for displaying artist images
+      allow read: if true;
+      
+      // Write access for authenticated users (admin panel)
+      allow write: if isAdmin();
+    }
+    
+    // Audio files folder
+    match /audio/{artistId}/{allPaths=**} {
+      // Public read access for playing audio
+      allow read: if true;
+      
+      // Write access for authenticated users (admin panel)
+      allow write: if isAdmin();
+    }
+    
+    // Track artwork folder
+    match /artwork/{artistId}/{allPaths=**} {
+      // Public read access for displaying artwork
+      allow read: if true;
+      
+      // Write access for authenticated users (admin panel)
+      allow write: if isAdmin();
+    }
+  }
+}

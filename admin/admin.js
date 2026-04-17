@@ -1,12 +1,4 @@
 // admin.js - Simplified Working Version
-import {
-    collection,
-    addDoc,
-    serverTimestamp,
-} from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js'
-
-import { db } from '../scripts/firebase-init.js'
-
 class AdminPanel {
     constructor() {
         this.currentSection = 'dashboard';
@@ -514,13 +506,14 @@ class AdminPanel {
             // Get artist name from select option
             const artistName = artistSelect.options[artistSelect.selectedIndex]?.text || 'Unknown Artist';
 
-            // Create track data for Firebase
+            // Create track data
             const trackData = {
                 title: title,
                 artist: artistId,
                 artistName: artistName,
                 genre: genre,
-                duration: '0:00', // Will be updated when audio is uploaded
+                duration: '0:00',
+                year: new Date().getFullYear().toString(),
                 streams: 0,
                 likes: 0,
                 downloads: 0,
@@ -528,47 +521,46 @@ class AdminPanel {
                 description: description || `Imported from Spotify: ${this.selectedSpotifyTrack.url}`,
                 releaseDate: new Date().toISOString().split('T')[0],
                 status: 'published',
-                audioUrl: '', // Will need to upload audio file separately
+                audioUrl: '',
                 spotifyUrl: this.selectedSpotifyTrack.url,
                 platformLinks: {
                     spotify: this.selectedSpotifyTrack.url
-                },
-                createdAt: serverTimestamp(),
-                updatedAt: serverTimestamp()
+                }
             };
 
-            // Save to Firebase Firestore
-            const docRef = await addDoc(collection(db, 'tracks'), trackData);
-            
-            // Also save to local data manager for admin panel
-            const localTrackData = {
-                ...trackData,
-                id: docRef.id,
-                year: new Date().getFullYear().toString()
-            };
-            this.dataManager.saveTrack(localTrackData);
+            // Save to local data manager
+            const savedTrack = this.dataManager.saveTrack(trackData);
 
-            this.showNotification('Track added to site successfully! The song is now live.', 'success');
-            
-            // Clear form
-            this.selectedSpotifyTrack = null;
-            document.getElementById('spotifyUrl').value = '';
-            document.getElementById('spotifySearch').value = '';
-            const resultsContainer = document.getElementById('spotifyResults');
-            resultsContainer.innerHTML = '';
-            resultsContainer.classList.remove('show');
-            
-            // Clear the upload form
-            if (titleInput) titleInput.value = '';
-            if (descriptionInput) descriptionInput.value = '';
-            const artworkPreview = document.getElementById('artworkPreview');
-            if (artworkPreview) {
-                artworkPreview.classList.remove('has-image');
-                artworkPreview.style.backgroundImage = '';
+            if (savedTrack) {
+                this.showNotification('Spotify track imported successfully! Please use the regular upload form to add the audio file and publish to the site.', 'success');
+                
+                // Clear form
+                this.selectedSpotifyTrack = null;
+                document.getElementById('spotifyUrl').value = '';
+                document.getElementById('spotifySearch').value = '';
+                const resultsContainer = document.getElementById('spotifyResults');
+                resultsContainer.innerHTML = '';
+                resultsContainer.classList.remove('show');
+                
+                // Switch to upload tab to complete with audio file
+                this.switchUploadMethod('upload');
+                
+                // Pre-fill the form with saved data
+                if (titleInput) titleInput.value = savedTrack.title;
+                if (artistSelect) artistSelect.value = savedTrack.artist;
+                if (genreSelect) genreSelect.value = savedTrack.genre;
+                if (descriptionInput) descriptionInput.value = savedTrack.description;
+                
+                if (savedTrack.artwork) {
+                    const artworkPreview = document.getElementById('artworkPreview');
+                    if (artworkPreview) {
+                        artworkPreview.classList.add('has-image');
+                        artworkPreview.style.backgroundImage = `url('${savedTrack.artwork}')`;
+                    }
+                }
+            } else {
+                this.showNotification('Failed to save track data', 'error');
             }
-            
-            // Refresh tracks list
-            this.loadTracks();
         } catch (error) {
             console.error('Error importing Spotify track:', error);
             this.showNotification('Error importing track: ' + error.message, 'error');
