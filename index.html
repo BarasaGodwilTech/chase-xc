@@ -19,8 +19,8 @@
     <section class="home-hero" data-home-hero id="hero" aria-labelledby="heroTitle">
         <!-- Background: local video (positioned behind content) -->
         <div class="home-hero-video" aria-hidden="true">
-            <video class="home-hero-bg-video" autoplay muted playsinline loop preload="metadata" aria-hidden="true" poster="chase-vid.jpg">
-                <source src="videos/Chase-Xc-Blessed.mp4" type="video/mp4">
+            <video class="home-hero-bg-video" autoplay muted playsinline preload="auto" aria-hidden="true" poster="chase-vid.jpg" data-video-sequence='["videos/Chase-Xc-Blessed-part1.mp4", "videos/Chase-Xc-Blessed-part2.mp4", "videos/Chase-Xc-Blessed-part3.mp4"]' data-current-segment="0">
+                <source src="videos/Chase-Xc-Blessed-part1.mp4" type="video/mp4">
                 Your browser does not support the video tag.
             </video>
         </div>
@@ -30,7 +30,7 @@
             <div class="home-hero-left">
                 <div class="home-hero-content">
                     <span class="home-hero-badge">
-                        <i class="fas fa-star"></i> Professional Studio
+                        <i class="fas fa-star"></i> Music Studio
                     </span>
                     <h1 class="home-hero-title" id="heroTitle">
                         <span class="home-hero-title-line">CHASE X</span>
@@ -702,7 +702,7 @@
     <!-- CTA Section -->
     <section class="home-cta-section">
         <!-- Background video (muted + playsinline so browsers allow autoplay) -->
-        <video class="home-cta-bg-video" autoplay muted playsinline loop preload="metadata" aria-hidden="true" poster="studio-poster.jpg" loading="lazy">
+        <video class="home-cta-bg-video" autoplay muted playsinline loop preload="auto" aria-hidden="true" poster="studio-poster.jpg" loading="lazy">
             <source src="studio-video.mp4" type="video/mp4">
             <!-- Optional fallback -->
             Your browser does not support the video tag.

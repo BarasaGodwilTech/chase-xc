@@ -15,6 +15,7 @@ function initApp() {
     initHomeHero()
     initContactHero()
     initMusicHero()
+    initVideoAutoplay()
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -1180,5 +1181,90 @@ function initMusicHero() {
                 embedCard.style.transform = 'translate(0, 0)'
             }
         }
+    })
+}
+
+// Force video autoplay for GitHub Pages
+function initVideoAutoplay() {
+    const videos = document.querySelectorAll('video[autoplay]')
+    
+    videos.forEach(video => {
+        // Check if video has sequence data
+        const sequenceData = video.getAttribute('data-video-sequence')
+        
+        if (sequenceData) {
+            // Handle sequential video playback
+            initVideoSequence(video)
+        } else {
+            // Handle single video playback
+            initSingleVideo(video)
+        }
+    })
+}
+
+function initSingleVideo(video) {
+    const playPromise = video.play()
+    
+    if (playPromise !== undefined) {
+        playPromise.catch(error => {
+            console.log('Video autoplay prevented, attempting to enable:', error)
+            video.muted = true
+            video.setAttribute('playsinline', '')
+            
+            setTimeout(() => {
+                video.play().catch(e => console.log('Video still not playing:', e))
+            }, 1000)
+        })
+    }
+    
+    // Ensure video loops
+    video.addEventListener('ended', () => {
+        video.play().catch(e => console.log('Video replay failed:', e))
+    })
+}
+
+function initVideoSequence(video) {
+    const sequence = JSON.parse(video.getAttribute('data-video-sequence'))
+    let currentIndex = parseInt(video.getAttribute('data-current-segment')) || 0
+    
+    function playSegment(index) {
+        if (index >= sequence.length) {
+            // Loop back to first segment
+            index = 0
+        }
+        
+        currentIndex = index
+        video.setAttribute('data-current-segment', currentIndex)
+        video.src = sequence[currentIndex]
+        video.load()
+        
+        const playPromise = video.play()
+        
+        if (playPromise !== undefined) {
+            playPromise.catch(error => {
+                console.log('Video segment autoplay prevented:', error)
+                video.muted = true
+                video.setAttribute('playsinline', '')
+                
+                setTimeout(() => {
+                    video.play().catch(e => console.log('Video segment still not playing:', e))
+                }, 1000)
+            })
+        }
+    }
+    
+    // Play first segment
+    playSegment(currentIndex)
+    
+    // When segment ends, play next one
+    video.addEventListener('ended', () => {
+        playSegment(currentIndex + 1)
+    })
+    
+    // Handle errors
+    video.addEventListener('error', (e) => {
+        console.log('Video segment error:', e)
+        // Try next segment on error
+        playSegment(currentIndex + 1)
     })
 }

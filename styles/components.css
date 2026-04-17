@@ -4413,11 +4413,28 @@ border: none;
 @media (max-width: 768px) {
     .services-hero {
         min-height: auto;
-        padding: 2rem 0;
+        padding: 4rem 0;
     }
 
     .services-hero-container {
-        padding: 2rem 1rem;
+        grid-template-columns: 1fr;
+        gap: 2rem;
+        padding: 0 1.5rem;
+        text-align: left;
+    }
+
+    .services-hero-left {
+        align-items: flex-start;
+    }
+
+    .services-hero-content {
+        align-items: flex-start;
+    }
+
+    .services-hero-badge {
+        margin: 0;
+        font-size: 0.7rem;
+        padding: 0.35rem 0.75rem;
     }
 
     .services-hero-title {
@@ -4426,52 +4443,97 @@ border: none;
 
     .services-hero-subtitle {
         font-size: 1rem;
+        max-width: 100%;
     }
 
     .services-hero-cta {
-        flex-direction: column;
+        flex-direction: row;
+        gap: 0.75rem;
+        justify-content: flex-start;
     }
 
     .services-hero-btn {
-        width: 100%;
+        padding: 0.75rem 1.5rem;
+        font-size: 0.9rem;
+        flex: 1;
         justify-content: center;
+        white-space: nowrap;
     }
 
     .services-hero-stats {
-        flex-wrap: wrap;
-        justify-content: center;
-    }
-
-    .services-hero-stat-divider {
         display: none;
     }
 
+    .services-hero-right {
+        max-width: 100%;
+        order: 2;
+    }
+
     .services-hero-image-wrapper {
-        max-width: 300px;
+        max-width: 400px;
+        margin: 0 auto;
     }
 
     .services-hero-float {
-        width: 40px;
-        height: 40px;
-        font-size: 1rem;
+        display: none;
+    }
+
+    .services-hero-glow {
+        display: none;
+    }
+
+    .services-hero-wave {
+        display: none;
     }
 }
 
 @media (max-width: 480px) {
-    .services-hero-title {
-        font-size: 1.75rem;
+    .services-hero {
+        padding: 3rem 0;
+    }
+
+    .services-hero-container {
+        padding: 0 1rem;
+        gap: 1.5rem;
     }
 
     .services-hero-badge {
-        font-size: 0.8rem;
+        font-size: 0.7rem;
+        padding: 0.35rem 0.75rem;
     }
 
-    .services-hero-stat-number {
-        font-size: 1.25rem;
+    .services-hero-title {
+        font-size: 1.5rem;
     }
 
-    .services-hero-image-wrapper {
-        max-width: 250px;
+    .services-hero-subtitle {
+        font-size: 0.9rem;
+    }
+
+    .services-hero-cta {
+        flex-direction: row;
+        gap: 0.5rem;
+    }
+
+    .services-hero-btn {
+        padding: 0.5rem 0.8rem;
+        font-size: 0.7rem;
+        flex: 1;
+        white-space: nowrap;
+    }
+
+    /* Hide stats and image on small mobile for cleaner focus on core content */
+    .services-hero-stats {
+        display: none;
+    }
+
+    .services-hero-right {
+        display: none;
+    }
+
+    /* Hide floating icons on mobile for cleaner look */
+    .services-hero-float {
+        display: none;
     }
 }
 
@@ -6282,15 +6344,16 @@ border: none;
 @media (max-width: 768px) {
     .home-hero {
         min-height: auto;
-        padding: 3rem 0;
-        aspect-ratio: 16/9;
-        max-height: 80vh;
+        padding: 4rem 0;
+        aspect-ratio: auto;
+        max-height: none;
+        height: auto;
     }
 
     .home-hero-video video {
         width: 100%;
         height: 100%;
-        object-fit: contain;
+        object-fit: cover;
         object-position: center;
     }
 
@@ -6298,6 +6361,17 @@ border: none;
         grid-template-columns: 1fr;
         gap: 2rem;
         padding: 0 1.5rem;
+        text-align: left;
+    }
+
+    .home-hero-content {
+        align-items: flex-start;
+    }
+
+    .home-hero-badge {
+        margin: 0;
+        font-size: 0.7rem;
+        padding: 0.35rem 0.75rem;
     }
 
     .home-hero-title {
@@ -6312,6 +6386,7 @@ border: none;
     .home-hero-cta {
         flex-direction: row;
         gap: 0.75rem;
+        justify-content: flex-start;
     }
 
     .home-hero-btn-primary,
@@ -6320,18 +6395,11 @@ border: none;
         font-size: 0.9rem;
         flex: 1;
         justify-content: center;
+        white-space: nowrap;
     }
 
     .home-hero-stats {
-        gap: 1.5rem;
-    }
-
-    .home-hero-stat-number {
-        font-size: 1.5rem;
-    }
-
-    .home-hero-stat-label {
-        font-size: 0.8rem;
+        display: none;
     }
 
     .home-hero-right {
@@ -6353,17 +6421,20 @@ border: none;
     }
 
     .home-hero-float {
-        width: 45px;
-        height: 45px;
-        font-size: 1.1rem;
+        display: none;
+    }
+
+    .home-hero-glow {
+        display: none;
     }
 }
 
 @media (max-width: 480px) {
     .home-hero {
-        padding: 2rem 0;
-        aspect-ratio: 16/10;
-        max-height: 75vh;
+        padding: 3rem 0;
+        aspect-ratio: auto;
+        max-height: none;
+        height: auto;
     }
 
     .home-hero-container {
@@ -6372,8 +6443,8 @@ border: none;
     }
 
     .home-hero-badge {
-        font-size: 0.75rem;
-        padding: 0.4rem 0.8rem;
+        font-size: 0.7rem;
+        padding: 0.35rem 0.75rem;
     }
 
     .home-hero-title {
@@ -6385,57 +6456,30 @@ border: none;
     }
 
     .home-hero-cta {
-        flex-direction: column;
+        flex-direction: row;
+        gap: 0.5rem;
     }
 
     .home-hero-btn-primary,
     .home-hero-btn-secondary {
-        padding: 0.7rem 1.25rem;
-        font-size: 0.85rem;
-        width: 100%;
+        padding: 0.5rem 0.8rem;
+        font-size: 0.7rem;
+        flex: 1;
+        white-space: nowrap;
     }
 
+    /* Hide stats and embed cards on small mobile for cleaner focus on core content */
     .home-hero-stats {
-        gap: 1rem;
+        display: none;
     }
 
-    .home-hero-stat-number {
-        font-size: 1.25rem;
+    .home-hero-right {
+        display: none;
     }
 
-    .home-hero-stat-label {
-        font-size: 0.75rem;
-    }
-
-    .home-hero-embeds {
-        grid-template-columns: 1fr;
-        gap: 0.75rem;
-    }
-
+    /* Hide floating icons on mobile for cleaner look */
     .home-hero-float {
-        width: 40px;
-        height: 40px;
-        font-size: 1rem;
-    }
-
-    .home-hero-float-1 {
-        top: 3%;
-        right: -3%;
-    }
-
-    .home-hero-float-2 {
-        top: 45%;
-        right: -8%;
-    }
-
-    .home-hero-float-3 {
-        bottom: 15%;
-        right: 3%;
-    }
-
-    .home-hero-float-4 {
-        top: 25%;
-        right: -12%;
+        display: none;
     }
 }
 
