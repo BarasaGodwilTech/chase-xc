@@ -4423,10 +4423,6 @@ border: none;
         text-align: left;
     }
 
-    .services-hero-left {
-        align-items: flex-start;
-    }
-
     .services-hero-content {
         align-items: flex-start;
     }
@@ -4452,7 +4448,8 @@ border: none;
         justify-content: flex-start;
     }
 
-    .services-hero-btn {
+    .services-hero-btn,
+    .services-hero-btn-outline {
         padding: 0.75rem 1.5rem;
         font-size: 0.9rem;
         flex: 1;
@@ -4515,14 +4512,14 @@ border: none;
         gap: 0.5rem;
     }
 
-    .services-hero-btn {
+    .services-hero-btn,
+    .services-hero-btn-outline {
         padding: 0.5rem 0.8rem;
         font-size: 0.7rem;
         flex: 1;
         white-space: nowrap;
     }
 
-    /* Hide stats and image on small mobile for cleaner focus on core content */
     .services-hero-stats {
         display: none;
     }
@@ -4531,7 +4528,6 @@ border: none;
         display: none;
     }
 
-    /* Hide floating icons on mobile for cleaner look */
     .services-hero-float {
         display: none;
     }
