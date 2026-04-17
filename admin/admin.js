@@ -152,6 +152,281 @@ class AdminPanel {
         }
     }
 
+    setupSpotifyImport() {
+        const searchSpotifyBtn = document.getElementById('searchSpotify');
+        const importSpotifyBtn = document.getElementById('importSpotify');
+        const cancelSpotifyBtn = document.getElementById('cancelSpotify');
+        const spotifyUrlInput = document.getElementById('spotifyUrl');
+        const spotifySearchInput = document.getElementById('spotifySearch');
+        const spotifyResults = document.getElementById('spotifyResults');
+
+        this.selectedSpotifyTrack = null;
+
+        // Search Spotify
+        if (searchSpotifyBtn) {
+            searchSpotifyBtn.addEventListener('click', () => this.searchSpotify());
+        }
+
+        // Search on Enter key
+        if (spotifySearchInput) {
+            spotifySearchInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    this.searchSpotify();
+                }
+            });
+        }
+
+        // Import selected track
+        if (importSpotifyBtn) {
+            importSpotifyBtn.addEventListener('click', () => this.importSpotifyTrack());
+        }
+
+        // Cancel
+        if (cancelSpotifyBtn) {
+            cancelSpotifyBtn.addEventListener('click', () => {
+                this.switchUploadMethod('upload');
+            });
+        }
+
+        // Parse URL when pasted
+        if (spotifyUrlInput) {
+            spotifyUrlInput.addEventListener('change', () => {
+                const url = spotifyUrlInput.value.trim();
+                if (url && url.includes('spotify.com/track/')) {
+                    this.fetchSpotifyTrackFromUrl(url);
+                }
+            });
+        }
+    }
+
+    async searchSpotify() {
+        const searchInput = document.getElementById('spotifySearch');
+        const resultsContainer = document.getElementById('spotifyResults');
+        const query = searchInput?.value?.trim();
+
+        if (!query) {
+            this.showNotification('Please enter a search query', 'warning');
+            return;
+        }
+
+        if (resultsContainer) {
+            resultsContainer.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Searching...</div>';
+        }
+
+        try {
+            // Using Spotify oEmbed API which doesn't require authentication
+            // For full search, we would need Spotify Web API with OAuth
+            // For now, we'll use a workaround with the Spotify metadata endpoint
+            const trackId = this.extractSpotifyId(query);
+            
+            if (trackId) {
+                // Direct URL was entered
+                await this.fetchSpotifyTrackFromUrl(query);
+            } else {
+                // Search query - show instructions
+                resultsContainer.innerHTML = `
+                    <div class="spotify-search-info">
+                        <p><i class="fas fa-info-circle"></i> To import from Spotify:</p>
+                        <ol>
+                            <li>Go to Spotify and find your track</li>
+                            <li>Copy the track URL (e.g., https://open.spotify.com/track/...)</li>
+                            <li>Paste it in the "Spotify Track URL" field above</li>
+                            <li>Click "Import Track"</li>
+                        </ol>
+                        <p class="text-muted">Note: Full search requires Spotify API credentials. Use direct URL import for now.</p>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            console.error('Spotify search error:', error);
+            if (resultsContainer) {
+                resultsContainer.innerHTML = `
+                    <div class="spotify-error">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <p>Failed to search Spotify. Please use the direct URL instead.</p>
+                    </div>
+                `;
+            }
+        }
+    }
+
+    extractSpotifyId(urlOrId) {
+        // Extract Spotify track ID from URL
+        const match = urlOrId.match(/spotify\.com\/track\/([a-zA-Z0-9]+)/);
+        return match ? match[1] : null;
+    }
+
+    async fetchSpotifyTrackFromUrl(url) {
+        const resultsContainer = document.getElementById('spotifyResults');
+        const trackId = this.extractSpotifyId(url);
+
+        if (!trackId) {
+            this.showNotification('Invalid Spotify URL. Please use a track URL.', 'error');
+            return;
+        }
+
+        if (resultsContainer) {
+            resultsContainer.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Fetching track info...</div>';
+        }
+
+        try {
+            // Use Spotify oEmbed API to get track info (no auth required)
+            const oembedUrl = `https://open.spotify.com/oembed?url=${encodeURIComponent(url)}`;
+            const response = await fetch(oembedUrl);
+            
+            if (!response.ok) {
+                throw new Error('Failed to fetch track data');
+            }
+
+            const data = await response.json();
+            
+            // Display the track
+            this.selectedSpotifyTrack = {
+                id: trackId,
+                url: url,
+                title: data.title || 'Unknown Track',
+                artist: data.author || 'Unknown Artist',
+                artwork: data.thumbnail_url || '',
+                html: data.html || ''
+            };
+
+            if (resultsContainer) {
+                resultsContainer.innerHTML = `
+                    <div class="spotify-track selected" data-track-id="${trackId}">
+                        <img src="${this.selectedSpotifyTrack.artwork}" alt="${this.selectedSpotifyTrack.title}">
+                        <div class="spotify-track-info">
+                            <div class="spotify-track-name">${this.selectedSpotifyTrack.title}</div>
+                            <div class="spotify-track-artist">${this.selectedSpotifyTrack.artist}</div>
+                            <div class="spotify-track-url">
+                                <i class="fas fa-check-circle"></i> Ready to import
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Auto-fill form fields
+            this.autoFillSpotifyForm();
+        } catch (error) {
+            console.error('Error fetching Spotify track:', error);
+            if (resultsContainer) {
+                resultsContainer.innerHTML = `
+                    <div class="spotify-error">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <p>Could not fetch track information. The track might be private or region-restricted.</p>
+                        <p class="text-muted">You can still manually enter the track details below.</p>
+                    </div>
+                `;
+            }
+        }
+    }
+
+    autoFillSpotifyForm() {
+        if (!this.selectedSpotifyTrack) return;
+
+        // Switch to upload form to fill in the details
+        const titleInput = document.getElementById('trackTitle');
+        const genreSelect = document.getElementById('trackGenre');
+        const descriptionInput = document.getElementById('trackDescription');
+        const artworkPreview = document.getElementById('artworkPreview');
+
+        if (titleInput) {
+            titleInput.value = this.selectedSpotifyTrack.title;
+        }
+
+        if (descriptionInput) {
+            descriptionInput.value = `Imported from Spotify: ${this.selectedSpotifyTrack.url}`;
+        }
+
+        if (artworkPreview && this.selectedSpotifyTrack.artwork) {
+            artworkPreview.classList.add('has-image');
+            artworkPreview.style.backgroundImage = `url('${this.selectedSpotifyTrack.artwork}')`;
+        }
+
+        this.showNotification('Track information loaded. Please select an artist and genre, then upload.', 'success');
+    }
+
+    async importSpotifyTrack() {
+        if (!this.selectedSpotifyTrack) {
+            this.showNotification('Please select a Spotify track first', 'warning');
+            return;
+        }
+
+        const artistSelect = document.getElementById('trackArtist');
+        const genreSelect = document.getElementById('trackGenre');
+        const titleInput = document.getElementById('trackTitle');
+        const descriptionInput = document.getElementById('trackDescription');
+
+        const artistId = artistSelect?.value;
+        const genre = genreSelect?.value;
+        const title = titleInput?.value?.trim();
+        const description = descriptionInput?.value?.trim();
+
+        if (!artistId || artistId === '__add_new__' || !genre || !title) {
+            this.showNotification('Please fill in Artist, Genre, and Title fields', 'warning');
+            return;
+        }
+
+        try {
+            // Create track data
+            const trackData = {
+                title: title,
+                artist: artistId,
+                genre: genre,
+                duration: '0:00', // Will be updated when audio is uploaded
+                year: new Date().getFullYear().toString(),
+                streams: 0,
+                likes: 0,
+                downloads: 0,
+                artwork: this.selectedSpotifyTrack.artwork || '',
+                description: description || `Imported from Spotify`,
+                releaseDate: new Date().toISOString().split('T')[0],
+                status: 'published',
+                audioUrl: '', // Will need to upload audio file separately
+                spotifyUrl: this.selectedSpotifyTrack.url,
+                platformLinks: {
+                    spotify: this.selectedSpotifyTrack.url
+                }
+            };
+
+            // Save to data manager
+            const savedTrack = this.dataManager.saveTrack(trackData);
+
+            if (savedTrack) {
+                this.showNotification('Spotify track imported successfully! Please upload the audio file to complete.', 'success');
+                
+                // Clear form
+                this.selectedSpotifyTrack = null;
+                document.getElementById('spotifyUrl').value = '';
+                document.getElementById('spotifySearch').value = '';
+                document.getElementById('spotifyResults').innerHTML = '';
+                
+                // Switch to upload tab to complete with audio file
+                this.switchUploadMethod('upload');
+                
+                // Pre-fill the form with saved data
+                if (titleInput) titleInput.value = savedTrack.title;
+                if (artistSelect) artistSelect.value = savedTrack.artist;
+                if (genreSelect) genreSelect.value = savedTrack.genre;
+                if (descriptionInput) descriptionInput.value = savedTrack.description;
+                
+                if (savedTrack.artwork) {
+                    const artworkPreview = document.getElementById('artworkPreview');
+                    if (artworkPreview) {
+                        artworkPreview.classList.add('has-image');
+                        artworkPreview.style.backgroundImage = `url('${savedTrack.artwork}')`;
+                    }
+                }
+            } else {
+                this.showNotification('Failed to save track data', 'error');
+            }
+        } catch (error) {
+            console.error('Error importing Spotify track:', error);
+            this.showNotification('Error importing track: ' + error.message, 'error');
+        }
+    }
+
     switchUploadMethod(method) {
         console.log('Switching to method:', method);
 

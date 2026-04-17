@@ -1588,6 +1588,74 @@ body.admin-page {
     font-size: 0.9rem;
 }
 
+.spotify-track-url {
+    color: #1DB954;
+    font-size: 0.85rem;
+    margin-top: 0.25rem;
+}
+
+.spotify-track.selected {
+    background: rgba(29, 185, 84, 0.1);
+    border-left: 3px solid #1DB954;
+}
+
+.spotify-search-info {
+    padding: 1.5rem;
+    text-align: left;
+}
+
+.spotify-search-info p {
+    margin-bottom: 1rem;
+    color: var(--text-primary);
+}
+
+.spotify-search-info ol {
+    margin-left: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.spotify-search-info li {
+    margin-bottom: 0.5rem;
+    color: var(--text-secondary);
+}
+
+.spotify-search-info .text-muted {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-style: italic;
+}
+
+.spotify-error {
+    padding: 1.5rem;
+    text-align: center;
+    color: #ff6b6b;
+}
+
+.spotify-error i {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.spotify-error p {
+    margin: 0.5rem 0;
+}
+
+.spotify-error .text-muted {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+.loading-spinner {
+    padding: 2rem;
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+.loading-spinner i {
+    font-size: 1.5rem;
+    margin-right: 0.5rem;
+}
+
 /* Form Actions */
 .form-actions {
     display: flex;

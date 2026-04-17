@@ -93,10 +93,6 @@ body {
   .header {
     position: fixed;
   }
-
-  .logo h1 {
-    display: none;
-  }
 }
 
 .header.scrolled {
@@ -128,6 +124,7 @@ body {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  display: none;
 }
 
 .logo a {
