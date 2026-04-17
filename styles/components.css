@@ -6139,7 +6139,6 @@ border: none;
     display: flex;
     gap: 1rem;
     flex-wrap: wrap;
-    justify-content: center;
     animation: fadeInUp 0.6s ease-out 0.5s forwards;
     opacity: 0;
 }
@@ -6147,10 +6146,12 @@ border: none;
 .home-hero-social {
     position: absolute;
     bottom: 40px;
-    left: 50%;
-    transform: translateX(-50%);
+    left: 0;
+    right: 0;
+    margin: 0 auto;
     display: flex;
     gap: 1.25rem;
+    justify-content: center;
     z-index: 4;
     animation: fadeInUp 0.6s ease-out 0.6s forwards;
     opacity: 0;
@@ -6392,11 +6393,11 @@ border: none;
         grid-template-columns: 1fr;
         gap: 2rem;
         padding: 0 1.5rem;
-        text-align: center;
+        text-align: left;
     }
 
     .home-hero-content {
-        align-items: center;
+        align-items: flex-start;
     }
 
     .home-hero-badge {
@@ -6511,6 +6512,11 @@ border: none;
     /* Hide floating icons on mobile for cleaner look */
     .home-hero-float {
         display: none;
+    }
+
+    .home-hero-social {
+        left: 50%;
+        transform: translateX(-50%);
     }
 }
 

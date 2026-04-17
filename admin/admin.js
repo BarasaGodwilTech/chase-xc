@@ -211,44 +211,149 @@ class AdminPanel {
         }
 
         if (resultsContainer) {
-            resultsContainer.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Searching...</div>';
+            resultsContainer.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Searching web for Spotify links...</div>';
+            resultsContainer.classList.add('show');
         }
 
         try {
-            // Using Spotify oEmbed API which doesn't require authentication
-            // For full search, we would need Spotify Web API with OAuth
-            // For now, we'll use a workaround with the Spotify metadata endpoint
+            // First check if it's a direct Spotify URL
             const trackId = this.extractSpotifyId(query);
             
             if (trackId) {
                 // Direct URL was entered
                 await this.fetchSpotifyTrackFromUrl(query);
-            } else {
-                // Search query - show instructions
-                resultsContainer.innerHTML = `
-                    <div class="spotify-search-info">
-                        <p><i class="fas fa-info-circle"></i> To import from Spotify:</p>
-                        <ol>
-                            <li>Go to Spotify and find your track</li>
-                            <li>Copy the track URL (e.g., https://open.spotify.com/track/...)</li>
-                            <li>Paste it in the "Spotify Track URL" field above</li>
-                            <li>Click "Import Track"</li>
-                        </ol>
-                        <p class="text-muted">Note: Full search requires Spotify API credentials. Use direct URL import for now.</p>
-                    </div>
-                `;
+                return;
             }
+
+            // Otherwise, search the web for Spotify links
+            await this.searchWebForSpotifyLinks(query);
         } catch (error) {
             console.error('Spotify search error:', error);
             if (resultsContainer) {
                 resultsContainer.innerHTML = `
                     <div class="spotify-error">
                         <i class="fas fa-exclamation-triangle"></i>
-                        <p>Failed to search Spotify. Please use the direct URL instead.</p>
+                        <p>Search failed. Please paste a Spotify URL directly.</p>
+                        <p class="text-muted">Go to Spotify, find your track, copy the URL, and paste it in the "Spotify Track URL" field above.</p>
                     </div>
                 `;
             }
         }
+    }
+
+    async searchWebForSpotifyLinks(query) {
+        const resultsContainer = document.getElementById('spotifyResults');
+        
+        try {
+            // Use DuckDuckGo API to search for the song + spotify
+            const searchQuery = encodeURIComponent(`${query} site:open.spotify.com/track`);
+            const searchUrl = `https://api.duckduckgo.com/?q=${searchQuery}&format=json&pretty=1`;
+            
+            const response = await fetch(searchUrl);
+            const data = await response.json();
+            
+            // Extract Spotify URLs from results
+            const spotifyResults = this.extractSpotifyUrlsFromResults(data, query);
+            
+            if (spotifyResults.length > 0) {
+                // Display found Spotify links
+                resultsContainer.innerHTML = `
+                    <div class="spotify-search-info">
+                        <p><i class="fas fa-check-circle" style="color: #1DB954;"></i> Found ${spotifyResults.length} result(s) on Spotify:</p>
+                    </div>
+                    ${spotifyResults.map(result => `
+                        <div class="spotify-track" onclick="adminPanel.selectSpotifyResult('${result.url}')">
+                            <div class="spotify-track-info">
+                                <div class="spotify-track-name">${result.title}</div>
+                                <div class="spotify-track-url">
+                                    <i class="fab fa-spotify"></i> Click to select
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                `;
+            } else {
+                // No results found - show manual instructions
+                resultsContainer.innerHTML = `
+                    <div class="spotify-search-info">
+                        <p><i class="fas fa-info-circle"></i> No Spotify links found for "${query}"</p>
+                        <p>To import from Spotify:</p>
+                        <ol>
+                            <li>Go to <a href="https://open.spotify.com" target="_blank" style="color: #1DB954;">Spotify</a> and search for your track</li>
+                            <li>Copy the track URL (e.g., https://open.spotify.com/track/...)</li>
+                            <li>Paste it in the "Spotify Track URL" field above</li>
+                            <li>Click "Import Track"</li>
+                        </ol>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            console.error('Web search error:', error);
+            // Fallback to manual instructions
+            resultsContainer.innerHTML = `
+                <div class="spotify-search-info">
+                    <p><i class="fas fa-info-circle"></i> Web search unavailable</p>
+                    <p>Please manually find the track on Spotify and paste the URL below.</p>
+                    <ol>
+                        <li>Go to <a href="https://open.spotify.com" target="_blank" style="color: #1DB954;">Spotify</a> and search for your track</li>
+                        <li>Copy the track URL (e.g., https://open.spotify.com/track/...)</li>
+                        <li>Paste it in the "Spotify Track URL" field above</li>
+                        <li>Click "Import Track"</li>
+                    </ol>
+                </div>
+            `;
+        }
+    }
+
+    extractSpotifyUrlsFromResults(data, query) {
+        const results = [];
+        
+        // Try to extract from RelatedTopics
+        if (data.RelatedTopics) {
+            for (const topic of data.RelatedTopics) {
+                if (topic.FirstURL && topic.FirstURL.includes('open.spotify.com/track')) {
+                    const url = topic.FirstURL;
+                    const title = topic.Text || topic.Result || `Track from Spotify`;
+                    results.push({ url, title: this.cleanTitle(title, query) });
+                }
+            }
+        }
+        
+        // Try to extract from AbstractURL
+        if (data.AbstractURL && data.AbstractURL.includes('open.spotify.com/track')) {
+            results.push({
+                url: data.AbstractURL,
+                title: data.Abstract || data.Heading || `Track from Spotify`
+            });
+        }
+        
+        // Return unique results only
+        const uniqueResults = [];
+        const seenUrls = new Set();
+        for (const result of results) {
+            if (!seenUrls.has(result.url)) {
+                seenUrls.add(result.url);
+                uniqueResults.push(result);
+            }
+        }
+        
+        return uniqueResults.slice(0, 5); // Limit to 5 results
+    }
+
+    cleanTitle(title, query) {
+        // Clean up the title from search results
+        if (!title) return query;
+        // Remove common prefixes/suffixes
+        return title
+            .replace(/^.*?Spotify[:\s-]*/i, '')
+            .replace(/\s*-\s*Open\.Spotify\.com.*$/i, '')
+            .trim()
+            .substring(0, 60) || query;
+    }
+
+    async selectSpotifyResult(url) {
+        // Fetch the selected Spotify track
+        await this.fetchSpotifyTrackFromUrl(url);
     }
 
     extractSpotifyId(urlOrId) {
@@ -268,6 +373,7 @@ class AdminPanel {
 
         if (resultsContainer) {
             resultsContainer.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Fetching track info...</div>';
+            resultsContainer.classList.add('show');
         }
 
         try {
@@ -400,7 +506,9 @@ class AdminPanel {
                 this.selectedSpotifyTrack = null;
                 document.getElementById('spotifyUrl').value = '';
                 document.getElementById('spotifySearch').value = '';
-                document.getElementById('spotifyResults').innerHTML = '';
+                const resultsContainer = document.getElementById('spotifyResults');
+                resultsContainer.innerHTML = '';
+                resultsContainer.classList.remove('show');
                 
                 // Switch to upload tab to complete with audio file
                 this.switchUploadMethod('upload');
