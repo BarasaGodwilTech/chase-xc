@@ -95,14 +95,24 @@ class UserAuth {
             toggle.addEventListener('click', (e) => this.togglePasswordVisibility(e));
         });
 
-        // Profile dropdown toggle
-        const profileBtn = document.getElementById('profileBtn');
-        if (profileBtn) {
-            profileBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.toggleProfileDropdown();
-            });
-        }
+        // Profile dropdown toggle - wait for includes to load
+        const setupProfileBtn = () => {
+            const profileBtn = document.getElementById('profileBtn');
+            console.log('Profile button found:', profileBtn);
+            if (profileBtn) {
+                profileBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    console.log('Profile button clicked');
+                    this.toggleProfileDropdown();
+                });
+            } else {
+                console.warn('Profile button not found');
+            }
+        };
+
+        // Try immediately, then wait for includes:loaded event
+        setupProfileBtn();
+        document.addEventListener('includes:loaded', setupProfileBtn);
 
         // Close dropdown when clicking outside
         document.addEventListener('click', () => {
