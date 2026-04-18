@@ -745,6 +745,14 @@ class AdminPanel {
                 document.getElementById('sessionMusicianMax').value = config.services.sessionMusicianMax || '';
             }
             
+            // Populate budget tiers form
+            if (config.budgetTiers) {
+                document.getElementById('budgetStandard').value = config.budgetTiers.standard || '';
+                document.getElementById('budgetClassic').value = config.budgetTiers.classic || '';
+                document.getElementById('budgetPremium').value = config.budgetTiers.premium || '';
+                document.getElementById('budgetDeluxe').value = config.budgetTiers.deluxe || '';
+            }
+            
             // Setup save button handler
             this.setupSettingsSaveHandler();
             
@@ -803,6 +811,12 @@ class AdminPanel {
                     restoration: parseInt(document.getElementById('restorationPrice').value) || 0,
                     sessionMusicianMin: parseInt(document.getElementById('sessionMusicianMin').value) || 0,
                     sessionMusicianMax: parseInt(document.getElementById('sessionMusicianMax').value) || 0
+                },
+                budgetTiers: {
+                    standard: parseInt(document.getElementById('budgetStandard').value) || 0,
+                    classic: parseInt(document.getElementById('budgetClassic').value) || 0,
+                    premium: parseInt(document.getElementById('budgetPremium').value) || 0,
+                    deluxe: parseInt(document.getElementById('budgetDeluxe').value) || 0
                 }
             };
             

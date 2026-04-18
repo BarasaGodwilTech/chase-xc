@@ -48,6 +48,12 @@ let studioConfig = {
     restoration: 0,
     sessionMusicianMin: 0,
     sessionMusicianMax: 0
+  },
+  budgetTiers: {
+    standard: 0,
+    classic: 0,
+    premium: 0,
+    deluxe: 0
   }
 }
 
@@ -135,6 +141,11 @@ async function initSettings() {
     window.updateServicePricesFromConfig(window.studioConfig)
   }
   
+  // Update budget tiers if the global function exists
+  if (window.updateBudgetTiersFromConfig && window.studioConfig) {
+    window.updateBudgetTiersFromConfig(window.studioConfig)
+  }
+  
   // Set up real-time listener
   onSettingsUpdate((newConfig) => {
     studioConfig = newConfig
@@ -148,6 +159,11 @@ async function initSettings() {
     // Update service prices when settings change
     if (window.updateServicePricesFromConfig) {
       window.updateServicePricesFromConfig(newConfig)
+    }
+    
+    // Update budget tiers when settings change
+    if (window.updateBudgetTiersFromConfig) {
+      window.updateBudgetTiersFromConfig(newConfig)
     }
     
     // Dispatch event for other scripts to listen

@@ -413,6 +413,49 @@ window.updateServicePricesFromConfig = function(config) {
     }
 }
 
+// Global function to update budget tiers from config
+window.updateBudgetTiersFromConfig = function(config) {
+    if (!config || !config.budgetTiers) return
+    
+    const tiers = config.budgetTiers
+    
+    // Update standard budget
+    if (tiers.standard) {
+        const el = document.getElementById('budget-standard')
+        if (el) {
+            el.textContent = `UGX ${tiers.standard.toLocaleString()} - Standard`
+            el.setAttribute('value', tiers.standard)
+        }
+    }
+    
+    // Update classic budget
+    if (tiers.classic) {
+        const el = document.getElementById('budget-classic')
+        if (el) {
+            el.textContent = `UGX ${tiers.classic.toLocaleString()} - Classic`
+            el.setAttribute('value', tiers.classic)
+        }
+    }
+    
+    // Update premium budget
+    if (tiers.premium) {
+        const el = document.getElementById('budget-premium')
+        if (el) {
+            el.textContent = `UGX ${tiers.premium.toLocaleString()} - Premium`
+            el.setAttribute('value', tiers.premium)
+        }
+    }
+    
+    // Update deluxe budget
+    if (tiers.deluxe) {
+        const el = document.getElementById('budget-deluxe')
+        if (el) {
+            el.textContent = `UGX ${tiers.deluxe.toLocaleString()} - Deluxe`
+            el.setAttribute('value', tiers.deluxe)
+        }
+    }
+}
+
 function initMembership() {
     const membershipModal = document.getElementById('membershipModal')
     const planSelectButtons = document.querySelectorAll('.plan-select')
