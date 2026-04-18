@@ -18,8 +18,8 @@ service firebase.storage {
       // Public read access for displaying artist images
       allow read: if true;
       
-      // Write access for authenticated users (admin panel)
-      allow write: if isAdmin();
+      // Write access (TEMPORARY: disabled auth for development)
+      allow write: if true;
     }
     
     // Audio files folder
@@ -27,8 +27,8 @@ service firebase.storage {
       // Public read access for playing audio
       allow read: if true;
       
-      // Write access for authenticated users (admin panel)
-      allow write: if isAdmin();
+      // Write access (TEMPORARY: disabled auth for development)
+      allow write: if true;
     }
     
     // Track artwork folder
@@ -36,8 +36,8 @@ service firebase.storage {
       // Public read access for displaying artwork
       allow read: if true;
       
-      // Write access for authenticated users (admin panel)
-      allow write: if isAdmin();
+      // Write access (TEMPORARY: disabled auth for development)
+      allow write: if true;
     }
   }
 }

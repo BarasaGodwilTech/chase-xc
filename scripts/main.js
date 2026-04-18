@@ -15,6 +15,7 @@ function initApp() {
     initContactHero()
     initMusicHero()
     initVideoAutoplay()
+    initClipboardSupport()
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -269,12 +270,21 @@ function clearErrors() {
     })
 }
 
-// Track Card Click - Play Track
+// Track Card Click - Redirect to Spotify or Play Track
 function initTrackCards() {
     const trackCards = document.querySelectorAll(".track-card")
 
     trackCards.forEach((card) => {
         card.addEventListener("click", function () {
+            const spotifyUrl = this.getAttribute("data-spotify-url")
+            
+            // If Spotify URL exists, redirect to Spotify
+            if (spotifyUrl && spotifyUrl.trim() !== '') {
+                window.open(spotifyUrl, '_blank')
+                return
+            }
+            
+            // Otherwise, use the regular audio player
             const trackIndex = this.getAttribute("data-track")
             const audioPlayer = document.getElementById("audioPlayer")
             // Scroll to player if it exists on this page
@@ -283,6 +293,198 @@ function initTrackCards() {
             }
         })
     })
+}
+
+// Global function to update plan cards from config (called from config-loader)
+window.updatePlanCardsFromConfig = function(config) {
+    if (!config || !config.plans) return
+    
+    const weeklyPrice = config.plans.weekly?.price || 0
+    const monthlyPrice = config.plans.monthly?.price || 0
+    const yearlyPrice = config.plans.yearly?.price || 0
+    
+    // Update weekly plan
+    if (config.plans.weekly) {
+        const weeklyPriceEl = document.getElementById('weekly-plan-price')
+        const weeklyBtn = document.getElementById('weekly-plan-btn')
+        if (weeklyPriceEl) weeklyPriceEl.textContent = `UGX ${weeklyPrice.toLocaleString()}`
+        if (weeklyBtn) weeklyBtn.setAttribute('data-amount', weeklyPrice)
+    }
+    
+    // Update monthly plan
+    if (config.plans.monthly) {
+        const monthlyPriceEl = document.getElementById('monthly-plan-price')
+        const monthlyBtn = document.getElementById('monthly-plan-btn')
+        const monthlySavingsEl = document.getElementById('monthly-plan-savings')
+        
+        if (monthlyPriceEl) monthlyPriceEl.textContent = `UGX ${monthlyPrice.toLocaleString()}`
+        if (monthlyBtn) monthlyBtn.setAttribute('data-amount', monthlyPrice)
+        
+        // Calculate monthly savings: (weekly × 4) - monthly
+        const weeklyMonthlyEquivalent = weeklyPrice * 4
+        const monthlySavings = weeklyMonthlyEquivalent - monthlyPrice
+        if (monthlySavingsEl && monthlySavings > 0) {
+            monthlySavingsEl.textContent = `Save UGX ${monthlySavings.toLocaleString()}`
+            monthlySavingsEl.style.display = 'block'
+        } else if (monthlySavingsEl) {
+            monthlySavingsEl.style.display = 'none'
+        }
+    }
+    
+    // Update yearly plan
+    if (config.plans.yearly) {
+        const yearlyPriceEl = document.getElementById('yearly-plan-price')
+        const yearlyBtn = document.getElementById('yearly-plan-btn')
+        const yearlySavingsEl = document.getElementById('yearly-plan-savings')
+        
+        if (yearlyPriceEl) yearlyPriceEl.textContent = `UGX ${yearlyPrice.toLocaleString()}`
+        if (yearlyBtn) yearlyBtn.setAttribute('data-amount', yearlyPrice)
+        
+        // Calculate yearly savings: (monthly × 12) - yearly
+        const monthlyYearlyEquivalent = monthlyPrice * 12
+        const yearlySavings = monthlyYearlyEquivalent - yearlyPrice
+        if (yearlySavingsEl && yearlySavings > 0) {
+            yearlySavingsEl.textContent = `Save UGX ${yearlySavings.toLocaleString()}`
+            yearlySavingsEl.style.display = 'block'
+        } else if (yearlySavingsEl) {
+            yearlySavingsEl.style.display = 'none'
+        }
+    }
+}
+
+// Global function to update service prices from config
+window.updateServicePricesFromConfig = function(config) {
+    if (!config || !config.services) return
+    
+    const services = config.services
+    
+    // Update production price
+    if (services.production) {
+        const el = document.getElementById('production-price')
+        if (el) el.textContent = `UGX ${services.production.toLocaleString()}`
+    }
+    
+    // Update mixing price
+    if (services.mixing) {
+        const el = document.getElementById('mixing-price')
+        if (el) el.textContent = `UGX ${services.mixing.toLocaleString()}`
+    }
+    
+    // Update mastering price
+    if (services.mastering) {
+        const el = document.getElementById('mastering-price')
+        if (el) el.textContent = `UGX ${services.mastering.toLocaleString()}`
+    }
+    
+    // Update vocal price
+    if (services.vocal) {
+        const el = document.getElementById('vocal-price')
+        if (el) el.textContent = `UGX ${services.vocal.toLocaleString()}`
+    }
+    
+    // Update hourly rate
+    if (services.hourlyRate) {
+        const el = document.getElementById('hourly-rate')
+        if (el) el.textContent = `UGX ${services.hourlyRate.toLocaleString()}`
+    }
+    
+    // Update package price
+    if (services.packagePrice) {
+        const el = document.getElementById('package-price')
+        if (el) el.textContent = `UGX ${services.packagePrice.toLocaleString()}`
+    }
+    
+    // Update songwriting price
+    if (services.songwriting) {
+        const el = document.getElementById('songwriting-price')
+        if (el) el.textContent = `UGX ${services.songwriting.toLocaleString()}`
+    }
+    
+    // Update restoration price
+    if (services.restoration) {
+        const el = document.getElementById('restoration-price')
+        if (el) el.textContent = `UGX ${services.restoration.toLocaleString()}`
+    }
+    
+    // Update session musician price (range)
+    if (services.sessionMusicianMin && services.sessionMusicianMax) {
+        const el = document.getElementById('session-musician-price')
+        if (el) el.textContent = `UGX ${services.sessionMusicianMin.toLocaleString()}-${services.sessionMusicianMax.toLocaleString()}`
+    }
+}
+
+// Global function to update budget tiers from config
+window.updateBudgetTiersFromConfig = function(config) {
+    if (!config || !config.budgetTiers) return
+    
+    const tiers = config.budgetTiers
+    
+    // Update standard budget
+    if (tiers.standard) {
+        const el = document.getElementById('budget-standard')
+        if (el) {
+            el.textContent = `UGX ${tiers.standard.toLocaleString()} - Standard`
+            el.setAttribute('value', tiers.standard)
+        }
+    }
+    
+    // Update classic budget
+    if (tiers.classic) {
+        const el = document.getElementById('budget-classic')
+        if (el) {
+            el.textContent = `UGX ${tiers.classic.toLocaleString()} - Classic`
+            el.setAttribute('value', tiers.classic)
+        }
+    }
+    
+    // Update premium budget
+    if (tiers.premium) {
+        const el = document.getElementById('budget-premium')
+        if (el) {
+            el.textContent = `UGX ${tiers.premium.toLocaleString()} - Premium`
+            el.setAttribute('value', tiers.premium)
+        }
+    }
+    
+    // Update deluxe budget
+    if (tiers.deluxe) {
+        const el = document.getElementById('budget-deluxe')
+        if (el) {
+            el.textContent = `UGX ${tiers.deluxe.toLocaleString()} - Deluxe`
+            el.setAttribute('value', tiers.deluxe)
+        }
+    }
+}
+
+// Global function to update billing cycle options from config
+window.updateBillingCycleOptionsFromConfig = function(config) {
+    if (!config || !config.plans) return
+    
+    const plans = config.plans
+    
+    // Update weekly option
+    if (plans.weekly) {
+        const el = document.getElementById('billing-weekly')
+        if (el) {
+            el.textContent = `Weekly - UGX ${plans.weekly.price.toLocaleString()}`
+        }
+    }
+    
+    // Update monthly option
+    if (plans.monthly) {
+        const el = document.getElementById('billing-monthly')
+        if (el) {
+            el.textContent = `Monthly - UGX ${plans.monthly.price.toLocaleString()}`
+        }
+    }
+    
+    // Update yearly option
+    if (plans.yearly) {
+        const el = document.getElementById('billing-yearly')
+        if (el) {
+            el.textContent = `Yearly - UGX ${plans.yearly.price.toLocaleString()}`
+        }
+    }
 }
 
 function initMembership() {
@@ -302,25 +504,97 @@ function initMembership() {
     const transactionInput = document.getElementById('transactionInput')
     const transactionId = document.getElementById('transactionId')
 
+    // Load plans from Firebase config
     const plans = {
         weekly: {
             name: 'Weekly Pass',
-            price: 'UGX 150,000',
+            price: 'UGX 150,000', // Default fallback
             period: 'week',
-            description: '10 hours of studio time, basic mixing for 2 tracks'
+            description: '10 hours of studio time, basic mixing for 2 tracks' // Default fallback
         },
         monthly: {
             name: 'Monthly Pro',
-            price: 'UGX 500,000',
+            price: 'UGX 500,000', // Default fallback
             period: 'month',
-            description: '50 hours of studio time, unlimited mixing sessions'
+            description: '50 hours of studio time, unlimited mixing sessions' // Default fallback
         },
         yearly: {
             name: 'Yearly Elite',
-            price: 'UGX 5,000,000',
+            price: 'UGX 5,000,000', // Default fallback
             period: 'year',
-            description: '600 hours of studio time, unlimited mixing & mastering'
+            description: '600 hours of studio time, unlimited mixing & mastering' // Default fallback
         }
+    }
+
+    // Try to load from Firebase config if available
+    if (window.studioConfig && window.studioConfig.plans) {
+        if (window.studioConfig.plans.weekly) {
+            plans.weekly.price = `UGX ${window.studioConfig.plans.weekly.price.toLocaleString()}`
+            plans.weekly.description = window.studioConfig.plans.weekly.description
+        }
+        if (window.studioConfig.plans.monthly) {
+            plans.monthly.price = `UGX ${window.studioConfig.plans.monthly.price.toLocaleString()}`
+            plans.monthly.description = window.studioConfig.plans.monthly.description
+        }
+        if (window.studioConfig.plans.yearly) {
+            plans.yearly.price = `UGX ${window.studioConfig.plans.yearly.price.toLocaleString()}`
+            plans.yearly.description = window.studioConfig.plans.yearly.description
+        }
+    }
+
+    // Listen for settings updates
+    window.addEventListener('settingsUpdated', (event) => {
+        const config = event.detail
+        if (config && config.plans) {
+            if (config.plans.weekly) {
+                plans.weekly.price = `UGX ${config.plans.weekly.price.toLocaleString()}`
+                plans.weekly.description = config.plans.weekly.description
+            }
+            if (config.plans.monthly) {
+                plans.monthly.price = `UGX ${config.plans.monthly.price.toLocaleString()}`
+                plans.monthly.description = config.plans.monthly.description
+            }
+            if (config.plans.yearly) {
+                plans.yearly.price = `UGX ${config.plans.yearly.price.toLocaleString()}`
+                plans.yearly.description = config.plans.yearly.description
+            }
+        }
+        // Update homepage plan cards
+        updateHomepagePlanCards(config)
+    })
+
+    // Function to update homepage plan cards from config
+    function updateHomepagePlanCards(config) {
+        if (!config || !config.plans) return
+        
+        // Update weekly plan
+        if (config.plans.weekly) {
+            const weeklyPriceEl = document.getElementById('weekly-plan-price')
+            const weeklyBtn = document.getElementById('weekly-plan-btn')
+            if (weeklyPriceEl) weeklyPriceEl.textContent = `UGX ${config.plans.weekly.price.toLocaleString()}`
+            if (weeklyBtn) weeklyBtn.setAttribute('data-amount', config.plans.weekly.price)
+        }
+        
+        // Update monthly plan
+        if (config.plans.monthly) {
+            const monthlyPriceEl = document.getElementById('monthly-plan-price')
+            const monthlyBtn = document.getElementById('monthly-plan-btn')
+            if (monthlyPriceEl) monthlyPriceEl.textContent = `UGX ${config.plans.monthly.price.toLocaleString()}`
+            if (monthlyBtn) monthlyBtn.setAttribute('data-amount', config.plans.monthly.price)
+        }
+        
+        // Update yearly plan
+        if (config.plans.yearly) {
+            const yearlyPriceEl = document.getElementById('yearly-plan-price')
+            const yearlyBtn = document.getElementById('yearly-plan-btn')
+            if (yearlyPriceEl) yearlyPriceEl.textContent = `UGX ${config.plans.yearly.price.toLocaleString()}`
+            if (yearlyBtn) yearlyBtn.setAttribute('data-amount', config.plans.yearly.price)
+        }
+    }
+
+    // Initial update when config is available
+    if (window.studioConfig && window.studioConfig.plans) {
+        updateHomepagePlanCards(window.studioConfig)
     }
 
     function openMembershipModal(planType) {
@@ -1309,4 +1583,95 @@ function initVideoSequence(video) {
         // Try next segment on error
         playSegment(currentIndex + 1)
     })
+}
+
+// Global Clipboard Support - Works across all devices and browsers
+function initClipboardSupport() {
+    // Add clipboard support to all text inputs and textareas
+    const textInputs = document.querySelectorAll('input[type="text"], input[type="url"], input[type="email"], input[type="tel"], input[type="search"], textarea');
+
+    textInputs.forEach(input => {
+        // Ensure paste works with clipboard API
+        input.addEventListener('paste', (e) => {
+            // Let the default behavior happen
+            // This ensures compatibility across all browsers
+            setTimeout(() => {
+                // Trigger any custom handling if needed
+                const eventType = new Event('input', { bubbles: true });
+                input.dispatchEvent(eventType);
+            }, 0);
+        });
+
+        // Add support for Ctrl+V / Cmd+V explicitly
+        input.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+                // The paste will be handled by the browser
+                // This event is just for any additional logic if needed
+            }
+        });
+
+        // Handle context menu paste for mobile devices
+        input.addEventListener('focus', () => {
+            // Ensure input is ready for paste on mobile
+            input.setAttribute('autocomplete', 'off');
+        });
+    });
+
+    // Add global clipboard error handling
+    window.addEventListener('error', (e) => {
+        if (e.message && e.message.includes('clipboard')) {
+            console.warn('Clipboard access error:', e);
+        }
+    });
+
+    // Add support for copy to clipboard functionality
+    window.copyToClipboard = async function(text) {
+        try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(text);
+                return true;
+            } else {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                textArea.style.position = 'fixed';
+                textArea.style.left = '-999999px';
+                textArea.style.top = '-999999px';
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    return true;
+                } catch (err) {
+                    document.body.removeChild(textArea);
+                    console.error('Fallback copy failed:', err);
+                    return false;
+                }
+            }
+        } catch (err) {
+            console.error('Clipboard copy failed:', err);
+            return false;
+        }
+    };
+
+    // Add support for paste from clipboard functionality
+    window.pasteFromClipboard = async function() {
+        try {
+            if (navigator.clipboard && navigator.clipboard.readText) {
+                const text = await navigator.clipboard.readText();
+                return text;
+            } else {
+                // Fallback - prompt user to paste
+                console.warn('Clipboard read not supported, user must paste manually');
+                return null;
+            }
+        } catch (err) {
+            console.error('Clipboard paste failed:', err);
+            return null;
+        }
+    };
+
+    console.log('Clipboard support initialized for', textInputs.length, 'inputs');
 }

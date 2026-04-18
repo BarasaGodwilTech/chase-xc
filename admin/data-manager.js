@@ -20,69 +20,13 @@ class DataManager {
     }
 
     getDefaultArtists() {
-        return [
-            {
-                id: 'A001',
-                name: 'Sarah Miles',
-                genre: 'Afro-Pop',
-                bio: 'Soulful vocalist known for her powerful performances and emotional depth.',
-                image: '',
-                tracks: 3,
-                streams: 15200,
-                since: '2024',
-                status: 'active'
-            },
-            {
-                id: 'A002',
-                name: 'DJ Kato',
-                genre: 'Electronic',
-                bio: 'Electronic music producer and DJ.',
-                image: '',
-                tracks: 2,
-                streams: 45800,
-                since: '2024',
-                status: 'active'
-            }
-        ];
+        // Return empty array - artists will be loaded from real data source
+        return [];
     }
 
     getDefaultTracks() {
-        return [
-            {
-                id: 'T001',
-                title: 'Sunset Dreams',
-                artist: 'A001',
-                artistName: 'Sarah Miles',
-                genre: 'Afro-Pop',
-                duration: '3:45',
-                year: '2024',
-                streams: 15200,
-                likes: 2400,
-                downloads: 1800,
-                artwork: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=400&fit=crop',
-                description: 'A soulful afro-pop track about chasing dreams',
-                releaseDate: '2024-12-15',
-                status: 'published',
-                audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'
-            },
-            {
-                id: 'T002',
-                title: 'City Lights',
-                artist: 'A002',
-                artistName: 'DJ Kato',
-                genre: 'Electronic',
-                duration: '4:20',
-                year: '2024',
-                streams: 45800,
-                likes: 8700,
-                downloads: 6200,
-                artwork: '',
-                description: 'Energetic electronic track inspired by city nightlife',
-                releaseDate: '2024-11-28',
-                status: 'published',
-                audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3'
-            }
-        ];
+        // Return empty array - tracks will be loaded from real data source
+        return [];
     }
 
     getData() {

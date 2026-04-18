@@ -7,18 +7,18 @@ class MembershipPaymentManager {
         this.paymentConfig = {
             mtn: {
                 name: 'MTN Mobile Money',
-                number: '+256 783 123 456',
-                instructions: 'Send {amount} to {number}. Use "{reference}" as reference.'
+                number: '', // Will be loaded from real data source
+                instructions: 'Send {amount} to the studio MTN number. Use "{reference}" as reference.'
             },
             airtel: {
                 name: 'Airtel Money',
-                number: '+256 756 123 456',
-                instructions: 'Send {amount} to {number}. Use "{reference}" as reference.'
+                number: '', // Will be loaded from real data source
+                instructions: 'Send {amount} to the studio Airtel number. Use "{reference}" as reference.'
             },
             bank: {
                 name: 'Bank Transfer',
-                number: 'Centenary Bank - 3100045678',
-                instructions: 'Transfer {amount} to:\nAccount: {number}\nName: Chase x Records\nReference: "{reference}"'
+                number: '', // Will be loaded from real data source
+                instructions: 'Transfer {amount} to the studio bank account. Reference: "{reference}"'
             },
             card: {
                 name: 'Card Payment',
@@ -161,24 +161,25 @@ class MembershipPaymentManager {
     }
 
     getPlanDetails(planType) {
+        // Plan details will be loaded from real data source
         const plans = {
             weekly: {
                 name: 'Weekly Pass',
-                price: 'UGX 150,000',
+                price: '', // Will be loaded from real data source
                 period: 'week',
-                description: '10 hours of studio time, basic mixing for 2 tracks'
+                description: '' // Will be loaded from real data source
             },
             monthly: {
                 name: 'Monthly Pro',
-                price: 'UGX 500,000',
+                price: '', // Will be loaded from real data source
                 period: 'month',
-                description: '50 hours of studio time, unlimited mixing sessions'
+                description: '' // Will be loaded from real data source
             },
             yearly: {
                 name: 'Yearly Elite',
-                price: 'UGX 5,000,000',
+                price: '', // Will be loaded from real data source
                 period: 'year',
-                description: '600 hours of studio time, unlimited mixing & mastering'
+                description: '' // Will be loaded from real data source
             }
         };
         return plans[planType] || plans.monthly;

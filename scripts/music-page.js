@@ -43,15 +43,17 @@ function getTrackBadge(track) {
 function renderTrackCard(track, index, artistName) {
   const categories = getTrackCategories(track)
   const badge = getTrackBadge(track)
+  const spotifyUrl = track.spotifyUrl || (track.platformLinks?.spotify) || ''
 
   return `
-    <div class="track-card" data-track="${index}" data-category="${categories.join(' ')}">
+    <div class="track-card" data-track="${index}" data-category="${categories.join(' ')}" data-spotify-url="${spotifyUrl}" data-track-id="${track.id || ''}">
       <div class="track-artwork">
         <img src="${track.artwork || ''}" alt="${track.title || ''}">
         <button class="play-btn-card" type="button">
           <i class="fas fa-play"></i>
         </button>
         ${badge ? `<div class="track-badge ${badge.type}">${badge.text}</div>` : ''}
+        ${spotifyUrl ? '<div class="spotify-indicator" title="Listen on Spotify"><i class="fab fa-spotify"></i></div>' : ''}
         <div class="track-overlay">
           <div class="overlay-actions">
             <button class="overlay-btn" title="Add to playlist" type="button">
@@ -241,21 +243,25 @@ async function initMusicPage() {
   const grid = document.getElementById('musicGrid')
   const resultsCount = document.getElementById('resultsCount')
 
+  console.log('[MusicPage] Initializing music page...')
   let tracks
   try {
+    console.log('[MusicPage] Fetching published tracks from Firestore...')
     tracks = await fetchPublishedTracks()
+    console.log('[MusicPage] Fetched tracks:', tracks)
   } catch (e) {
-    console.error(e)
-    if (grid) grid.innerHTML = ''
+    console.error('[MusicPage] Error fetching tracks:', e)
+    if (grid) grid.innerHTML = '<p class="text-center">Error loading tracks. Please check console for details.</p>'
     if (resultsCount) resultsCount.textContent = '0 tracks'
     return
   }
 
   if (!Array.isArray(tracks) || tracks.length === 0) {
-    if (grid) grid.innerHTML = ''
+    console.log('[MusicPage] No tracks found or invalid data format')
+    if (grid) grid.innerHTML = '<p class="text-center">No tracks available yet. Check back soon!</p>'
     if (resultsCount) resultsCount.textContent = '0 tracks'
     window.__tracks = []
-    
+
     // Still render empty states for other sections
     await renderLatestReleases([])
     await renderGenreCards([])

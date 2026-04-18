@@ -13,6 +13,7 @@
 </head>
 <body>
     <script src="scripts/includes.js"></script>
+    <script type="module" src="scripts/config-loader.js"></script>
     <div data-include="partials/header.html"></div>
 
     <!-- Hero Section -->
@@ -210,7 +211,7 @@
         </div>
         
         <div class="membership-plans">
-            <div class="membership-plan-card">
+            <div class="membership-plan-card" id="weekly-plan-card">
                 <div class="plan-visual">
                     <div class="plan-icon">
                         <i class="fas fa-calendar-week"></i>
@@ -218,9 +219,9 @@
                 </div>
                 <div class="plan-content">
                     <span class="plan-badge">Starter</span>
-                    <h4>Weekly Pass</h4>
+                    <h4 id="weekly-plan-name">Weekly Pass</h4>
                     <div class="plan-price">
-                        <span class="price-value">UGX 150,000</span>
+                        <span class="price-value" id="weekly-plan-price"></span>
                         <span class="price-period">/ week</span>
                     </div>
                     <ul class="plan-features">
@@ -229,13 +230,13 @@
                         <li><i class="fas fa-check-circle"></i> Equipment rental included</li>
                         <li><i class="fas fa-check-circle"></i> Engineer assistance</li>
                     </ul>
-                    <button class="btn btn-outline plan-select" data-plan="weekly" data-amount="150000">
+                    <button class="btn btn-outline plan-select" data-plan="weekly" id="weekly-plan-btn">
                         Select Plan
                     </button>
                 </div>
             </div>
             
-            <div class="membership-plan-card plan-card-featured">
+            <div class="membership-plan-card plan-card-featured" id="monthly-plan-card">
                 <div class="plan-visual">
                     <div class="plan-icon">
                         <i class="fas fa-crown"></i>
@@ -244,12 +245,12 @@
                 </div>
                 <div class="plan-content">
                     <span class="plan-badge">Pro</span>
-                    <h4>Monthly Pro</h4>
+                    <h4 id="monthly-plan-name">Monthly Pro</h4>
                     <div class="plan-price">
-                        <span class="price-value">UGX 500,000</span>
+                        <span class="price-value" id="monthly-plan-price"></span>
                         <span class="price-period">/ month</span>
                     </div>
-                    <div class="plan-savings">Save UGX 100,000</div>
+                    <div class="plan-savings" id="monthly-plan-savings"></div>
                     <ul class="plan-features">
                         <li><i class="fas fa-check-circle"></i> 50 hours of studio time</li>
                         <li><i class="fas fa-check-circle"></i> Unlimited mixing sessions</li>
@@ -258,13 +259,13 @@
                         <li><i class="fas fa-check-circle"></i> Mastering for 5 tracks</li>
                         <li><i class="fas fa-check-circle"></i> 4 vocal tuning sessions</li>
                     </ul>
-                    <button class="btn btn-primary plan-select" data-plan="monthly" data-amount="500000">
+                    <button class="btn btn-primary plan-select" data-plan="monthly" id="monthly-plan-btn">
                         Select Plan
                     </button>
                 </div>
             </div>
             
-            <div class="membership-plan-card">
+            <div class="membership-plan-card" id="yearly-plan-card">
                 <div class="plan-visual">
                     <div class="plan-icon">
                         <i class="fas fa-gem"></i>
@@ -272,12 +273,12 @@
                 </div>
                 <div class="plan-content">
                     <span class="plan-badge">Elite</span>
-                    <h4>Yearly Elite</h4>
+                    <h4 id="yearly-plan-name">Yearly Elite</h4>
                     <div class="plan-price">
-                        <span class="price-value">UGX 5,000,000</span>
+                        <span class="price-value" id="yearly-plan-price"></span>
                         <span class="price-period">/ year</span>
                     </div>
-                    <div class="plan-savings">Save UGX 1,000,000</div>
+                    <div class="plan-savings" id="yearly-plan-savings"></div>
                     <ul class="plan-features">
                         <li><i class="fas fa-check-circle"></i> 600 hours of studio time</li>
                         <li><i class="fas fa-check-circle"></i> Unlimited mixing & mastering</li>
@@ -286,7 +287,7 @@
                         <li><i class="fas fa-check-circle"></i> Unlimited vocal tuning</li>
                         <li><i class="fas fa-check-circle"></i> 2 free music videos</li>
                     </ul>
-                    <button class="btn btn-outline plan-select" data-plan="yearly" data-amount="5000000">
+                    <button class="btn btn-outline plan-select" data-plan="yearly" id="yearly-plan-btn">
                         Select Plan
                     </button>
                 </div>
@@ -426,9 +427,9 @@
         </div>
         <div class="modal-body">
             <div class="plan-summary">
-                <h4 id="selectedPlanName">Monthly Pro Plan</h4>
-                <p id="selectedPlanPrice">UGX 500,000 / month</p>
-                <p id="selectedPlanDescription">50 hours of studio time, unlimited mixing, and more</p>
+                <h4 id="selectedPlanName"></h4>
+                <p id="selectedPlanPrice"></p>
+                <p id="selectedPlanDescription"></p>
             </div>
             
             <form class="membership-form" id="membershipForm">
@@ -450,9 +451,9 @@
                 <div class="form-group">
                     <label for="billingCycle">Billing Cycle *</label>
                     <select id="billingCycle" name="billingCycle" required>
-                        <option value="weekly">Weekly - UGX 150,000</option>
-                        <option value="monthly" selected>Monthly - UGX 500,000</option>
-                        <option value="yearly">Yearly - UGX 5,000,000</option>
+                        <option value="weekly" id="billing-weekly">Weekly</option>
+                        <option value="monthly" selected id="billing-monthly">Monthly</option>
+                        <option value="yearly" id="billing-yearly">Yearly</option>
                     </select>
                 </div>
                 
@@ -500,64 +501,9 @@
     <section class="music" id="music">
         <div class="container">
             <h3 class="section-title">Featured Tracks</h3>
-            <!--<div class="music-grid">
-                <div class="track-card" data-track="0">
-                    <div class="track-artwork">
-                        <img src="" alt="Sunset Dreams">
-                        <button class="play-btn-card">
-                            <i class="fas fa-play"></i>
-                        </button>
-                    </div>
-                    <h4 class="track-title">Sunset Dreams</h4>
-                    <p class="track-artist">By Sarah Miles</p>
-                    <div class="track-meta">
-                        <span class="track-genre">Afro-Pop</span>
-                        <span class="track-duration">3:45</span>
-                    </div>
-                </div>
-                <div class="track-card" data-track="1">
-                    <div class="track-artwork">
-                        <img src="" alt="City Lights">
-                        <button class="play-btn-card">
-                            <i class="fas fa-play"></i>
-                        </button>
-                    </div>
-                    <h4 class="track-title">City Lights</h4>
-                    <p class="track-artist">By DJ Kato</p>
-                    <div class="track-meta">
-                        <span class="track-genre">Electronic</span>
-                        <span class="track-duration">4:20</span>
-                    </div>
-                </div>
-                <div class="track-card" data-track="2">
-                    <div class="track-artwork">
-                        <img src="" alt="Rhythm of Mbale">
-                        <button class="play-btn-card">
-                            <i class="fas fa-play"></i>
-                        </button>
-                    </div>
-                    <h4 class="track-title">Rhythm of Mbale</h4>
-                    <p class="track-artist">By The UG Collective</p>
-                    <div class="track-meta">
-                        <span class="track-genre">Dancehall</span>
-                        <span class="track-duration">3:30</span>
-                    </div>
-                </div>
-                <div class="track-card" data-track="3">
-                    <div class="track-artwork">
-                        <img src="" alt="Morning Breeze">
-                        <button class="play-btn-card">
-                            <i class="fas fa-play"></i>
-                        </button>
-                    </div>
-                    <h4 class="track-title">Morning Breeze</h4>
-                    <p class="track-artist">By Lila Rose</p>
-                    <div class="track-meta">
-                        <span class="track-genre">R&B</span>
-                        <span class="track-duration">4:05</span>
-                    </div>
-                </div>
-            </div>-->
+            <div class="music-grid">
+                <!-- Tracks will be loaded dynamically from Firestore -->
+            </div>
             <div style="text-align: center; margin-top: 3rem;">
                 <a href="music.html" class="btn btn-primary">Browse All Music</a>
             </div>
@@ -568,107 +514,12 @@
     <section class="artists" id="artists">
         <div class="container">
             <h3 class="section-title">Featured Artists</h3>
-            <!--<div class="artists-grid">
-                <div class="artist-card">
-                    <div class="artist-image">
-                        <img src="" alt="Sarah Miles">
-                    </div>
-                    <h4>Sarah Miles</h4>
-                    <p class="artist-genre">Afro-Pop • R&B</p>
-                    <p class="artist-bio">Soulful vocalist known for her powerful performances and emotional depth.</p>
-                    <div class="artist-stats">
-                        <span>15K+ Streams</span>
-                        <span>•</span>
-                        <span>3 Releases</span>
-                    </div>
-                    <div class="artist-socials">
-                        <a href="#" target="_blank" title="Instagram">
-                            <i class="fab fa-instagram"></i>
-                        </a>
-                        <a href="#" target="_blank" title="Spotify">
-                            <i class="fab fa-spotify"></i>
-                        </a>
-                        <a href="#" target="_blank" title="Apple Music">
-                            <i class="fab fa-apple"></i>
-                        </a>
-                    </div>
-                </div>
-                <div class="artist-card">
-                    <div class="artist-image">
-                        <img src="" alt="DJ Kato">
-                    </div>
-                    <h4>DJ Kato</h4>
-                    <p class="artist-genre">Electronic • Dance</p>
-                    <p class="artist-bio">Innovative producer blending traditional African rhythms with modern electronic sounds.</p>
-                    <div class="artist-stats">
-                        <span>45K+ Streams</span>
-                        <span>•</span>
-                        <span>8 Releases</span>
-                    </div>
-                    <div class="artist-socials">
-                        <a href="#" target="_blank" title="Instagram">
-                            <i class="fab fa-instagram"></i>
-                        </a>
-                        <a href="#" target="_blank" title="Spotify">
-                            <i class="fab fa-spotify"></i>
-                        </a>
-                        <a href="#" target="_blank" title="SoundCloud">
-                            <i class="fab fa-soundcloud"></i>
-                        </a>
-                    </div>
-                </div>
-                <div class="artist-card">
-                    <div class="artist-image">
-                        <img src="" alt="Lila Rose">
-                    </div>
-                    <h4>Lila Rose</h4>
-                    <p class="artist-genre">R&B • Soul</p>
-                    <p class="artist-bio">Emerging R&B sensation with a unique blend of soulful melodies and contemporary production.</p>
-                    <div class="artist-stats">
-                        <span>25K+ Streams</span>
-                        <span>•</span>
-                        <span>5 Releases</span>
-                    </div>
-                    <div class="artist-socials">
-                        <a href="#" target="_blank" title="Instagram">
-                            <i class="fab fa-instagram"></i>
-                        </a>
-                        <a href="#" target="_blank" title="Spotify">
-                            <i class="fab fa-spotify"></i>
-                        </a>
-                        <a href="#" target="_blank" title="YouTube">
-                            <i class="fab fa-youtube"></i>
-                        </a>
-                    </div>
-                </div>
-                <div class="artist-card">
-                    <div class="artist-image">
-                        <img src="" alt="The UG Collective">
-                    </div>
-                    <h4>The UG Collective</h4>
-                    <p class="artist-genre">Dancehall • Afrobeat</p>
-                    <p class="artist-bio">Dynamic group bringing fresh energy to the Ugandan music scene with infectious rhythms.</p>
-                    <div class="artist-stats">
-                        <span>80K+ Streams</span>
-                        <span>•</span>
-                        <span>12 Releases</span>
-                    </div>
-                    <div class="artist-socials">
-                        <a href="#" target="_blank" title="Instagram">
-                            <i class="fab fa-instagram"></i>
-                        </a>
-                        <a href="#" target="_blank" title="Spotify">
-                            <i class="fab fa-spotify"></i>
-                        </a>
-                        <a href="#" target="_blank" title="TikTok">
-                            <i class="fab fa-tiktok"></i>
-                        </a>
-                    </div>
-                </div>
+            <div class="artists-grid">
+                <!-- Artists will be loaded dynamically from Firestore -->
             </div>
             <div style="text-align: center; margin-top: 3rem;">
                 <a href="artists.html" class="btn btn-primary">Meet All Artists</a>
-            </div>-->
+            </div>
         </div>
     </section>
 
@@ -749,5 +600,11 @@
 
     <script src="scripts/main.js"></script>
     <script src="scripts/membership-payments.js"></script>
+<<<<<<< HEAD
+=======
+    <script src="scripts/video-optimizer.js"></script>
+    <script type="module" src="scripts/firebase-init.js"></script>
+    <script type="module" src="scripts/home-page.js"></script>
+>>>>>>> 2b92a8df1af7b3743ddcc63cb8e52ce60944f627
 </body>
 </html>

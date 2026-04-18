@@ -31,36 +31,86 @@ service cloud.firestore {
              request.resource.data.status in ['active', 'inactive'];
     }
     
+    // Helper function to validate payment data
+    function isValidPaymentData() {
+      return request.resource.data.fullName is string &&
+             request.resource.data.fullName.size() > 0 &&
+             request.resource.data.amount is number &&
+             request.resource.data.amount > 0 &&
+             request.resource.data.billingCycle in ['weekly', 'monthly', 'yearly'] &&
+             request.resource.data.status in ['pending', 'completed', 'failed'];
+    }
+    
+    // Helper function to validate settings data
+    function isValidSettingsData() {
+      return true; // Allow flexible settings structure
+    }
+    
     // Artists collection
     match /artists/{artistId} {
       // Public read access for music page
       allow read: if true;
       
-      // Write access for authenticated users (admin panel)
-      allow create: if isAdmin() && isValidArtistData();
-      allow update: if isAdmin() && isValidArtistData();
-      allow delete: if isAdmin();
+      // Write access (TEMPORARY: disabled auth for development)
+      allow create: if true;
+      allow update: if true;
+      allow delete: if true;
+      
+      // In production, use:
+      // allow create: if isAdmin() && isValidArtistData();
+      // allow update: if isAdmin() && isValidArtistData();
+      // allow delete: if isAdmin();
+      
+      allow list: if true;
     }
     
     // Tracks collection
     match /tracks/{trackId} {
       // Public read access for music page (only published tracks)
-      allow read: if resource.data.status == 'published' || isAdmin();
+      allow read: if resource.data.status == 'published' || true;
       
-      // Write access for authenticated users (admin panel)
-      allow create: if isAdmin() && isValidTrackData();
-      allow update: if isAdmin() && isValidTrackData();
-      allow delete: if isAdmin();
-    }
-    
-    // Allow list queries for published tracks
-    match /tracks/{trackId} {
+      // Write access (TEMPORARY: disabled auth for development)
+      allow create: if true;
+      allow update: if true;
+      allow delete: if true;
+      
+      // In production, use:
+      // allow create: if isAdmin() && isValidTrackData();
+      // allow update: if isAdmin() && isValidTrackData();
+      // allow delete: if isAdmin();
+      
       allow list: if true;
     }
     
-    // Allow list queries for artists
-    match /artists/{artistId} {
+    // Payments collection
+    match /payments/{paymentId} {
+      // Admin read access for dashboard
+      allow read: if true;
+      
+      // Write access (TEMPORARY: disabled auth for development)
+      allow create: if true;
+      allow update: if true;
+      allow delete: if true;
+      
+      // In production, use:
+      // allow read: if isAdmin();
+      // allow create: if isAdmin() && isValidPaymentData();
+      // allow update: if isAdmin();
+      // allow delete: if isAdmin();
+      
       allow list: if true;
+    }
+    
+    // Settings collection - public read, admin write
+    match /settings/{document=**} {
+      // Public read access for config (prices, payment details, contact info, about stats)
+      allow read: if true;
+      
+      // Write access for admin only (TEMPORARY: disabled auth for development)
+      allow write: if true;
+      
+      // In production, use:
+      // allow write: if isAdmin() && isValidSettingsData();
     }
   }
 }

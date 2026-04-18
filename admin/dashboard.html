@@ -33,24 +33,24 @@
             </div>
 
             <div class="nav-section">
-    <h4>CONTENT</h4>
-    <a href="#" class="nav-item" data-target="artists">
-        <i class="fas fa-users"></i>
-        <span>Artists</span>
-    </a>
-    <a href="#" class="nav-item" data-target="tracks">
-        <i class="fas fa-music"></i>
-        <span>Tracks</span>
-    </a>
-    <a href="#" class="nav-item" data-target="music-management">
-        <i class="fas fa-cloud-upload-alt"></i>
-        <span>Music Management</span>
-    </a>
-    <a href="#" class="nav-item" data-target="projects">
-        <i class="fas fa-project-diagram"></i>
-        <span>Projects</span>
-    </a>
-</div>
+                <h4>CONTENT</h4>
+                <a href="#" class="nav-item" data-target="artists">
+                    <i class="fas fa-users"></i>
+                    <span>Artists</span>
+                </a>
+                <a href="#" class="nav-item" data-target="tracks">
+                    <i class="fas fa-music"></i>
+                    <span>Tracks</span>
+                </a>
+                <a href="#" class="nav-item" data-target="music-management">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <span>Music Management</span>
+                </a>
+                <a href="#" class="nav-item" data-target="projects">
+                    <i class="fas fa-project-diagram"></i>
+                    <span>Projects</span>
+                </a>
+            </div>
 
             <div class="nav-section">
                 <h4>FINANCIAL</h4>
@@ -87,8 +87,8 @@
                     <i class="fas fa-user-shield"></i>
                 </div>
                 <div class="user-details">
-                    <strong>Admin User</strong>
-                    <span>Super Admin</span>
+                    <strong id="userName"></strong>
+                    <span id="userRole"></span>
                 </div>
             </div>
         </div>
@@ -109,7 +109,7 @@
                 </div>
                 <button class="btn btn-icon" id="notificationsBtn">
                     <i class="fas fa-bell"></i>
-                    <span class="badge">3</span>
+                    <span class="badge" id="notificationBadge"></span>
                 </button>
                 <button class="btn btn-icon" id="fullscreenBtn">
                     <i class="fas fa-expand"></i>
@@ -126,10 +126,10 @@
                         <i class="fas fa-money-bill-wave"></i>
                     </div>
                     <div class="stat-info">
-                        <h3 id="totalRevenue">UGX 12,450,000</h3>
+                        <h3 id="totalRevenue"></h3>
                         <p>Total Revenue</p>
-                        <span class="stat-change positive">
-                            <i class="fas fa-arrow-up"></i> 15.2%
+                        <span class="stat-change" id="revenueChange">
+                            <i class="fas fa-arrow-up"></i>
                         </span>
                     </div>
                 </div>
@@ -139,10 +139,10 @@
                         <i class="fas fa-project-diagram"></i>
                     </div>
                     <div class="stat-info">
-                        <h3 id="activeProjects">8</h3>
+                        <h3 id="activeProjects"></h3>
                         <p>Active Projects</p>
-                        <span class="stat-change positive">
-                            <i class="fas fa-arrow-up"></i> 2 new
+                        <span class="stat-change" id="projectsChange">
+                            <i class="fas fa-arrow-up"></i>
                         </span>
                     </div>
                 </div>
@@ -152,10 +152,10 @@
                         <i class="fas fa-users"></i>
                     </div>
                     <div class="stat-info">
-                        <h3 id="totalArtists">24</h3>
+                        <h3 id="totalArtists"></h3>
                         <p>Total Artists</p>
-                        <span class="stat-change positive">
-                            <i class="fas fa-arrow-up"></i> 12.5%
+                        <span class="stat-change" id="artistsChange">
+                            <i class="fas fa-arrow-up"></i>
                         </span>
                     </div>
                 </div>
@@ -165,10 +165,10 @@
                         <i class="fas fa-clock"></i>
                     </div>
                     <div class="stat-info">
-                        <h3 id="pendingPayments">5</h3>
+                        <h3 id="pendingPayments"></h3>
                         <p>Pending Payments</p>
-                        <span class="stat-change negative">
-                            <i class="fas fa-arrow-down"></i> 3 resolved
+                        <span class="stat-change" id="paymentsChange">
+                            <i class="fas fa-arrow-down"></i>
                         </span>
                     </div>
                 </div>
@@ -222,28 +222,28 @@
                                 <i class="fas fa-music"></i>
                                 <span>Total Tracks</span>
                             </div>
-                            <span class="stat-value">42</span>
+                            <span class="stat-value" id="totalTracksValue"></span>
                         </div>
                         <div class="stat-item">
                             <div class="stat-label">
                                 <i class="fas fa-headphones"></i>
                                 <span>Streams This Month</span>
                             </div>
-                            <span class="stat-value">1.2M</span>
+                            <span class="stat-value" id="streamsValue"></span>
                         </div>
                         <div class="stat-item">
                             <div class="stat-label">
                                 <i class="fas fa-calendar-check"></i>
                                 <span>Bookings This Week</span>
                             </div>
-                            <span class="stat-value">15</span>
+                            <span class="stat-value" id="bookingsValue"></span>
                         </div>
                         <div class="stat-item">
                             <div class="stat-label">
                                 <i class="fas fa-star"></i>
                                 <span>Avg. Rating</span>
                             </div>
-                            <span class="stat-value">4.8/5</span>
+                            <span class="stat-value" id="ratingValue"></span>
                         </div>
                     </div>
                 </div>
@@ -619,6 +619,336 @@
             </div>
         </section>
 
+        <!-- Settings Section -->
+        <section class="admin-section" id="settings">
+            <div class="section-header">
+                <h2>Studio Settings</h2>
+                <div class="section-actions">
+                    <button class="btn btn-primary" id="saveSettings">
+                        <i class="fas fa-save"></i> Save Settings
+                    </button>
+                </div>
+            </div>
+
+            <div class="settings-container">
+                <!-- Payment Details -->
+                <div class="settings-card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-credit-card"></i> Payment Details</h3>
+                        <p>Configure payment methods and contact information</p>
+                    </div>
+                    <form id="paymentSettingsForm">
+                        <div class="form-group">
+                            <label for="mtnNumber">MTN Mobile Money Number</label>
+                            <input type="text" id="mtnNumber" name="mtnNumber" placeholder="+256 7XX XXX XXX">
+                        </div>
+                        <div class="form-group">
+                            <label for="airtelNumber">Airtel Money Number</label>
+                            <input type="text" id="airtelNumber" name="airtelNumber" placeholder="+256 7XX XXX XXX">
+                        </div>
+                        <div class="form-group">
+                            <label for="bankName">Bank Name</label>
+                            <input type="text" id="bankName" name="bankName" placeholder="e.g. Centenary Bank">
+                        </div>
+                        <div class="form-group">
+                            <label for="bankAccount">Bank Account Number</label>
+                            <input type="text" id="bankAccount" name="bankAccount" placeholder="Account number">
+                        </div>
+                        <div class="form-group">
+                            <label for="bankAccountName">Account Name</label>
+                            <input type="text" id="bankAccountName" name="bankAccountName" placeholder="Account holder name">
+                        </div>
+                        <div class="form-group">
+                            <label for="supportPhone">Support Phone Number</label>
+                            <input type="text" id="supportPhone" name="supportPhone" placeholder="+256 XXX XXX XXX">
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Membership Plans -->
+                <div class="settings-card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-crown"></i> Membership Plans</h3>
+                        <p>Configure membership pricing and features</p>
+                    </div>
+                    <form id="plansSettingsForm">
+                        <div class="plan-config">
+                            <h4>Weekly Pass</h4>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="weeklyPrice">Price (UGX)</label>
+                                    <input type="number" id="weeklyPrice" name="weeklyPrice" placeholder="150000">
+                                </div>
+                                <div class="form-group">
+                                    <label for="weeklyDescription">Description</label>
+                                    <textarea id="weeklyDescription" name="weeklyDescription" rows="2" placeholder="Plan features..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="plan-config">
+                            <h4>Monthly Pro</h4>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="monthlyPrice">Price (UGX)</label>
+                                    <input type="number" id="monthlyPrice" name="monthlyPrice" placeholder="500000">
+                                </div>
+                                <div class="form-group">
+                                    <label for="monthlyDescription">Description</label>
+                                    <textarea id="monthlyDescription" name="monthlyDescription" rows="2" placeholder="Plan features..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="plan-config">
+                            <h4>Yearly Elite</h4>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="yearlyPrice">Price (UGX)</label>
+                                    <input type="number" id="yearlyPrice" name="yearlyPrice" placeholder="5000000">
+                                </div>
+                                <div class="form-group">
+                                    <label for="yearlyDescription">Description</label>
+                                    <textarea id="yearlyDescription" name="yearlyDescription" rows="2" placeholder="Plan features..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Service Pricing -->
+                <div class="settings-card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-tags"></i> Service Pricing</h3>
+                        <p>Configure pricing for studio services</p>
+                    </div>
+                    <form id="servicePricingForm">
+                        <div class="plan-config">
+                            <h4>Music Production</h4>
+                            <div class="form-group">
+                                <label for="productionPrice">Price per track (UGX)</label>
+                                <input type="number" id="productionPrice" name="productionPrice" placeholder="1800000">
+                            </div>
+                        </div>
+                        <div class="plan-config">
+                            <h4>Mixing & Mastering</h4>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="mixingPrice">Mixing per track (UGX)</label>
+                                    <input type="number" id="mixingPrice" name="mixingPrice" placeholder="900000">
+                                </div>
+                                <div class="form-group">
+                                    <label for="masteringPrice">Mastering per track (UGX)</label>
+                                    <input type="number" id="masteringPrice" name="masteringPrice" placeholder="360000">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="plan-config">
+                            <h4>Vocal Production</h4>
+                            <div class="form-group">
+                                <label for="vocalPrice">Price per vocal track (UGX)</label>
+                                <input type="number" id="vocalPrice" name="vocalPrice" placeholder="540000">
+                            </div>
+                        </div>
+                        <div class="plan-config">
+                            <h4>Studio Rental</h4>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="hourlyRate">Hourly rate (UGX)</label>
+                                    <input type="number" id="hourlyRate" name="hourlyRate" placeholder="50000">
+                                </div>
+                                <div class="form-group">
+                                    <label for="packagePrice">4-session package (UGX)</label>
+                                    <input type="number" id="packagePrice" name="packagePrice" placeholder="180000">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="plan-config">
+                            <h4>Additional Services</h4>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="songwritingPrice">Songwriting per hour (UGX)</label>
+                                    <input type="number" id="songwritingPrice" name="songwritingPrice" placeholder="270000">
+                                </div>
+                                <div class="form-group">
+                                    <label for="restorationPrice">Audio restoration per project (UGX)</label>
+                                    <input type="number" id="restorationPrice" name="restorationPrice" placeholder="720000">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="sessionMusicianMin">Session musician min (UGX)</label>
+                                <input type="number" id="sessionMusicianMin" name="sessionMusicianMin" placeholder="180000">
+                            </div>
+                            <div class="form-group">
+                                <label for="sessionMusicianMax">Session musician max (UGX)</label>
+                                <input type="number" id="sessionMusicianMax" name="sessionMusicianMax" placeholder="540000">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Budget Tiers -->
+                <div class="settings-card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-wallet"></i> Budget Tiers</h3>
+                        <p>Configure budget ranges for contact form</p>
+                    </div>
+                    <form id="budgetTiersForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="budgetStandard">Standard (UGX)</label>
+                                <input type="number" id="budgetStandard" name="budgetStandard" placeholder="200000">
+                            </div>
+                            <div class="form-group">
+                                <label for="budgetClassic">Classic (UGX)</label>
+                                <input type="number" id="budgetClassic" name="budgetClassic" placeholder="350000">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="budgetPremium">Premium (UGX)</label>
+                                <input type="number" id="budgetPremium" name="budgetPremium" placeholder="500000">
+                            </div>
+                            <div class="form-group">
+                                <label for="budgetDeluxe">Deluxe (UGX)</label>
+                                <input type="number" id="budgetDeluxe" name="budgetDeluxe" placeholder="750000">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Contact Information -->
+                <div class="settings-card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-envelope"></i> Contact Information</h3>
+                        <p>Configure contact details for website and footer</p>
+                    </div>
+                    <form id="contactSettingsForm">
+                        <div class="form-group">
+                            <label for="contactPhone">Phone Number</label>
+                            <input type="text" id="contactPhone" name="contactPhone" placeholder="+256 757 858 462">
+                        </div>
+                        <div class="form-group">
+                            <label for="contactEmail">Email Address</label>
+                            <input type="email" id="contactEmail" name="contactEmail" placeholder="chasexbigoma@gmail.com">
+                        </div>
+                        <div class="form-group">
+                            <label for="contactLocation">Location</label>
+                            <input type="text" id="contactLocation" name="contactLocation" placeholder="Mbale City, Eastern Region, Uganda">
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Plan Savings -->
+                <div class="settings-card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-percent"></i> Plan Savings</h3>
+                        <p>Configure savings display text for membership plans</p>
+                    </div>
+                    <form id="planSavingsForm">
+                        <div class="form-group">
+                            <label for="monthlySavings">Monthly Plan Savings Text</label>
+                            <input type="text" id="monthlySavings" name="monthlySavings" placeholder="Save UGX 100,000">
+                        </div>
+                        <div class="form-group">
+                            <label for="yearlySavings">Yearly Plan Savings Text</label>
+                            <input type="text" id="yearlySavings" name="yearlySavings" placeholder="Save UGX 1,000,000">
+                        </div>
+                    </form>
+                </div>
+
+                <!-- About Page Stats -->
+                <div class="settings-card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-chart-line"></i> About Page Statistics</h3>
+                        <p>Configure statistics displayed on the about page</p>
+                    </div>
+                    <form id="aboutStatsForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="statProjects">Projects Completed</label>
+                                <input type="text" id="statProjects" name="statProjects" placeholder="200+">
+                            </div>
+                            <div class="form-group">
+                                <label for="statArtists">Artists Worked With</label>
+                                <input type="text" id="statArtists" name="statArtists" placeholder="50+">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="statStreams">Streams Generated</label>
+                            <input type="text" id="statStreams" name="statStreams" placeholder="5M+">
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- Savings Section -->
+        <section class="admin-section" id="savings">
+            <div class="section-header">
+                <h2>Savings Goals</h2>
+                <div class="section-actions">
+                    <button class="btn btn-primary" type="button">
+                        <i class="fas fa-plus"></i> Add Goal
+                    </button>
+                </div>
+            </div>
+
+            <div class="savings-container">
+                <div class="savings-summary">
+                    <div class="summary-card">
+                        <h3>Total Saved</h3>
+                        <p class="summary-value">UGX 0</p>
+                    </div>
+                    <div class="summary-card">
+                        <h3>Active Goals</h3>
+                        <p class="summary-value">0</p>
+                    </div>
+                </div>
+
+                <div class="savings-list">
+                    <p class="text-center">No savings goals yet. Click "Add Goal" to create one.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Reports Section -->
+        <section class="admin-section" id="reports">
+            <div class="section-header">
+                <h2>Reports</h2>
+                <div class="section-actions">
+                    <button class="btn btn-secondary" type="button">
+                        <i class="fas fa-download"></i> Export Report
+                    </button>
+                </div>
+            </div>
+
+            <div class="reports-container">
+                <div class="report-filters">
+                    <div class="filter-group">
+                        <label>Report Type:</label>
+                        <select>
+                            <option>Revenue Report</option>
+                            <option>Artist Performance</option>
+                            <option>Track Analytics</option>
+                            <option>Payment History</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Date Range:</label>
+                        <input type="date">
+                        <span>to</span>
+                        <input type="date">
+                    </div>
+                    <button class="btn btn-primary">
+                        <i class="fas fa-filter"></i> Generate Report
+                    </button>
+                </div>
+
+                <div class="report-preview">
+                    <p class="text-center">Select report type and date range to generate a report.</p>
+                </div>
+            </div>
+        </section>
+
         <!-- Add Artist Modal -->
         <div class="modal" id="addArtistModal" aria-hidden="true">
             <div class="modal-content">
@@ -682,5 +1012,6 @@
     <script src="admin.js"></script>
     <script type="module" src="../scripts/firebase-init.js"></script>
     <script type="module" src="../scripts/admin-firebase.js"></script>
+    <script type="module" src="../scripts/config-loader.js"></script>
 </body>
 </html>

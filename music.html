@@ -54,18 +54,6 @@
                 <div class="music-hero-image-wrapper">
                     <div class="music-hero-image-shape"></div>
                     <img src="images/headphonesonmixer.jpg" alt="Headphones on mixer" class="music-hero-image" fetchpriority="high" decoding="async" width="800" height="600">
-                    <div class="music-hero-float music-hero-float-1">
-                        <i class="fas fa-music"></i>
-                    </div>
-                    <div class="music-hero-float music-hero-float-2">
-                        <i class="fas fa-headphones"></i>
-                    </div>
-                    <div class="music-hero-float music-hero-float-3">
-                        <i class="fas fa-compact-disc"></i>
-                    </div>
-                    <div class="music-hero-float music-hero-float-4">
-                        <i class="fas fa-microphone"></i>
-                    </div>
                     <div class="music-hero-glow"></div>
                     <div class="music-hero-wave music-hero-wave-1"></div>
                     <div class="music-hero-wave music-hero-wave-2"></div>
@@ -217,7 +205,7 @@
                         </button>
                     </div>
                     <div class="search-results-info" id="searchResultsInfo">
-                        <span id="resultsCount">6 tracks</span>
+                        <span id="resultsCount"></span>
                         <button class="search-filter-toggle" id="searchFilterToggle">
                             <i class="fas fa-sliders-h"></i>
                             Filters
@@ -311,6 +299,7 @@
 
     <div data-include="partials/footer.html"></div>
 
+    <script type="module" src="scripts/firebase-init.js"></script>
     <script src="scripts/audio-player.js"></script>
     <script src="scripts/main.js"></script>
     <script type="module" src="scripts/music-page.js"></script>
