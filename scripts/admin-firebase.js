@@ -2,10 +2,12 @@ import {
   collection,
   addDoc,
   getDocs,
+  getDoc,
   query,
   orderBy,
   serverTimestamp,
   deleteDoc,
+  updateDoc,
   doc,
 } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js'
 
@@ -77,7 +79,7 @@ async function renderArtistsTable() {
         const stats = statsByArtist.get(a.id) || { tracks: 0, streams: 0 }
 
         return `
-          <tr>
+          <tr data-artist-id="${a.id}">
             <td>
               <div class="artist-cell">
                 ${image ? `<img src="${image}" alt="${name}" class="artist-avatar">` : ''}
@@ -91,8 +93,11 @@ async function renderArtistsTable() {
             <td><span class="status-badge status-${status}">${status}</span></td>
             <td>
               <div class="action-buttons">
-                <button class="btn btn-secondary btn-sm" type="button" disabled>
-                  <i class="fas fa-eye"></i>
+                <button class="btn btn-secondary btn-sm" type="button" onclick="window.editArtist('${a.id}')" title="Edit">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn btn-danger btn-sm" type="button" onclick="window.deleteArtist('${a.id}', '${name.replace(/'/g, "\\'")}')" title="Delete">
+                  <i class="fas fa-trash"></i>
                 </button>
               </div>
             </td>
@@ -163,11 +168,27 @@ async function populateArtistSelect(selectedId = '') {
   if (selectedId) select.value = selectedId
 }
 
+let editingArtistId = null
+
 function openAddArtistModal() {
   const modal = document.getElementById('addArtistModal')
   if (!modal) return
+  editingArtistId = null
   modal.style.display = 'flex'
   modal.setAttribute('aria-hidden', 'false')
+  
+  // Reset form for add mode
+  const form = document.getElementById('addArtistForm')
+  if (form) {
+    form.reset()
+    setArtistImagePreview(null)
+  }
+  
+  // Update modal title
+  const modalTitle = modal.querySelector('.modal-header h3')
+  if (modalTitle) {
+    modalTitle.textContent = 'Add New Artist'
+  }
 }
 
 function closeAddArtistModal() {
@@ -243,7 +264,7 @@ function restoreAudioUploadDraft(draft) {
 
 async function handleAddArtistSubmit(e) {
   e.preventDefault()
-  console.log('[admin-firebase] Add artist submit')
+  console.log('[admin-firebase] Add/Edit artist submit')
   const form = e.currentTarget
   const fd = new FormData(form)
 
@@ -287,19 +308,42 @@ async function handleAddArtistSubmit(e) {
       }
     }
 
-    const ref = await addDoc(collection(db, 'artists'), {
+    const artistData = {
       name,
       genre,
       bio,
       image: imageUrl,
       status: 'active',
-      createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
-    })
+    }
 
-    // Refresh caches + selects
-    artistCache = null
-    await populateArtistSelect(ref.id)
+    if (editingArtistId) {
+      // Update existing artist
+      // Keep existing image if no new image uploaded
+      if (!imageUrl) {
+        const existingArtist = await getArtistById(editingArtistId)
+        if (existingArtist && existingArtist.image) {
+          artistData.image = existingArtist.image
+        }
+      }
+      await updateArtistInFirestore(editingArtistId, artistData)
+      
+      if (window.notifications) {
+        window.notifications.show('Artist updated successfully!', 'success')
+      }
+    } else {
+      // Create new artist
+      artistData.createdAt = serverTimestamp()
+      const ref = await addDoc(collection(db, 'artists'), artistData)
+      
+      // Refresh caches + selects
+      artistCache = null
+      await populateArtistSelect(ref.id)
+      
+      if (window.notifications) {
+        window.notifications.show('Artist added successfully!', 'success')
+      }
+    }
 
     // Refresh artists table (if visible)
     await renderArtistsTable()
@@ -313,6 +357,7 @@ async function handleAddArtistSubmit(e) {
     closeAddArtistModal()
     form.reset()
     setArtistImagePreview(null)
+    editingArtistId = null
   } catch (err) {
     console.error(err)
     alert('Failed to save artist. Check console for details.')
@@ -460,6 +505,37 @@ async function deleteArtistFromFirestore(artistId) {
     return true;
   } catch (error) {
     console.error('[admin-firebase] Error deleting artist:', error);
+    throw error;
+  }
+}
+
+// Update artist in Firestore
+async function updateArtistInFirestore(artistId, artistData) {
+  try {
+    const artistRef = doc(db, 'artists', artistId);
+    await updateDoc(artistRef, {
+      ...artistData,
+      updatedAt: serverTimestamp()
+    });
+    console.log('[admin-firebase] Artist updated:', artistId);
+    return true;
+  } catch (error) {
+    console.error('[admin-firebase] Error updating artist:', error);
+    throw error;
+  }
+}
+
+// Get artist by ID
+async function getArtistById(artistId) {
+  try {
+    const artistRef = doc(db, 'artists', artistId);
+    const artistSnap = await getDoc(artistRef);
+    if (artistSnap.exists()) {
+      return { id: artistSnap.id, ...artistSnap.data() };
+    }
+    return null;
+  } catch (error) {
+    console.error('[admin-firebase] Error fetching artist:', error);
     throw error;
   }
 }
