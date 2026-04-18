@@ -70,18 +70,42 @@ class AdminPanel {
             this.openArtistModal();
         });
 
-        document.getElementById('closeAddArtistModal')?.addEventListener('click', () => {
-            this.closeArtistModal();
-        });
+        // Add artist modal event listeners
+        const addArtistModal = document.getElementById('addArtistModal');
+        const closeAddArtistModal = document.getElementById('closeAddArtistModal');
+        const cancelAddArtist = document.getElementById('cancelAddArtist');
+        const addArtistForm = document.getElementById('addArtistForm');
 
-        document.getElementById('cancelAddArtist')?.addEventListener('click', () => {
-            this.closeArtistModal();
-        });
+        if (closeAddArtistModal) {
+            closeAddArtistModal.addEventListener('click', () => this.closeArtistModal());
+        }
+        if (cancelAddArtist) {
+            cancelAddArtist.addEventListener('click', () => this.closeArtistModal());
+        }
+        if (addArtistForm) {
+            addArtistForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.saveArtist();
+            });
+        }
 
-        document.getElementById('addArtistForm')?.addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.saveArtist();
-        });
+        // Add team member modal event listeners
+        const closeTeamMemberModal = document.getElementById('closeTeamMemberModal');
+        const cancelTeamMember = document.getElementById('cancelTeamMember');
+        const addTeamMemberForm = document.getElementById('addTeamMemberForm');
+
+        if (closeTeamMemberModal) {
+            closeTeamMemberModal.addEventListener('click', () => this.closeTeamMemberModal());
+        }
+        if (cancelTeamMember) {
+            cancelTeamMember.addEventListener('click', () => this.closeTeamMemberModal());
+        }
+        if (addTeamMemberForm) {
+            addTeamMemberForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.saveTeamMember();
+            });
+        }
 
         // Artist image preview
         const artistImageInput = document.getElementById('artistImage');
@@ -1033,10 +1057,211 @@ class AdminPanel {
 
     async loadTeam() {
         console.log('Loading team members...');
-        // Team section functionality to be implemented
         const table = document.getElementById('teamTable');
-        if (table) {
-            table.innerHTML = '<tr><td colspan="7" class="text-center">Team management coming soon</td></tr>';
+        if (!table) {
+            console.error('Team table container not found');
+            return;
+        }
+
+        try {
+            const { db } = await import('../scripts/firebase-init.js');
+            const { collection, getDocs, query, orderBy } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+            
+            const teamQuery = query(collection(db, 'team'), orderBy('name'));
+            const querySnapshot = await getDocs(teamQuery);
+            
+            const teamMembers = [];
+            querySnapshot.forEach((doc) => {
+                teamMembers.push({ id: doc.id, ...doc.data() });
+            });
+
+            if (teamMembers.length === 0) {
+                table.innerHTML = '<tr><td colspan="5" class="text-center">No team members found</td></tr>';
+                return;
+            }
+
+            table.innerHTML = teamMembers.map(member => `
+                <tr>
+                    <td>
+                        <div class="member-cell">
+                            <img src="${member.image || 'https://via.placeholder.com/40'}" alt="${member.name}" class="member-avatar">
+                            <div>
+                                <strong>${member.name}</strong>
+                                <small>${member.badge || ''}</small>
+                            </div>
+                        </div>
+                    </td>
+                    <td>${member.role}</td>
+                    <td>${(member.skills || []).join(', ')}</td>
+                    <td><span class="status-badge status-${member.status || 'active'}">${member.status || 'active'}</span></td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn btn-primary btn-sm" onclick="adminPanel.editTeamMember('${member.id}')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-danger btn-sm" onclick="adminPanel.deleteTeamMember('${member.id}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        } catch (error) {
+            console.error('Error loading team members:', error);
+            table.innerHTML = '<tr><td colspan="5" class="text-center">Error loading team members</td></tr>';
+        }
+    }
+
+    addNewTeamMember() {
+        this.openTeamMemberModal();
+    }
+
+    editTeamMember(memberId) {
+        // Fetch team member data and populate modal
+        this.loadTeamMemberForEdit(memberId);
+    }
+
+    async loadTeamMemberForEdit(memberId) {
+        try {
+            const { db } = await import('../scripts/firebase-init.js');
+            const { doc, getDoc } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+            
+            const docRef = doc(db, 'team', memberId);
+            const docSnap = await getDoc(docRef);
+            
+            if (docSnap.exists()) {
+                const member = { id: docSnap.id, ...docSnap.data() };
+                this.openTeamMemberModal(member);
+            } else {
+                this.showNotification('Team member not found', 'error');
+            }
+        } catch (error) {
+            console.error('Error loading team member:', error);
+            this.showNotification('Error loading team member: ' + error.message, 'error');
+        }
+    }
+
+    openTeamMemberModal(member = null) {
+        const modal = document.getElementById('addTeamMemberModal');
+        const form = document.getElementById('addTeamMemberForm');
+        const modalTitle = document.getElementById('teamModalTitle');
+        
+        if (!modal || !form) return;
+
+        // Reset form
+        form.reset();
+        document.getElementById('teamMemberImagePreview').classList.remove('is-visible');
+        document.getElementById('teamMemberImagePreview').style.backgroundImage = '';
+
+        if (member) {
+            // Edit mode
+            modalTitle.textContent = 'Edit Team Member';
+            document.getElementById('teamMemberName').value = member.name || '';
+            document.getElementById('teamMemberRole').value = member.role || '';
+            document.getElementById('teamMemberBadge').value = member.badge || '';
+            document.getElementById('teamMemberBio').value = member.bio || '';
+            document.getElementById('teamMemberSkills').value = (member.skills || []).join(', ');
+            document.getElementById('teamMemberStatus').value = member.status || 'active';
+            
+            if (member.image) {
+                const preview = document.getElementById('teamMemberImagePreview');
+                preview.classList.add('is-visible');
+                preview.style.backgroundImage = `url('${member.image}')`;
+            }
+            
+            this.editingItem = { type: 'team', id: member.id, data: member };
+        } else {
+            // Add mode
+            modalTitle.textContent = 'Add New Team Member';
+            this.editingItem = null;
+        }
+
+        modal.classList.add('active');
+        modal.setAttribute('aria-hidden', 'false');
+    }
+
+    closeTeamMemberModal() {
+        const modal = document.getElementById('addTeamMemberModal');
+        if (modal) {
+            modal.classList.remove('active');
+            modal.setAttribute('aria-hidden', 'true');
+        }
+        this.editingItem = null;
+    }
+
+    async saveTeamMember() {
+        const form = document.getElementById('addTeamMemberForm');
+        const name = document.getElementById('teamMemberName').value.trim();
+        const role = document.getElementById('teamMemberRole').value.trim();
+        const badge = document.getElementById('teamMemberBadge').value.trim();
+        const bio = document.getElementById('teamMemberBio').value.trim();
+        const skills = document.getElementById('teamMemberSkills').value.split(',').map(s => s.trim()).filter(s => s);
+        const status = document.getElementById('teamMemberStatus').value;
+        const imageInput = document.getElementById('teamMemberImage');
+
+        if (!name || !role) {
+            this.showNotification('Name and role are required', 'error');
+            return;
+        }
+
+        try {
+            let imageUrl = '';
+            
+            // Handle image upload if file selected
+            if (imageInput.files && imageInput.files[0]) {
+                imageUrl = await this.handleImageUpload(imageInput.files[0]);
+            } else if (this.editingItem && this.editingItem.data.image) {
+                imageUrl = this.editingItem.data.image;
+            }
+
+            const memberData = {
+                name,
+                role,
+                badge,
+                bio,
+                skills,
+                status,
+                image: imageUrl || 'https://via.placeholder.com/250',
+                createdAt: new Date().toISOString()
+            };
+
+            const { db } = await import('../scripts/firebase-init.js');
+            const { collection, addDoc, doc, updateDoc } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+
+            if (this.editingItem && this.editingItem.id) {
+                // Update existing team member
+                const docRef = doc(db, 'team', this.editingItem.id);
+                delete memberData.createdAt; // Don't update creation time
+                memberData.updatedAt = new Date().toISOString();
+                await updateDoc(docRef, memberData);
+                this.showNotification('Team member updated successfully!', 'success');
+            } else {
+                // Add new team member
+                await addDoc(collection(db, 'team'), memberData);
+                this.showNotification('Team member added successfully!', 'success');
+            }
+
+            this.closeTeamMemberModal();
+            this.loadTeam();
+        } catch (error) {
+            console.error('Error saving team member:', error);
+            this.showNotification('Error saving team member: ' + error.message, 'error');
+        }
+    }
+
+    async deleteTeamMember(memberId) {
+        if (confirm('Are you sure you want to delete this team member?')) {
+            try {
+                const { db } = await import('../scripts/firebase-init.js');
+                const { doc, deleteDoc } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+                
+                await deleteDoc(doc(db, 'team', memberId));
+                this.showNotification('Team member deleted successfully!', 'success');
+                this.loadTeam();
+            } catch (error) {
+                console.error('Error deleting team member:', error);
+                this.showNotification('Error deleting team member: ' + error.message, 'error');
+            }
         }
     }
 
@@ -1102,6 +1327,15 @@ class AdminPanel {
                 document.getElementById('statProjects').value = config.about.projects || '';
                 document.getElementById('statArtists').value = config.about.artists || '';
                 document.getElementById('statStreams').value = config.about.streams || '';
+            }
+            
+            // Populate social media links form
+            if (config.social) {
+                document.getElementById('socialInstagram').value = config.social.instagram || '';
+                document.getElementById('socialYouTube').value = config.social.youtube || '';
+                document.getElementById('socialTikTok').value = config.social.tiktok || '';
+                document.getElementById('socialTwitter').value = config.social.twitter || '';
+                document.getElementById('socialSpotify').value = config.social.spotify || '';
             }
             
             // Setup save button handler
@@ -1180,6 +1414,13 @@ class AdminPanel {
                     projects: document.getElementById('statProjects').value,
                     artists: document.getElementById('statArtists').value,
                     streams: document.getElementById('statStreams').value
+                },
+                social: {
+                    instagram: document.getElementById('socialInstagram').value,
+                    youtube: document.getElementById('socialYouTube').value,
+                    tiktok: document.getElementById('socialTikTok').value,
+                    twitter: document.getElementById('socialTwitter').value,
+                    spotify: document.getElementById('socialSpotify').value
                 }
             };
             

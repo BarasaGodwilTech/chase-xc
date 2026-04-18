@@ -112,5 +112,17 @@ service cloud.firestore {
       // In production, use:
       // allow write: if isAdmin() && isValidSettingsData();
     }
+    
+    // Team collection - public read, admin write
+    match /team/{document=**} {
+      // Public read access for team member info displayed on about page
+      allow read: if true;
+      
+      // Write access for admin only (TEMPORARY: disabled auth for development)
+      allow write: if true;
+      
+      // In production, use:
+      // allow write: if isAdmin() && isValidTeamData();
+    }
   }
 }
