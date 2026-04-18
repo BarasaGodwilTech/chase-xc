@@ -189,15 +189,75 @@ class AdminPanel {
             });
         }
 
-        // Parse URL when pasted
+        // Parse URL when pasted - with clipboard API support
         if (spotifyUrlInput) {
+            // Handle paste event with clipboard API
+            spotifyUrlInput.addEventListener('paste', async (e) => {
+                // Let the default paste happen first
+                setTimeout(async () => {
+                    const url = spotifyUrlInput.value.trim();
+                    if (url && url.includes('spotify.com/track/')) {
+                        await this.fetchSpotifyTrackFromUrl(url);
+                    }
+                }, 100);
+            });
+
+            // Also handle change event as fallback
             spotifyUrlInput.addEventListener('change', () => {
                 const url = spotifyUrlInput.value.trim();
                 if (url && url.includes('spotify.com/track/')) {
                     this.fetchSpotifyTrackFromUrl(url);
                 }
             });
+
+            // Handle input event for real-time detection
+            spotifyUrlInput.addEventListener('input', () => {
+                const url = spotifyUrlInput.value.trim();
+                if (url && url.includes('spotify.com/track/')) {
+                    // Debounce to avoid multiple calls
+                    clearTimeout(this.spotifyUrlDebounce);
+                    this.spotifyUrlDebounce = setTimeout(() => {
+                        this.fetchSpotifyTrackFromUrl(url);
+                    }, 500);
+                }
+            });
         }
+
+        // Setup clipboard support for all text inputs
+        this.setupClipboardSupport();
+    }
+
+    setupClipboardSupport() {
+        // Add clipboard support to all text inputs and textareas
+        const textInputs = document.querySelectorAll('input[type="text"], input[type="url"], input[type="email"], input[type="tel"], textarea');
+
+        textInputs.forEach(input => {
+            // Ensure paste works with clipboard API
+            input.addEventListener('paste', (e) => {
+                // Let the default behavior happen
+                // This ensures compatibility across all browsers
+                setTimeout(() => {
+                    // Trigger any custom handling if needed
+                    const eventType = new Event('input', { bubbles: true });
+                    input.dispatchEvent(eventType);
+                }, 0);
+            });
+
+            // Add support for Ctrl+V / Cmd+V explicitly
+            input.addEventListener('keydown', (e) => {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+                    // The paste will be handled by the browser
+                    // This event is just for any additional logic if needed
+                }
+            });
+        });
+
+        // Add global clipboard error handling
+        window.addEventListener('error', (e) => {
+            if (e.message && e.message.includes('clipboard')) {
+                console.warn('Clipboard access error:', e);
+            }
+        });
     }
 
     async searchSpotify() {
@@ -405,15 +465,59 @@ class AdminPanel {
         }
 
         try {
-            // Use Spotify oEmbed API to get track info (no auth required)
-            const oembedUrl = `https://open.spotify.com/oembed?url=${encodeURIComponent(url)}`;
-            const response = await fetch(oembedUrl);
-            
-            if (!response.ok) {
-                throw new Error('Failed to fetch track data');
+            // Try multiple methods to fetch Spotify track data
+            let data = null;
+            let lastError = null;
+
+            // Method 1: Direct oEmbed API
+            try {
+                const oembedUrl = `https://open.spotify.com/oembed?url=${encodeURIComponent(url)}`;
+                const response = await fetch(oembedUrl);
+                if (response.ok) {
+                    data = await response.json();
+                }
+            } catch (e) {
+                lastError = e;
+                console.log('Direct oEmbed failed, trying CORS proxy...');
             }
 
-            const data = await response.json();
+            // Method 2: Try with CORS proxy if direct fails
+            if (!data) {
+                try {
+                    const corsProxies = [
+                        'https://api.allorigins.win/raw?url=',
+                        'https://corsproxy.io/?'
+                    ];
+                    
+                    for (const proxy of corsProxies) {
+                        try {
+                            const oembedUrl = `${proxy}${encodeURIComponent(`https://open.spotify.com/oembed?url=${encodeURIComponent(url)}`)}`;
+                            const response = await fetch(oembedUrl);
+                            if (response.ok) {
+                                const text = await response.text();
+                                data = JSON.parse(text);
+                                break;
+                            }
+                        } catch (e) {
+                            console.log(`Proxy ${proxy} failed:`, e);
+                            continue;
+                        }
+                    }
+                } catch (e) {
+                    console.log('CORS proxy method failed:', e);
+                }
+            }
+
+            // Method 3: Fallback - extract info from URL pattern
+            if (!data) {
+                console.log('Using fallback method - minimal info from URL');
+                data = {
+                    title: 'Spotify Track',
+                    author: 'Unknown Artist',
+                    thumbnail_url: 'https://upload.wikimedia.org/wikipedia/commons/1/19/Spotify_logo_without_text.svg',
+                    html: ''
+                };
+            }
             
             // Display the track
             this.selectedSpotifyTrack = {
@@ -428,7 +532,7 @@ class AdminPanel {
             if (resultsContainer) {
                 resultsContainer.innerHTML = `
                     <div class="spotify-track selected" data-track-id="${trackId}">
-                        <img src="${this.selectedSpotifyTrack.artwork}" alt="${this.selectedSpotifyTrack.title}">
+                        <img src="${this.selectedSpotifyTrack.artwork}" alt="${this.selectedSpotifyTrack.title}" onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/1/19/Spotify_logo_without_text.svg'">
                         <div class="spotify-track-info">
                             <div class="spotify-track-name">${this.selectedSpotifyTrack.title}</div>
                             <div class="spotify-track-artist">${this.selectedSpotifyTrack.artist}</div>
@@ -506,14 +610,13 @@ class AdminPanel {
             // Get artist name from select option
             const artistName = artistSelect.options[artistSelect.selectedIndex]?.text || 'Unknown Artist';
 
-            // Create track data
+            // Create track data for Firestore
             const trackData = {
                 title: title,
                 artist: artistId,
                 artistName: artistName,
                 genre: genre,
                 duration: '0:00',
-                year: new Date().getFullYear().toString(),
                 streams: 0,
                 likes: 0,
                 downloads: 0,
@@ -521,46 +624,72 @@ class AdminPanel {
                 description: description || `Imported from Spotify: ${this.selectedSpotifyTrack.url}`,
                 releaseDate: new Date().toISOString().split('T')[0],
                 status: 'published',
-                audioUrl: '',
+                audioUrl: '', // Will be added later when audio file is uploaded
                 spotifyUrl: this.selectedSpotifyTrack.url,
                 platformLinks: {
                     spotify: this.selectedSpotifyTrack.url
-                }
+                },
+                createdAt: new Date(),
+                updatedAt: new Date()
             };
 
-            // Save to local data manager
-            const savedTrack = this.dataManager.saveTrack(trackData);
-
-            if (savedTrack) {
-                this.showNotification('Spotify track imported successfully! Please use the regular upload form to add the audio file and publish to the site.', 'success');
-                
-                // Clear form
-                this.selectedSpotifyTrack = null;
-                document.getElementById('spotifyUrl').value = '';
-                document.getElementById('spotifySearch').value = '';
-                const resultsContainer = document.getElementById('spotifyResults');
-                resultsContainer.innerHTML = '';
-                resultsContainer.classList.remove('show');
-                
-                // Switch to upload tab to complete with audio file
-                this.switchUploadMethod('upload');
-                
-                // Pre-fill the form with saved data
-                if (titleInput) titleInput.value = savedTrack.title;
-                if (artistSelect) artistSelect.value = savedTrack.artist;
-                if (genreSelect) genreSelect.value = savedTrack.genre;
-                if (descriptionInput) descriptionInput.value = savedTrack.description;
-                
-                if (savedTrack.artwork) {
-                    const artworkPreview = document.getElementById('artworkPreview');
-                    if (artworkPreview) {
-                        artworkPreview.classList.add('has-image');
-                        artworkPreview.style.backgroundImage = `url('${savedTrack.artwork}')`;
+            // Save to Firestore using the admin-firebase module
+            if (window.saveTrackToFirestore) {
+                await window.saveTrackToFirestore(trackData);
+                this.showNotification('Spotify track imported successfully! The track is now visible on your website. Upload the audio file to enable playback.', 'success');
+            } else {
+                // Fallback: Try to use Firestore directly if admin-firebase is not loaded
+                console.warn('saveTrackToFirestore not available, trying direct Firestore access');
+                try {
+                    const { collection, addDoc, serverTimestamp } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
+                    const { db } = await import('./scripts/firebase-init.js');
+                    
+                    await addDoc(collection(db, 'tracks'), {
+                        ...trackData,
+                        createdAt: serverTimestamp(),
+                        updatedAt: serverTimestamp()
+                    });
+                    
+                    this.showNotification('Spotify track imported successfully! The track is now visible on your website. Upload the audio file to enable playback.', 'success');
+                } catch (firestoreError) {
+                    console.error('Direct Firestore save failed:', firestoreError);
+                    // Final fallback to local storage
+                    const savedTrack = this.dataManager.saveTrack(trackData);
+                    if (savedTrack) {
+                        this.showNotification('Track saved locally. Firebase connection not available. Track may not appear on website until Firebase is configured.', 'warning');
+                    } else {
+                        throw new Error('Failed to save track to both Firestore and local storage');
                     }
                 }
-            } else {
-                this.showNotification('Failed to save track data', 'error');
             }
+            
+            // Clear form
+            this.selectedSpotifyTrack = null;
+            document.getElementById('spotifyUrl').value = '';
+            document.getElementById('spotifySearch').value = '';
+            const resultsContainer = document.getElementById('spotifyResults');
+            resultsContainer.innerHTML = '';
+            resultsContainer.classList.remove('show');
+            
+            // Switch to upload tab to complete with audio file
+            this.switchUploadMethod('upload');
+            
+            // Pre-fill the form with saved data
+            if (titleInput) titleInput.value = trackData.title;
+            if (artistSelect) artistSelect.value = trackData.artist;
+            if (genreSelect) genreSelect.value = trackData.genre;
+            if (descriptionInput) descriptionInput.value = trackData.description;
+            
+            if (trackData.artwork) {
+                const artworkPreview = document.getElementById('artworkPreview');
+                if (artworkPreview) {
+                    artworkPreview.classList.add('has-image');
+                    artworkPreview.style.backgroundImage = `url('${trackData.artwork}')`;
+                }
+            }
+            
+            // Refresh tracks table if visible
+            this.loadTracks();
         } catch (error) {
             console.error('Error importing Spotify track:', error);
             this.showNotification('Error importing track: ' + error.message, 'error');

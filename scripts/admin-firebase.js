@@ -386,6 +386,25 @@ async function handleAudioUploadSubmit(e) {
   }
 }
 
+// Helper function to save track data to Firestore (used by Spotify import)
+async function saveTrackToFirestore(trackData) {
+  try {
+    await addDoc(collection(db, 'tracks'), {
+      ...trackData,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+    console.log('[admin-firebase] Track saved to Firestore:', trackData.title);
+    return true;
+  } catch (error) {
+    console.error('[admin-firebase] Error saving track to Firestore:', error);
+    throw error;
+  }
+}
+
+// Make the function available globally for admin.js
+window.saveTrackToFirestore = saveTrackToFirestore;
+
 function initAdminFirebase() {
   console.log('[admin-firebase] init')
   try {

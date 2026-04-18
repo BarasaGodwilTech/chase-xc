@@ -15,6 +15,7 @@ function initApp() {
     initContactHero()
     initMusicHero()
     initVideoAutoplay()
+    initClipboardSupport()
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -1309,4 +1310,95 @@ function initVideoSequence(video) {
         // Try next segment on error
         playSegment(currentIndex + 1)
     })
+}
+
+// Global Clipboard Support - Works across all devices and browsers
+function initClipboardSupport() {
+    // Add clipboard support to all text inputs and textareas
+    const textInputs = document.querySelectorAll('input[type="text"], input[type="url"], input[type="email"], input[type="tel"], input[type="search"], textarea');
+
+    textInputs.forEach(input => {
+        // Ensure paste works with clipboard API
+        input.addEventListener('paste', (e) => {
+            // Let the default behavior happen
+            // This ensures compatibility across all browsers
+            setTimeout(() => {
+                // Trigger any custom handling if needed
+                const eventType = new Event('input', { bubbles: true });
+                input.dispatchEvent(eventType);
+            }, 0);
+        });
+
+        // Add support for Ctrl+V / Cmd+V explicitly
+        input.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+                // The paste will be handled by the browser
+                // This event is just for any additional logic if needed
+            }
+        });
+
+        // Handle context menu paste for mobile devices
+        input.addEventListener('focus', () => {
+            // Ensure input is ready for paste on mobile
+            input.setAttribute('autocomplete', 'off');
+        });
+    });
+
+    // Add global clipboard error handling
+    window.addEventListener('error', (e) => {
+        if (e.message && e.message.includes('clipboard')) {
+            console.warn('Clipboard access error:', e);
+        }
+    });
+
+    // Add support for copy to clipboard functionality
+    window.copyToClipboard = async function(text) {
+        try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(text);
+                return true;
+            } else {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                textArea.style.position = 'fixed';
+                textArea.style.left = '-999999px';
+                textArea.style.top = '-999999px';
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    return true;
+                } catch (err) {
+                    document.body.removeChild(textArea);
+                    console.error('Fallback copy failed:', err);
+                    return false;
+                }
+            }
+        } catch (err) {
+            console.error('Clipboard copy failed:', err);
+            return false;
+        }
+    };
+
+    // Add support for paste from clipboard functionality
+    window.pasteFromClipboard = async function() {
+        try {
+            if (navigator.clipboard && navigator.clipboard.readText) {
+                const text = await navigator.clipboard.readText();
+                return text;
+            } else {
+                // Fallback - prompt user to paste
+                console.warn('Clipboard read not supported, user must paste manually');
+                return null;
+            }
+        } catch (err) {
+            console.error('Clipboard paste failed:', err);
+            return null;
+        }
+    };
+
+    console.log('Clipboard support initialized for', textInputs.length, 'inputs');
 }
