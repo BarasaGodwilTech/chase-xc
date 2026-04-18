@@ -13,41 +13,18 @@
             <!-- <a href="savings.html" class="nav-link"><i class="fas fa-piggy-bank"></i> Savings</a> -->
             <a href="about.html" class="nav-link"><i class="fas fa-info-circle"></i> About</a>
             <a href="contact.html" class="nav-link"><i class="fas fa-envelope"></i> Contact</a>
-            
-            <!-- User Profile Icon (shown when logged in) -->
-            <div class="user-profile" id="userProfile" style="display: none;">
-                <div class="profile-toggle" id="profileToggle">
-                    <img id="userAvatar" src="" alt="User Avatar" class="user-avatar">
-                    <span id="userName" class="user-name"></span>
-                    <i class="fas fa-chevron-down profile-arrow"></i>
-                </div>
+            <div class="profile-icon" id="profileIcon" style="display: none;">
+                <i class="fas fa-user"></i>
                 <div class="profile-dropdown" id="profileDropdown">
-                    <div class="dropdown-header">
-                        <img id="dropdownAvatar" src="" alt="User Avatar" class="dropdown-avatar">
-                        <div class="dropdown-user-info">
-                            <span id="dropdownName" class="dropdown-name"></span>
-                            <span id="dropdownEmail" class="dropdown-email"></span>
-                        </div>
+                    <div class="profile-info">
+                        <span class="user-name" id="userName">User</span>
+                        <span class="user-email" id="userEmail">email@example.com</span>
                     </div>
-                    <div class="dropdown-menu">
-                        <a href="#" class="dropdown-item">
-                            <i class="fas fa-user"></i> My Profile
-                        </a>
-                        <a href="#" class="dropdown-item">
-                            <i class="fas fa-cog"></i> Settings
-                        </a>
-                        <hr class="dropdown-divider">
-                        <button id="navLogoutBtn" class="dropdown-item dropdown-logout">
-                            <i class="fas fa-sign-out-alt"></i> Sign Out
-                        </button>
-                    </div>
+                    <button class="dropdown-item" id="userLogoutBtn">
+                        <i class="fas fa-sign-out-alt"></i> Sign Out
+                    </button>
                 </div>
             </div>
-
-            <!-- Login Button (shown when not logged in) -->
-            <a href="auth.html" class="nav-link nav-login-btn" id="navLoginBtn">
-                <i class="fas fa-sign-in-alt"></i> Sign In
-            </a>
         </nav>
         <button class="hamburger" id="hamburger">
             <span></span>

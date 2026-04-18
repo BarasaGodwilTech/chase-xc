@@ -20,8 +20,8 @@ class UserAuth {
         // Listen for auth state changes
         onAuthStateChanged(auth, (user) => {
             this.currentUser = user;
-            this.updateNavigationUI();
-            
+            this.updateProfileIcon();
+
             // If user is logged in and there's a redirect URL, redirect them
             if (user && this.redirectUrl) {
                 const redirectTarget = this.redirectUrl;
@@ -87,21 +87,15 @@ class UserAuth {
             logoutBtn.addEventListener('click', () => this.handleLogout());
         }
 
-        // Navigation profile dropdown toggle
-        const profileToggle = document.getElementById('profileToggle');
-        if (profileToggle) {
-            profileToggle.addEventListener('click', (e) => this.toggleProfileDropdown(e));
-        }
-
-        // Navigation logout button
-        const navLogoutBtn = document.getElementById('navLogoutBtn');
-        if (navLogoutBtn) {
-            navLogoutBtn.addEventListener('click', () => this.handleLogout());
+        // Profile icon dropdown toggle
+        const profileIcon = document.getElementById('profileIcon');
+        if (profileIcon) {
+            profileIcon.addEventListener('click', () => this.toggleProfileDropdown());
         }
 
         // Close dropdown when clicking outside
         document.addEventListener('click', (e) => {
-            if (!e.target.closest('.user-profile')) {
+            if (profileIcon && !profileIcon.contains(e.target)) {
                 this.closeProfileDropdown();
             }
         });
@@ -363,90 +357,41 @@ class UserAuth {
         return errorMessages[errorCode] || 'An error occurred. Please try again.';
     }
 
-    updateNavigationUI() {
-        const userProfile = document.getElementById('userProfile');
-        const navLoginBtn = document.getElementById('navLoginBtn');
+    updateProfileIcon() {
+        const profileIcon = document.getElementById('profileIcon');
+        const userName = document.getElementById('userName');
+        const userEmail = document.getElementById('userEmail');
+
+        if (!profileIcon) return;
 
         if (this.currentUser) {
-            // User is logged in - show profile, hide login button
-            if (userProfile) {
-                userProfile.style.display = 'flex';
-                this.updateUserProfile();
+            // Show profile icon
+            profileIcon.style.display = 'flex';
+
+            // Update user info
+            if (userName) {
+                userName.textContent = this.currentUser.displayName || 'User';
             }
-            if (navLoginBtn) {
-                navLoginBtn.style.display = 'none';
+            if (userEmail) {
+                userEmail.textContent = this.currentUser.email || '';
             }
         } else {
-            // User is not logged in - hide profile, show login button
-            if (userProfile) {
-                userProfile.style.display = 'none';
-            }
-            if (navLoginBtn) {
-                navLoginBtn.style.display = 'flex';
-            }
+            // Hide profile icon
+            profileIcon.style.display = 'none';
         }
     }
 
-    updateUserProfile() {
-        if (!this.currentUser) return;
-
-        const userAvatar = document.getElementById('userAvatar');
-        const userName = document.getElementById('userName');
-        const dropdownAvatar = document.getElementById('dropdownAvatar');
-        const dropdownName = document.getElementById('dropdownName');
-        const dropdownEmail = document.getElementById('dropdownEmail');
-
-        const displayName = this.currentUser.displayName || this.currentUser.email?.split('@')[0] || 'User';
-        const email = this.currentUser.email || '';
-        const photoURL = this.currentUser.photoURL;
-
-        // Generate initials for avatar if no photo
-        const initials = displayName
-            .split(' ')
-            .map(name => name[0])
-            .join('')
-            .toUpperCase()
-            .slice(0, 2);
-
-        if (photoURL) {
-            if (userAvatar) userAvatar.src = photoURL;
-            if (dropdownAvatar) dropdownAvatar.src = photoURL;
-        } else {
-            if (userAvatar) {
-                userAvatar.src = '';
-                userAvatar.textContent = initials;
-            }
-            if (dropdownAvatar) {
-                dropdownAvatar.src = '';
-                dropdownAvatar.textContent = initials;
-            }
-        }
-
-        if (userName) userName.textContent = displayName;
-        if (dropdownName) dropdownName.textContent = displayName;
-        if (dropdownEmail) dropdownEmail.textContent = email;
-    }
-
-    toggleProfileDropdown(e) {
-        e.stopPropagation();
-        const profileToggle = document.getElementById('profileToggle');
-        const profileDropdown = document.getElementById('profileDropdown');
-
-        if (profileToggle && profileDropdown) {
-            profileToggle.classList.toggle('active');
-            profileDropdown.classList.toggle('show');
+    toggleProfileDropdown() {
+        const dropdown = document.getElementById('profileDropdown');
+        if (dropdown) {
+            dropdown.classList.toggle('active');
         }
     }
 
     closeProfileDropdown() {
-        const profileToggle = document.getElementById('profileToggle');
-        const profileDropdown = document.getElementById('profileDropdown');
-
-        if (profileToggle) {
-            profileToggle.classList.remove('active');
-        }
-        if (profileDropdown) {
-            profileDropdown.classList.remove('show');
+        const dropdown = document.getElementById('profileDropdown');
+        if (dropdown) {
+            dropdown.classList.remove('active');
         }
     }
 }
