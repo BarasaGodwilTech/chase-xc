@@ -157,6 +157,41 @@ class AdminPanel {
             });
         }
 
+        // External URL auto-fetch metadata
+        const externalUrlInput = document.getElementById('externalUrl');
+        if (externalUrlInput) {
+            // Handle paste event
+            externalUrlInput.addEventListener('paste', async (e) => {
+                setTimeout(async () => {
+                    const url = externalUrlInput.value.trim();
+                    if (url) {
+                        await this.fetchExternalTrackMetadata(url);
+                    }
+                }, 100);
+            });
+
+            // Handle change event
+            externalUrlInput.addEventListener('change', async () => {
+                const url = externalUrlInput.value.trim();
+                if (url) {
+                    await this.fetchExternalTrackMetadata(url);
+                }
+            });
+
+            // Handle input event with debounce
+            externalUrlInput.addEventListener('input', (e) => {
+                const url = externalUrlInput.value.trim();
+                if (url && this.isValidPlatformUrl(url, 'youtube') || 
+                    this.isValidPlatformUrl(url, 'apple-music') || 
+                    this.isValidPlatformUrl(url, 'soundcloud')) {
+                    clearTimeout(this.externalUrlDebounce);
+                    this.externalUrlDebounce = setTimeout(async () => {
+                        await this.fetchExternalTrackMetadata(url);
+                    }, 500);
+                }
+            });
+        }
+
         // Payment section handlers
         document.getElementById('exportPayments')?.addEventListener('click', () => {
             this.exportPayments();
@@ -2178,6 +2213,221 @@ class AdminPanel {
         this.showNotification('Track details filled in. Please complete the form.', 'success');
     }
 
+    async fetchExternalTrackMetadata(url) {
+        // Detect platform from URL
+        let platform = 'other';
+        if (this.isValidPlatformUrl(url, 'youtube')) {
+            platform = 'youtube';
+        } else if (this.isValidPlatformUrl(url, 'apple-music')) {
+            platform = 'apple-music';
+        } else if (this.isValidPlatformUrl(url, 'soundcloud')) {
+            platform = 'soundcloud';
+        }
+
+        if (platform === 'other') {
+            return; // Not a supported platform
+        }
+
+        try {
+            let metadata = null;
+            
+            switch (platform) {
+                case 'youtube':
+                    metadata = await this.fetchYouTubeMetadata(url);
+                    break;
+                case 'apple-music':
+                    metadata = await this.fetchAppleMusicMetadata(url);
+                    break;
+                case 'soundcloud':
+                    metadata = await this.fetchSoundCloudMetadata(url);
+                    break;
+            }
+
+            if (metadata) {
+                this.autoFillExternalForm(metadata);
+                this.showNotification(`Track info fetched from ${platform === 'youtube' ? 'YouTube' : platform === 'apple-music' ? 'Apple Music' : 'SoundCloud'}!`, 'success');
+            }
+        } catch (error) {
+            console.error('Error fetching external track metadata:', error);
+            // Don't show error notification - let user manually fill
+        }
+    }
+
+    async fetchYouTubeMetadata(url) {
+        try {
+            // Extract video ID from URL
+            const videoIdMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]+)/);
+            const videoId = videoIdMatch ? videoIdMatch[1] : null;
+            
+            if (!videoId) {
+                return null;
+            }
+
+            // Try to fetch from oEmbed API
+            const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`;
+            
+            try {
+                const response = await fetch(oembedUrl);
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // Extract duration from YouTube page
+                    let duration = await this.fetchYouTubeDuration(videoId);
+                    
+                    return {
+                        title: data.title || 'Unknown Track',
+                        artist: data.author_name || 'Unknown Artist',
+                        artwork: data.thumbnail_url || `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
+                        duration: duration || null,
+                        genre: 'Unknown'
+                    };
+                }
+            } catch (e) {
+                console.log('YouTube oEmbed failed, trying fallback');
+            }
+
+            // Fallback: Extract basic info from URL
+            return {
+                title: 'YouTube Track',
+                artist: 'Unknown Artist',
+                artwork: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
+                duration: null,
+                genre: 'Unknown'
+            };
+        } catch (error) {
+            console.error('Error fetching YouTube metadata:', error);
+            return null;
+        }
+    }
+
+    async fetchYouTubeDuration(videoId) {
+        try {
+            // Use noembed as a fallback for basic info
+            const response = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`);
+            if (response.ok) {
+                const data = await response.json();
+                // Try to extract duration if available
+                if (data.html) {
+                    const durationMatch = data.html.match(/(\d+):(\d+)/);
+                    if (durationMatch) {
+                        return durationMatch[0];
+                    }
+                }
+            }
+        } catch (e) {
+            console.log('Could not fetch duration');
+        }
+        return null;
+    }
+
+    async fetchAppleMusicMetadata(url) {
+        try {
+            // Try oEmbed API
+            const oembedUrl = `https://embed.music.apple.com/oembed?url=${encodeURIComponent(url)}`;
+            
+            try {
+                const response = await fetch(oembedUrl);
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    return {
+                        title: data.title || 'Unknown Track',
+                        artist: data.author_name || 'Unknown Artist',
+                        artwork: data.thumbnail_url || 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4a/Apple_Music_icon.svg/1024px-Apple_Music_icon.svg.png',
+                        duration: null,
+                        genre: 'Unknown'
+                    };
+                }
+            } catch (e) {
+                console.log('Apple Music oEmbed failed');
+            }
+
+            // Fallback
+            return {
+                title: 'Apple Music Track',
+                artist: 'Unknown Artist',
+                artwork: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4a/Apple_Music_icon.svg/1024px-Apple_Music_icon.svg.png',
+                duration: null,
+                genre: 'Unknown'
+            };
+        } catch (error) {
+            console.error('Error fetching Apple Music metadata:', error);
+            return null;
+        }
+    }
+
+    async fetchSoundCloudMetadata(url) {
+        try {
+            // Try oEmbed API
+            const oembedUrl = `https://soundcloud.com/oembed?url=${encodeURIComponent(url)}&format=json`;
+            
+            try {
+                const response = await fetch(oembedUrl);
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // Extract duration if available
+                    let duration = null;
+                    if (data.html) {
+                        const durationMatch = data.html.match(/(\d+):(\d+)/);
+                        if (durationMatch) {
+                            duration = durationMatch[0];
+                        }
+                    }
+                    
+                    return {
+                        title: data.title || 'Unknown Track',
+                        artist: data.author_name || 'Unknown Artist',
+                        artwork: data.thumbnail_url || 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/SoundCloud_logo.svg/1024px-SoundCloud_logo.svg.png',
+                        duration: duration || null,
+                        genre: 'Unknown'
+                    };
+                }
+            } catch (e) {
+                console.log('SoundCloud oEmbed failed');
+            }
+
+            // Fallback
+            return {
+                title: 'SoundCloud Track',
+                artist: 'Unknown Artist',
+                artwork: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/SoundCloud_logo.svg/1024px-SoundCloud_logo.svg.png',
+                duration: null,
+                genre: 'Unknown'
+            };
+        } catch (error) {
+            console.error('Error fetching SoundCloud metadata:', error);
+            return null;
+        }
+    }
+
+    autoFillExternalForm(metadata) {
+        // Fill in the form fields
+        const titleInput = document.getElementById('externalTitle');
+        const artistInput = document.getElementById('externalArtist');
+        const genreSelect = document.getElementById('externalGenre');
+
+        if (titleInput && metadata.title) {
+            titleInput.value = metadata.title;
+        }
+
+        if (artistInput && metadata.artist) {
+            artistInput.value = metadata.artist;
+        }
+
+        if (genreSelect && metadata.genre && metadata.genre !== 'Unknown') {
+            // Try to match genre to available options
+            const genreOptions = Array.from(genreSelect.options).map(opt => opt.value);
+            const matchedGenre = genreOptions.find(g => g.toLowerCase().includes(metadata.genre.toLowerCase()));
+            if (matchedGenre) {
+                genreSelect.value = matchedGenre;
+            }
+        }
+
+        // Store artwork and duration for later use
+        this.fetchedExternalMetadata = metadata;
+    }
+
     async handleExternalTrack() {
         const platform = document.querySelector('input[name="platform"]:checked')?.value;
         const url = document.getElementById('externalUrl').value.trim();
@@ -2196,16 +2446,20 @@ class AdminPanel {
         }
 
         try {
-            const platformArtwork = this.getPlatformArtwork(platform);
+            // Use fetched metadata if available, otherwise use platform defaults
+            const metadata = this.fetchedExternalMetadata || {};
+            const artwork = metadata.artwork || this.getPlatformArtwork(platform);
+            const duration = metadata.duration || '';
 
             const trackData = {
                 title,
                 artist: artist,
                 artistName: artist,
                 genre: genre || 'Unknown',
+                duration: duration,
                 externalUrl: url,
                 platform,
-                artwork: platformArtwork,
+                artwork: artwork,
                 streams: 0,
                 status: 'published'
             };
@@ -2213,6 +2467,8 @@ class AdminPanel {
             this.dataManager.saveTrack(trackData);
             this.showNotification('External track added successfully!', 'success');
 
+            // Clear fetched metadata
+            this.fetchedExternalMetadata = null;
             document.getElementById('externalTrackForm').reset();
             this.switchUploadMethod('upload');
             this.loadTracks();
@@ -2220,16 +2476,6 @@ class AdminPanel {
             console.error('Error adding external track:', error);
             this.showNotification('Error adding track: ' + error.message, 'error');
         }
-    }
-
-    getPlatformArtwork(platform) {
-        const artworkMap = {
-            'youtube': 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/YouTube_full-color_icon_%282017%29.svg/1024px-YouTube_full-color_icon_%282017%29.svg.png',
-            'apple-music': 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4a/Apple_Music_icon.svg/1024px-Apple_Music_icon.svg.png',
-            'soundcloud': 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/SoundCloud_logo.svg/1024px-SoundCloud_logo.svg.png',
-            'other': 'https://via.placeholder.com/300?text=External'
-        };
-        return artworkMap[platform] || artworkMap['other'];
     }
 
     exportPayments() {
