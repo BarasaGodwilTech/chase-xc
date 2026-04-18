@@ -20,6 +20,7 @@ class UserAuth {
         // Listen for auth state changes
         onAuthStateChanged(auth, (user) => {
             this.currentUser = user;
+            this.updateNavigationUI();
             
             // If user is logged in and there's a redirect URL, redirect them
             if (user && this.redirectUrl) {
@@ -85,6 +86,25 @@ class UserAuth {
         if (logoutBtn) {
             logoutBtn.addEventListener('click', () => this.handleLogout());
         }
+
+        // Navigation profile dropdown toggle
+        const profileToggle = document.getElementById('profileToggle');
+        if (profileToggle) {
+            profileToggle.addEventListener('click', (e) => this.toggleProfileDropdown(e));
+        }
+
+        // Navigation logout button
+        const navLogoutBtn = document.getElementById('navLogoutBtn');
+        if (navLogoutBtn) {
+            navLogoutBtn.addEventListener('click', () => this.handleLogout());
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.user-profile')) {
+                this.closeProfileDropdown();
+            }
+        });
 
         // Password visibility toggle
         const passwordToggles = document.querySelectorAll('.password-toggle');
@@ -341,6 +361,93 @@ class UserAuth {
         };
 
         return errorMessages[errorCode] || 'An error occurred. Please try again.';
+    }
+
+    updateNavigationUI() {
+        const userProfile = document.getElementById('userProfile');
+        const navLoginBtn = document.getElementById('navLoginBtn');
+
+        if (this.currentUser) {
+            // User is logged in - show profile, hide login button
+            if (userProfile) {
+                userProfile.style.display = 'flex';
+                this.updateUserProfile();
+            }
+            if (navLoginBtn) {
+                navLoginBtn.style.display = 'none';
+            }
+        } else {
+            // User is not logged in - hide profile, show login button
+            if (userProfile) {
+                userProfile.style.display = 'none';
+            }
+            if (navLoginBtn) {
+                navLoginBtn.style.display = 'flex';
+            }
+        }
+    }
+
+    updateUserProfile() {
+        if (!this.currentUser) return;
+
+        const userAvatar = document.getElementById('userAvatar');
+        const userName = document.getElementById('userName');
+        const dropdownAvatar = document.getElementById('dropdownAvatar');
+        const dropdownName = document.getElementById('dropdownName');
+        const dropdownEmail = document.getElementById('dropdownEmail');
+
+        const displayName = this.currentUser.displayName || this.currentUser.email?.split('@')[0] || 'User';
+        const email = this.currentUser.email || '';
+        const photoURL = this.currentUser.photoURL;
+
+        // Generate initials for avatar if no photo
+        const initials = displayName
+            .split(' ')
+            .map(name => name[0])
+            .join('')
+            .toUpperCase()
+            .slice(0, 2);
+
+        if (photoURL) {
+            if (userAvatar) userAvatar.src = photoURL;
+            if (dropdownAvatar) dropdownAvatar.src = photoURL;
+        } else {
+            if (userAvatar) {
+                userAvatar.src = '';
+                userAvatar.textContent = initials;
+            }
+            if (dropdownAvatar) {
+                dropdownAvatar.src = '';
+                dropdownAvatar.textContent = initials;
+            }
+        }
+
+        if (userName) userName.textContent = displayName;
+        if (dropdownName) dropdownName.textContent = displayName;
+        if (dropdownEmail) dropdownEmail.textContent = email;
+    }
+
+    toggleProfileDropdown(e) {
+        e.stopPropagation();
+        const profileToggle = document.getElementById('profileToggle');
+        const profileDropdown = document.getElementById('profileDropdown');
+
+        if (profileToggle && profileDropdown) {
+            profileToggle.classList.toggle('active');
+            profileDropdown.classList.toggle('show');
+        }
+    }
+
+    closeProfileDropdown() {
+        const profileToggle = document.getElementById('profileToggle');
+        const profileDropdown = document.getElementById('profileDropdown');
+
+        if (profileToggle) {
+            profileToggle.classList.remove('active');
+        }
+        if (profileDropdown) {
+            profileDropdown.classList.remove('show');
+        }
     }
 }
 
