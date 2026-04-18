@@ -434,8 +434,9 @@
   opacity: 0;
   transition: opacity 0.3s ease;
   display: flex;
-  align-items: flex-end;
-  padding: 16px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
   z-index: 15;
 }
 
@@ -446,8 +447,6 @@
 .overlay-actions {
   display: flex;
   gap: 8px;
-  justify-content: center;
-  width: 100%;
 }
 
 .overlay-btn {

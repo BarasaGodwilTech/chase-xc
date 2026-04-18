@@ -124,10 +124,12 @@ function renderTrackCard(track, index, artistName) {
         ${badge ? `<div class="track-badge ${badge.type}">${badge.text}</div>` : ''}
         ${spotifyUrl ? '<div class="spotify-indicator" title="Listen on Spotify"><i class="fab fa-spotify"></i></div>' : ''}
         <div class="track-overlay">
-          <div class="overlay-actions">
+          <div class="overlay-actions overlay-left">
             <button class="overlay-btn" title="Add to playlist" type="button">
               <i class="fas fa-plus"></i>
             </button>
+          </div>
+          <div class="overlay-actions overlay-right">
             <button class="overlay-btn" title="Share" type="button">
               <i class="fas fa-share"></i>
             </button>
