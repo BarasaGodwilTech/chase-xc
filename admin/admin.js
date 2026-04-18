@@ -1038,66 +1038,195 @@ class AdminPanel {
                 document.getElementById('mtnNumber').value = config.payment.mtn || '';
                 document.getElementById('airtelNumber').value = config.payment.airtel || '';
                 document.getElementById('bankName').value = config.payment.bank?.name || '';
-                document.getElementById('bankAccount').value = config.payment.bank?.account || '';
-                document.getElementById('bankAccountName').value = config.payment.bank?.accountName || '';
-                document.getElementById('supportPhone').value = config.payment.supportPhone || '';
-            }
-            
-            // Populate plans settings form
-            if (config.plans) {
-                document.getElementById('weeklyPrice').value = config.plans.weekly?.price || '';
-                document.getElementById('weeklyDescription').value = config.plans.weekly?.description || '';
-                document.getElementById('monthlyPrice').value = config.plans.monthly?.price || '';
-                document.getElementById('monthlyDescription').value = config.plans.monthly?.description || '';
-                document.getElementById('yearlyPrice').value = config.plans.yearly?.price || '';
-                document.getElementById('yearlyDescription').value = config.plans.yearly?.description || '';
-            }
-            
-            // Populate service pricing form
-            if (config.services) {
-                document.getElementById('productionPrice').value = config.services.production || '';
-                document.getElementById('mixingPrice').value = config.services.mixing || '';
-                document.getElementById('masteringPrice').value = config.services.mastering || '';
-                document.getElementById('vocalPrice').value = config.services.vocal || '';
-                document.getElementById('hourlyRate').value = config.services.hourlyRate || '';
-                document.getElementById('packagePrice').value = config.services.packagePrice || '';
-                document.getElementById('songwritingPrice').value = config.services.songwriting || '';
-                document.getElementById('restorationPrice').value = config.services.restoration || '';
-                document.getElementById('sessionMusicianMin').value = config.services.sessionMusicianMin || '';
-                document.getElementById('sessionMusicianMax').value = config.services.sessionMusicianMax || '';
-            }
-            
-            // Populate budget tiers form
-            if (config.budgetTiers) {
-                document.getElementById('budgetStandard').value = config.budgetTiers.standard || '';
-                document.getElementById('budgetClassic').value = config.budgetTiers.classic || '';
-                document.getElementById('budgetPremium').value = config.budgetTiers.premium || '';
-                document.getElementById('budgetDeluxe').value = config.budgetTiers.deluxe || '';
-            }
-            
-            // Setup save button handler
-            this.setupSettingsSaveHandler();
-            
-        } catch (error) {
-            console.error('Error loading settings:', error);
-            this.showNotification('Error loading settings. Config loader may not be available yet.', 'error');
-        }
+
+async loadTracks() {
+    console.log('Loading tracks...');
+    const container = document.getElementById('tracksTable');
+    if (!container) {
+        console.error('Tracks table container not found');
+        return;
     }
 
-    setupSettingsSaveHandler() {
-        const saveBtn = document.getElementById('saveSettings');
-        if (saveBtn) {
-            saveBtn.onclick = async () => {
-                this.saveSettings();
-            };
-        }
+    const tracks = await window.fetchTracks();
+    const artists = await window.fetchArtists();
+
+    if (tracks.length === 0) {
+        container.innerHTML = '<tr><td colspan="7" class="text-center">No tracks found</td></tr>';
+        return;
     }
 
-    async saveSettings() {
-        try {
-            const { saveSettings: saveToFirebase } = await import('../scripts/config-loader.js');
-            
-            const config = {
+    // Create artist lookup map
+    const artistMap = new Map();
+    for (const a of artists || []) {
+        artistMap.set(a.id, a.name || 'Unknown Artist');
+    }
+
+    container.innerHTML = tracks.map(track => {
+        const artistName = artistMap.get(track.artist) || track.artistName || 'Unknown Artist';
+        return `
+            <tr>
+                <td>
+                    <div class="track-cell">
+                        <img src="${track.artwork}" alt="${track.title}" class="track-artwork-small">
+                        <span>${track.title}</span>
+                    </div>
+                </td>
+                <td>${artistName}</td>
+                <td>${track.genre}</td>
+                <td>${this.formatNumber(track.streams)}</td>
+                <td>${track.duration}</td>
+                <td><span class="status-badge status-${track.status}">${track.status}</span></td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="btn btn-primary btn-sm" onclick="adminPanel.editTrack('${track.id}')">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-secondary btn-sm" onclick="adminPanel.viewTrack('${track.id}')">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="btn btn-danger btn-sm" onclick="adminPanel.deleteTrack('${track.id}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+async loadArtistsForSelect() {
+    const artistSelect = document.getElementById('trackArtist');
+    if (!artistSelect) return;
+    
+    const artists = await window.fetchArtists();
+    artistSelect.innerHTML = '<option value="">Select Artist</option>' + 
+        artists.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+}
+
+async loadPayments() {
+    const table = document.getElementById('paymentsTable');
+    if (!table) return;
+    
+    const payments = await window.fetchPayments();
+    
+    if (payments.length === 0) {
+        table.innerHTML = '<tr><td colspan="7" class="text-center">No payments found</td></tr>';
+        return;
+    }
+    table.innerHTML = payments.map(payment => `
+        <tr>
+            <td>${payment.id}</td>
+            <td>${payment.fullName || payment.artist || 'Unknown'}</td>
+            <td>UGX ${this.formatNumber(payment.amount || 0)}</td>
+            <td>${payment.billingCycle || payment.service || 'Membership'}</td>
+            <td>${new Date(payment.timestamp).toLocaleDateString()}</td>
+            <td><span class="status-badge status-${payment.status}">${payment.status}</span></td>
+            <td>
+                <button class="btn btn-primary btn-sm" onclick="adminPanel.viewPayment('${payment.id}')">
+                    <i class="fas fa-eye"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+async loadSettings() {
+    try {
+        const { getConfig } = await import('../scripts/config-loader.js');
+        const config = getConfig();
+        
+        // Populate payment settings form
+        if (config.payment) {
+            document.getElementById('mtnNumber').value = config.payment.mtn || '';
+            document.getElementById('airtelNumber').value = config.payment.airtel || '';
+            document.getElementById('bankName').value = config.payment.bank?.name || '';
+            document.getElementById('bankAccount').value = config.payment.bank?.account || '';
+            document.getElementById('bankAccountName').value = config.payment.bank?.accountName || '';
+            document.getElementById('supportPhone').value = config.payment.supportPhone || '';
+        }
+        
+        // Populate plans settings form
+        if (config.plans) {
+            document.getElementById('weeklyPrice').value = config.plans.weekly?.price || '';
+            document.getElementById('weeklyDescription').value = config.plans.weekly?.description || '';
+            document.getElementById('monthlyPrice').value = config.plans.monthly?.price || '';
+            document.getElementById('monthlyDescription').value = config.plans.monthly?.description || '';
+            document.getElementById('yearlyPrice').value = config.plans.yearly?.price || '';
+            document.getElementById('yearlyDescription').value = config.plans.yearly?.description || '';
+        }
+        
+        // Populate service pricing form
+        if (config.services) {
+            document.getElementById('productionPrice').value = config.services.production || '';
+            document.getElementById('mixingPrice').value = config.services.mixing || '';
+            document.getElementById('masteringPrice').value = config.services.mastering || '';
+            document.getElementById('vocalPrice').value = config.services.vocal || '';
+            document.getElementById('hourlyRate').value = config.services.hourlyRate || '';
+            document.getElementById('packagePrice').value = config.services.packagePrice || '';
+            document.getElementById('songwritingPrice').value = config.services.songwriting || '';
+            document.getElementById('restorationPrice').value = config.services.restoration || '';
+            document.getElementById('sessionMusicianMin').value = config.services.sessionMusicianMin || '';
+            document.getElementById('sessionMusicianMax').value = config.services.sessionMusicianMax || '';
+        }
+        
+        // Populate budget tiers form
+        if (config.budgetTiers) {
+            document.getElementById('budgetStandard').value = config.budgetTiers.standard || '';
+            document.getElementById('budgetClassic').value = config.budgetTiers.classic || '';
+            document.getElementById('budgetPremium').value = config.budgetTiers.premium || '';
+            document.getElementById('budgetDeluxe').value = config.budgetTiers.deluxe || '';
+        }
+        
+        // Populate contact information form
+        if (config.contact) {
+            document.getElementById('contactPhone').value = config.contact.phone || '';
+            document.getElementById('contactEmail').value = config.contact.email || '';
+            document.getElementById('contactLocation').value = config.contact.location || '';
+        }
+        
+        // Populate plan savings form
+        if (config.plans) {
+            document.getElementById('monthlySavings').value = config.plans.monthly?.savings || '';
+            document.getElementById('yearlySavings').value = config.plans.yearly?.savings || '';
+        }
+        
+        // Populate about page stats form
+        if (config.about) {
+            document.getElementById('statProjects').value = config.about.projects || '';
+            document.getElementById('statArtists').value = config.about.artists || '';
+            document.getElementById('statStreams').value = config.about.streams || '';
+        }
+        
+        // Setup save button handler
+        this.setupSettingsSaveHandler();
+        
+    } catch (error) {
+        console.error('Error loading settings:', error);
+        this.showNotification('Error loading settings. Config loader may not be available yet.', 'error');
+    }
+}
+
+setupSettingsSaveHandler() {
+    const saveBtn = document.getElementById('saveSettings');
+    if (saveBtn) {
+        saveBtn.onclick = async () => {
+            this.saveSettings();
+        };
+    }
+}
+
+async saveSettings() {
+    try {
+        const { saveSettings: saveToFirebase } = await import('../scripts/config-loader.js');
+        
+        const config = {
+            payment: {
+                mtn: document.getElementById('mtnNumber').value,
+                airtel: document.getElementById('airtelNumber').value,
+                bank: {
+                    name: document.getElementById('bankName').value,
+                    account: document.getElementById('bankAccount').value,
+                    accountName: document.getElementById('bankAccountName').value
                 payment: {
                     mtn: document.getElementById('mtnNumber').value,
                     airtel: document.getElementById('airtelNumber').value,

@@ -243,21 +243,25 @@ async function initMusicPage() {
   const grid = document.getElementById('musicGrid')
   const resultsCount = document.getElementById('resultsCount')
 
+  console.log('[MusicPage] Initializing music page...')
   let tracks
   try {
+    console.log('[MusicPage] Fetching published tracks from Firestore...')
     tracks = await fetchPublishedTracks()
+    console.log('[MusicPage] Fetched tracks:', tracks)
   } catch (e) {
-    console.error(e)
-    if (grid) grid.innerHTML = ''
+    console.error('[MusicPage] Error fetching tracks:', e)
+    if (grid) grid.innerHTML = '<p class="text-center">Error loading tracks. Please check console for details.</p>'
     if (resultsCount) resultsCount.textContent = '0 tracks'
     return
   }
 
   if (!Array.isArray(tracks) || tracks.length === 0) {
-    if (grid) grid.innerHTML = ''
+    console.log('[MusicPage] No tracks found or invalid data format')
+    if (grid) grid.innerHTML = '<p class="text-center">No tracks available yet. Check back soon!</p>'
     if (resultsCount) resultsCount.textContent = '0 tracks'
     window.__tracks = []
-    
+
     // Still render empty states for other sections
     await renderLatestReleases([])
     await renderGenreCards([])

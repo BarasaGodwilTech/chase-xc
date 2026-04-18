@@ -501,64 +501,9 @@
     <section class="music" id="music">
         <div class="container">
             <h3 class="section-title">Featured Tracks</h3>
-            <!--<div class="music-grid">
-                <div class="track-card" data-track="0">
-                    <div class="track-artwork">
-                        <img src="" alt="Sunset Dreams">
-                        <button class="play-btn-card">
-                            <i class="fas fa-play"></i>
-                        </button>
-                    </div>
-                    <h4 class="track-title">Sunset Dreams</h4>
-                    <p class="track-artist">By Sarah Miles</p>
-                    <div class="track-meta">
-                        <span class="track-genre">Afro-Pop</span>
-                        <span class="track-duration">3:45</span>
-                    </div>
-                </div>
-                <div class="track-card" data-track="1">
-                    <div class="track-artwork">
-                        <img src="" alt="City Lights">
-                        <button class="play-btn-card">
-                            <i class="fas fa-play"></i>
-                        </button>
-                    </div>
-                    <h4 class="track-title">City Lights</h4>
-                    <p class="track-artist">By DJ Kato</p>
-                    <div class="track-meta">
-                        <span class="track-genre">Electronic</span>
-                        <span class="track-duration">4:20</span>
-                    </div>
-                </div>
-                <div class="track-card" data-track="2">
-                    <div class="track-artwork">
-                        <img src="" alt="Rhythm of Mbale">
-                        <button class="play-btn-card">
-                            <i class="fas fa-play"></i>
-                        </button>
-                    </div>
-                    <h4 class="track-title">Rhythm of Mbale</h4>
-                    <p class="track-artist">By The UG Collective</p>
-                    <div class="track-meta">
-                        <span class="track-genre">Dancehall</span>
-                        <span class="track-duration">3:30</span>
-                    </div>
-                </div>
-                <div class="track-card" data-track="3">
-                    <div class="track-artwork">
-                        <img src="" alt="Morning Breeze">
-                        <button class="play-btn-card">
-                            <i class="fas fa-play"></i>
-                        </button>
-                    </div>
-                    <h4 class="track-title">Morning Breeze</h4>
-                    <p class="track-artist">By Lila Rose</p>
-                    <div class="track-meta">
-                        <span class="track-genre">R&B</span>
-                        <span class="track-duration">4:05</span>
-                    </div>
-                </div>
-            </div>-->
+            <div class="music-grid">
+                <!-- Tracks will be loaded dynamically from Firestore -->
+            </div>
             <div style="text-align: center; margin-top: 3rem;">
                 <a href="music.html" class="btn btn-primary">Browse All Music</a>
             </div>
@@ -569,107 +514,12 @@
     <section class="artists" id="artists">
         <div class="container">
             <h3 class="section-title">Featured Artists</h3>
-            <!--<div class="artists-grid">
-                <div class="artist-card">
-                    <div class="artist-image">
-                        <img src="" alt="Sarah Miles">
-                    </div>
-                    <h4>Sarah Miles</h4>
-                    <p class="artist-genre">Afro-Pop • R&B</p>
-                    <p class="artist-bio">Soulful vocalist known for her powerful performances and emotional depth.</p>
-                    <div class="artist-stats">
-                        <span>15K+ Streams</span>
-                        <span>•</span>
-                        <span>3 Releases</span>
-                    </div>
-                    <div class="artist-socials">
-                        <a href="#" target="_blank" title="Instagram">
-                            <i class="fab fa-instagram"></i>
-                        </a>
-                        <a href="#" target="_blank" title="Spotify">
-                            <i class="fab fa-spotify"></i>
-                        </a>
-                        <a href="#" target="_blank" title="Apple Music">
-                            <i class="fab fa-apple"></i>
-                        </a>
-                    </div>
-                </div>
-                <div class="artist-card">
-                    <div class="artist-image">
-                        <img src="" alt="DJ Kato">
-                    </div>
-                    <h4>DJ Kato</h4>
-                    <p class="artist-genre">Electronic • Dance</p>
-                    <p class="artist-bio">Innovative producer blending traditional African rhythms with modern electronic sounds.</p>
-                    <div class="artist-stats">
-                        <span>45K+ Streams</span>
-                        <span>•</span>
-                        <span>8 Releases</span>
-                    </div>
-                    <div class="artist-socials">
-                        <a href="#" target="_blank" title="Instagram">
-                            <i class="fab fa-instagram"></i>
-                        </a>
-                        <a href="#" target="_blank" title="Spotify">
-                            <i class="fab fa-spotify"></i>
-                        </a>
-                        <a href="#" target="_blank" title="SoundCloud">
-                            <i class="fab fa-soundcloud"></i>
-                        </a>
-                    </div>
-                </div>
-                <div class="artist-card">
-                    <div class="artist-image">
-                        <img src="" alt="Lila Rose">
-                    </div>
-                    <h4>Lila Rose</h4>
-                    <p class="artist-genre">R&B • Soul</p>
-                    <p class="artist-bio">Emerging R&B sensation with a unique blend of soulful melodies and contemporary production.</p>
-                    <div class="artist-stats">
-                        <span>25K+ Streams</span>
-                        <span>•</span>
-                        <span>5 Releases</span>
-                    </div>
-                    <div class="artist-socials">
-                        <a href="#" target="_blank" title="Instagram">
-                            <i class="fab fa-instagram"></i>
-                        </a>
-                        <a href="#" target="_blank" title="Spotify">
-                            <i class="fab fa-spotify"></i>
-                        </a>
-                        <a href="#" target="_blank" title="YouTube">
-                            <i class="fab fa-youtube"></i>
-                        </a>
-                    </div>
-                </div>
-                <div class="artist-card">
-                    <div class="artist-image">
-                        <img src="" alt="The UG Collective">
-                    </div>
-                    <h4>The UG Collective</h4>
-                    <p class="artist-genre">Dancehall • Afrobeat</p>
-                    <p class="artist-bio">Dynamic group bringing fresh energy to the Ugandan music scene with infectious rhythms.</p>
-                    <div class="artist-stats">
-                        <span>80K+ Streams</span>
-                        <span>•</span>
-                        <span>12 Releases</span>
-                    </div>
-                    <div class="artist-socials">
-                        <a href="#" target="_blank" title="Instagram">
-                            <i class="fab fa-instagram"></i>
-                        </a>
-                        <a href="#" target="_blank" title="Spotify">
-                            <i class="fab fa-spotify"></i>
-                        </a>
-                        <a href="#" target="_blank" title="TikTok">
-                            <i class="fab fa-tiktok"></i>
-                        </a>
-                    </div>
-                </div>
+            <div class="artists-grid">
+                <!-- Artists will be loaded dynamically from Firestore -->
             </div>
             <div style="text-align: center; margin-top: 3rem;">
                 <a href="artists.html" class="btn btn-primary">Meet All Artists</a>
-            </div>-->
+            </div>
         </div>
     </section>
 
@@ -751,5 +601,7 @@
     <script src="scripts/main.js"></script>
     <script src="scripts/membership-payments.js"></script>
     <script src="scripts/video-optimizer.js"></script>
+    <script type="module" src="scripts/firebase-init.js"></script>
+    <script type="module" src="scripts/home-page.js"></script>
 </body>
 </html>
