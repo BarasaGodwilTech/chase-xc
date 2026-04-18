@@ -873,6 +873,11 @@ class MusicFilters {
 document.addEventListener('DOMContentLoaded', () => {
     // Initialize music filters
     new MusicFilters();
+    
+    // Initialize music search
+    new MusicSearch();
+});
+
 // === MUSIC SEARCH FUNCTIONALITY ===
 class MusicSearch {
     constructor() {
@@ -889,28 +894,10 @@ class MusicSearch {
         
         this.allTracks = Array.from(this.trackCards);
         this.currentSearchTerm = '';
-        this.trackData = window.__tracks || [];
         
         if (this.searchInput) {
             this.init();
         }
-        
-        // Listen for track data updates
-        window.addEventListener('tracksLoaded', () => {
-            this.refreshTrackData();
-        });
-        
-        // Also check if tracks are already loaded
-        if (window.__tracks && window.__tracks.length > 0) {
-            this.refreshTrackData();
-        }
-    }
-    
-    refreshTrackData() {
-        this.trackData = window.__tracks || [];
-        this.trackCards = document.querySelectorAll('.track-card');
-        this.allTracks = Array.from(this.trackCards);
-        console.log('[MusicSearch] Refreshed track data:', this.trackData.length, 'tracks,', this.allTracks.length, 'cards');
     }
     
     init() {
