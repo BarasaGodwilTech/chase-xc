@@ -294,7 +294,7 @@ async function handleAddArtistSubmit(e) {
         console.error(uploadErr)
 
         const msg =
-          'Artist image upload failed. This usually means Firebase Storage is not enabled or Storage rules block uploads.\n\n' +
+          'Artist image upload failed. This usually means cloud storage is not enabled or storage rules block uploads.\n\n' +
           'I can still save the artist WITHOUT an image. Continue?'
 
         let ok = false
@@ -329,7 +329,7 @@ async function handleAddArtistSubmit(e) {
       await updateArtistInFirestore(editingArtistId, artistData)
       
       if (window.notifications) {
-        window.notifications.show('Artist updated successfully!', 'success')
+        window.notifications.show('Artist updated successfully', 'success')
       }
     } else {
       // Create new artist
@@ -341,7 +341,7 @@ async function handleAddArtistSubmit(e) {
       await populateArtistSelect(ref.id)
       
       if (window.notifications) {
-        window.notifications.show('Artist added successfully!', 'success')
+        window.notifications.show('Artist added successfully', 'success')
       }
     }
 
@@ -360,7 +360,7 @@ async function handleAddArtistSubmit(e) {
     editingArtistId = null
   } catch (err) {
     console.error(err)
-    alert('Failed to save artist. Check console for details.')
+    alert('Failed to save artist. Please try again.')
   }
 }
 
@@ -455,9 +455,9 @@ async function handleAudioUploadSubmit(e) {
     })
 
     if (window.notifications) {
-      window.notifications.show('Track uploaded to Firebase successfully!', 'success')
+      window.notifications.show('Track uploaded successfully', 'success')
     } else {
-      console.log('Track uploaded to Firebase successfully!')
+      console.log('Track uploaded successfully')
     }
     form.reset()
 
@@ -474,9 +474,9 @@ async function handleAudioUploadSubmit(e) {
   } catch (err) {
     console.error(err)
     if (window.notifications) {
-      window.notifications.show('Upload failed. Check console for details.', 'error')
+      window.notifications.show('Upload failed. Please try again.', 'error')
     } else {
-      console.error('Upload failed. Check console for details.')
+      console.error('Upload failed. Please try again.')
     }
   }
 }
@@ -623,9 +623,9 @@ window.deleteArtist = async function(artistId, artistName) {
   } catch (error) {
     console.error('[admin-firebase] Error deleting artist:', error);
     if (window.notifications) {
-      window.notifications.show('Failed to delete artist. Check console for details.', 'error');
+      window.notifications.show('Failed to delete artist. Please try again.', 'error');
     } else {
-      alert('Failed to delete artist. Check console for details.');
+      alert('Failed to delete artist. Please try again.');
     }
   }
 };
