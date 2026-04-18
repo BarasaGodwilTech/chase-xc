@@ -1311,10 +1311,12 @@ class AdminPanel {
 
     viewArtist(artistId) {
         const artist = this.dataManager.getArtist(artistId);
-        const tracks = this.dataManager.getTracksByArtist(artistId);
-        if (artist) {
-            alert(`Artist: ${artist.name}\nGenre: ${artist.genre}\nTracks: ${tracks.length}\nStatus: ${artist.status}`);
+        if (!artist) {
+            this.showNotification('Artist not found', 'error');
+            return;
         }
+        const tracks = this.dataManager.getTracksByArtist(artistId) || [];
+        alert(`Artist: ${artist.name}\nGenre: ${artist.genre}\nTracks: ${tracks.length}\nStatus: ${artist.status}`);
     }
 
     deleteArtist(artistId) {
@@ -1327,9 +1329,11 @@ class AdminPanel {
 
     editTrack(trackId) {
         const track = this.dataManager.getTrack(trackId);
-        if (track) {
-            this.openTrackEditModal(track);
+        if (!track) {
+            this.showNotification('Track not found', 'error');
+            return;
         }
+        this.openTrackEditModal(track);
     }
 
     openTrackEditModal(track) {
@@ -1372,10 +1376,12 @@ class AdminPanel {
 
     viewTrack(trackId) {
         const track = this.dataManager.getTrack(trackId);
-        const artist = this.dataManager.getArtist(track.artist);
-        if (track) {
-            alert(`Track: ${track.title}\nArtist: ${artist?.name || 'Unknown'}\nStreams: ${this.formatNumber(track.streams)}`);
+        if (!track) {
+            this.showNotification('Track not found', 'error');
+            return;
         }
+        const artist = this.dataManager.getArtist(track.artist);
+        alert(`Track: ${track.title}\nArtist: ${artist?.name || 'Unknown'}\nStreams: ${this.formatNumber(track.streams)}`);
     }
 
     deleteTrack(trackId) {
