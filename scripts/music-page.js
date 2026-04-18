@@ -128,9 +128,6 @@ function renderTrackCard(track, index, artistName) {
             <button class="overlay-btn" title="Add to playlist" type="button">
               <i class="fas fa-plus"></i>
             </button>
-            <button class="overlay-btn" title="Like" data-like-track-id="${track.id}" type="button">
-              <i class="far fa-heart"></i>
-            </button>
             <button class="overlay-btn" title="Share" type="button">
               <i class="fas fa-share"></i>
             </button>
@@ -138,8 +135,15 @@ function renderTrackCard(track, index, artistName) {
         </div>
       </div>
       <div class="track-content">
-        <h4 class="track-title">${track.title || ''}</h4>
-        <p class="track-artist">${artistName || track.artistName || 'Unknown Artist'}</p>
+        <div class="track-header">
+          <div class="track-info">
+            <h4 class="track-title">${track.title || ''}</h4>
+            <p class="track-artist">${artistName || track.artistName || 'Unknown Artist'}</p>
+          </div>
+          <button class="like-btn-mini" title="Like" data-like-track-id="${track.id}" type="button">
+            <i class="far fa-heart"></i>
+          </button>
+        </div>
         <div class="track-meta">
           <span class="track-genre">${track.genre || ''}</span>
           <span class="track-duration">${track.duration || ''}</span>
@@ -333,7 +337,7 @@ function setupTrackCardListeners() {
   })
 
   // Like button listeners
-  document.querySelectorAll('.overlay-btn[data-like-track-id]').forEach(btn => {
+  document.querySelectorAll('.like-btn-mini[data-like-track-id]').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation()
       const trackId = btn.dataset.likeTrackId
@@ -516,11 +520,11 @@ function toggleLikeButton(btn) {
   if (icon.classList.contains('far')) {
     icon.classList.remove('far')
     icon.classList.add('fas')
-    btn.style.color = '#ef4444'
+    btn.classList.add('liked')
   } else {
     icon.classList.remove('fas')
     icon.classList.add('far')
-    btn.style.color = ''
+    btn.classList.remove('liked')
   }
 }
 
@@ -554,7 +558,7 @@ function executePendingAction() {
 
 function handleLikeAfterLogin(trackId) {
   // Find the button for this track
-  const btn = document.querySelector(`.overlay-btn[data-like-track-id="${trackId}"]`)
+  const btn = document.querySelector(`.like-btn-mini[data-like-track-id="${trackId}"]`)
   if (btn) {
     toggleLikeButton(btn)
   }

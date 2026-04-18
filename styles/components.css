@@ -478,6 +478,18 @@
   gap: 8px;
 }
 
+.track-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.track-info {
+  flex: 1;
+  min-width: 0;
+}
+
 .track-title {
   font-family: var(--font-heading);
   font-size: 1rem;
@@ -502,6 +514,40 @@
   color: var(--text-secondary);
   margin: 0;
   font-weight: 500;
+}
+
+.like-btn-mini {
+  width: 32px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.like-btn-mini:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+  transform: scale(1.1);
+}
+
+.like-btn-mini.liked {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.like-btn-mini.liked i {
+  font-weight: 900;
 }
 
 .track-meta {
@@ -581,6 +627,10 @@
     gap: 6px;
   }
 
+  .track-header {
+    gap: 6px;
+  }
+
   .track-title {
     font-size: 0.95rem;
     -webkit-line-clamp: 2;
@@ -589,6 +639,12 @@
 
   .track-artist {
     font-size: 0.8rem;
+  }
+
+  .like-btn-mini {
+    width: 28px;
+    height: 28px;
+    font-size: 0.85rem;
   }
 
   .track-genre {
@@ -652,6 +708,10 @@
     gap: 4px;
   }
 
+  .track-header {
+    gap: 4px;
+  }
+
   .track-title {
     font-size: 0.9rem;
     -webkit-line-clamp: 2;
@@ -660,6 +720,12 @@
 
   .track-artist {
     font-size: 0.75rem;
+  }
+
+  .like-btn-mini {
+    width: 26px;
+    height: 26px;
+    font-size: 0.8rem;
   }
 
   .track-meta {
