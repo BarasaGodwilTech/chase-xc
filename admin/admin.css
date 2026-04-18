@@ -1904,14 +1904,48 @@ body.admin-page {
     gap: 0.5rem;
 }
 
+.action-buttons .btn {
+    width: auto;
+    min-width: 36px;
+    padding: 0.5rem 0.75rem;
+    justify-content: center;
+}
+
+.action-buttons .btn i {
+    margin: 0;
+}
+
+.action-buttons .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 212, 255, 0.3);
+}
+
+.action-buttons .btn-primary:active {
+    transform: translateY(0);
+}
+
+.action-buttons .btn-secondary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 212, 255, 0.2);
+}
+
+.action-buttons .btn-secondary:active {
+    transform: translateY(0);
+}
+
 .btn-danger {
     background: var(--danger);
     color: white;
-    border: none;
 }
 
 .btn-danger:hover {
     background: #dc2626;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.btn-danger:active {
+    transform: translateY(0);
 }
 
 /* Form Improvements */
