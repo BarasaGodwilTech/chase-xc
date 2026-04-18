@@ -222,13 +222,11 @@ class AdminPanel {
                 }
             });
         }
-            }
-        });
     }
 
-    // Setup clipboard support for all text inputs
-    this.setupClipboardSupport();
-}
+    async searchSpotify() {
+        const searchInput = document.getElementById('spotifySearch');
+        const resultsContainer = document.getElementById('spotifyResults');
         const query = searchInput?.value?.trim();
 
         if (!query) {
@@ -459,22 +457,204 @@ class AdminPanel {
                         try {
                             const oembedUrl = `${proxy}${encodeURIComponent(`https://open.spotify.com/oembed?url=${encodeURIComponent(url)}`)}`;
                             const response = await fetch(oembedUrl);
+                            if (response.ok) {
+                                data = await response.json();
+                                break;
                             }
+                        } catch (e) {
+                            console.log('CORS proxy failed:', e);
                         }
-                    } catch (e) {
-                        console.log('CORS proxy method failed:', e);
                     }
+                } catch (e) {
+                    console.log('CORS proxy method failed:', e);
                 }
+            }
 
-                // Method 3: Fallback - extract info from URL pattern
-                if (!data) {
-                    console.log('Using fallback method - minimal info from URL');
-                    data = {
-                        title: 'Spotify Track',
-                        author: 'Unknown Artist',
-                        thumbnail_url: 'https://upload.wikimedia.org/wikipedia/commons/1/19/Spotify_logo_without_text.svg',
-                        html: ''
-                    };
+            // Method 3: Fallback - extract info from URL pattern
+            if (!data) {
+                console.log('Using fallback method - minimal info from URL');
+                data = {
+                    title: 'Spotify Track',
+                    author: 'Unknown Artist',
+                    thumbnail_url: 'https://upload.wikimedia.org/wikipedia/commons/1/19/Spotify_logo_without_text.svg',
+                    html: ''
+                };
+            }
+
+            // Store the fetched data and try to get additional info from Spotify page
+            this.selectedSpotifyTrack = {
+                title: data.title || 'Unknown Track',
+                artist: data.author || 'Unknown Artist',
+                artwork: data.thumbnail_url || '',
+                url: url,
+                trackId: trackId
+            };
+
+            // Try to fetch additional metadata (duration, release date) from Spotify page
+            await this.fetchSpotifyMetadata(trackId);
+
+            // Display the fetched data
+            if (resultsContainer) {
+                resultsContainer.innerHTML = `
+                    <div class="spotify-track-selected">
+                        <div class="spotify-track-info">
+                            ${this.selectedSpotifyTrack.artwork ? `<img src="${this.selectedSpotifyTrack.artwork}" alt="Artwork" class="spotify-artwork">` : ''}
+                            <div class="spotify-track-details">
+                                <div class="spotify-track-name">${this.selectedSpotifyTrack.title}</div>
+                                <div class="spotify-track-artist">${this.selectedSpotifyTrack.artist}</div>
+                                ${this.selectedSpotifyTrack.duration ? `<div class="spotify-track-duration">Duration: ${this.selectedSpotifyTrack.duration}</div>` : ''}
+                                ${this.selectedSpotifyTrack.releaseDate ? `<div class="spotify-track-release">Release: ${this.selectedSpotifyTrack.releaseDate}</div>` : ''}
+                            </div>
+                        </div>
+                        <div class="spotify-import-actions">
+                            <button type="button" class="btn btn-primary" id="confirmImportBtn">Import Track</button>
+                        </div>
+                    </div>
+                `;
+
+                // Add click handler for confirm import
+                document.getElementById('confirmImportBtn')?.addEventListener('click', () => {
+                    this.importSpotifyTrack();
+                });
+            }
+        } catch (error) {
+            console.error('Error fetching Spotify track:', error);
+            this.showNotification('Error fetching track: ' + error.message, 'error');
+        } finally {
+            if (resultsContainer) {
+                resultsContainer.classList.remove('show');
+            }
+        }
+    }
+
+    async fetchSpotifyMetadata(trackId) {
+        try {
+            // Try to scrape the Spotify open page for duration and release date
+            const spotifyUrl = `https://open.spotify.com/track/${trackId}`;
+            
+            // Use a CORS proxy to fetch the page
+            const corsProxies = [
+                'https://api.allorigins.win/raw?url=',
+                'https://corsproxy.io/?'
+            ];
+            
+            for (const proxy of corsProxies) {
+                try {
+                    const response = await fetch(`${proxy}${encodeURIComponent(spotifyUrl)}`);
+                    if (response.ok) {
+                        const html = await response.text();
+                        
+                        // Try to extract duration from the page
+                        const durationMatch = html.match(/"duration_ms":(\d+)/);
+                        if (durationMatch) {
+                            const durationMs = parseInt(durationMatch[1]);
+                            const minutes = Math.floor(durationMs / 60000);
+                            const seconds = Math.floor((durationMs % 60000) / 1000);
+                            this.selectedSpotifyTrack.duration = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                        }
+
+                        // Try to extract release date from the page
+                        const releaseDateMatch = html.match(/"release_date":"([^"]+)"/);
+                        if (releaseDateMatch) {
+                            this.selectedSpotifyTrack.releaseDate = releaseDateMatch[1];
+                        }
+
+                        // If we found data, break
+                        if (this.selectedSpotifyTrack.duration || this.selectedSpotifyTrack.releaseDate) {
+                            break;
+                        }
+                    }
+                } catch (e) {
+                    console.log('Failed to fetch metadata with proxy:', e);
+                }
+            }
+        } catch (error) {
+            console.log('Could not fetch additional metadata:', error);
+        }
+    }
+
+    async importSpotifyTrack() {
+        if (!this.selectedSpotifyTrack) {
+            this.showNotification('No Spotify track selected', 'error');
+            return;
+        }
+
+        // Populate the form with Spotify data
+        const titleInput = document.getElementById('trackTitle');
+        const artistInput = document.getElementById('trackArtist');
+        const genreInput = document.getElementById('trackGenre');
+        const durationInput = document.getElementById('trackDuration');
+        const releaseDateInput = document.getElementById('releaseDate');
+        const descriptionInput = document.getElementById('trackDescription');
+        const artworkPreview = document.getElementById('artworkPreview');
+        const spotifyUrlInput = document.getElementById('spotifyUrl');
+
+        // Ensure hidden input for Spotify artwork URL exists
+        let spotifyArtworkInput = document.getElementById('spotifyArtworkUrl');
+        if (!spotifyArtworkInput) {
+            spotifyArtworkInput = document.createElement('input');
+            spotifyArtworkInput.type = 'hidden';
+            spotifyArtworkInput.id = 'spotifyArtworkUrl';
+            spotifyArtworkInput.name = 'spotifyArtworkUrl';
+            document.getElementById('audioUploadForm')?.appendChild(spotifyArtworkInput);
+        }
+
+        if (titleInput) titleInput.value = this.selectedSpotifyTrack.title;
+        
+        // Try to find matching artist or set to add new
+        if (artistInput) {
+            const artists = this.dataManager.getAllArtists();
+            const matchingArtist = artists.find(a => 
+                a.name.toLowerCase() === this.selectedSpotifyTrack.artist.toLowerCase()
+            );
+            if (matchingArtist) {
+                artistInput.value = matchingArtist.id;
+            } else {
+                artistInput.value = '__add_new__';
+            }
+        }
+
+        if (durationInput && this.selectedSpotifyTrack.duration) {
+            durationInput.value = this.selectedSpotifyTrack.duration;
+        }
+
+        if (releaseDateInput && this.selectedSpotifyTrack.releaseDate) {
+            releaseDateInput.value = this.selectedSpotifyTrack.releaseDate;
+        } else if (releaseDateInput) {
+            releaseDateInput.value = new Date().toISOString().split('T')[0];
+        }
+
+        if (descriptionInput) {
+            descriptionInput.value = `Imported from Spotify: ${this.selectedSpotifyTrack.url}`;
+        }
+
+        // Set artwork preview and save URL for form submission
+        if (artworkPreview && this.selectedSpotifyTrack.artwork) {
+            artworkPreview.classList.add('has-image');
+            artworkPreview.style.backgroundImage = `url('${this.selectedSpotifyTrack.artwork}')`;
+            // Save the Spotify artwork URL to hidden input
+            if (spotifyArtworkInput) {
+                spotifyArtworkInput.value = this.selectedSpotifyTrack.artwork;
+            }
+        }
+
+        // Clear Spotify URL input
+        if (spotifyUrlInput) spotifyUrlInput.value = '';
+
+        // Hide Spotify results
+        const resultsContainer = document.getElementById('spotifyResults');
+        if (resultsContainer) {
+            resultsContainer.innerHTML = '';
+            resultsContainer.classList.remove('show');
+        }
+
+        // Switch to upload method to complete the import
+        this.switchUploadMethod('upload');
+
+        this.showNotification('Track data imported from Spotify. Please upload audio file to complete.', 'success');
+    }
+
+    showSection(sectionId) {
         document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
         document.querySelector(`[data-target="${sectionId}"]`)?.classList.add('active');
 
@@ -520,23 +700,24 @@ class AdminPanel {
         if (pageSubtitle) pageSubtitle.textContent = subtitles[sectionId] || 'Manage your studio operations';
     }
 
-    loadSectionData(sectionId) {
+    async loadSectionData(sectionId) {
         console.log('Loading section data:', sectionId);
         this.showLoading();
 
-        setTimeout(() => {
+        setTimeout(async () => {
             try {
                 switch (sectionId) {
                     case 'dashboard':
                         this.renderDashboard();
                         break;
                     case 'artists':
+                        await this.loadArtists();
                         break;
                     case 'tracks':
-                        this.loadTracks();
+                        await this.loadTracks();
                         break;
                     case 'music-management':
-                        this.loadArtistsForSelect();
+                        await this.loadArtistsForSelect();
                         break;
                     case 'projects':
                         break;
@@ -544,7 +725,7 @@ class AdminPanel {
                         this.loadPayments();
                         break;
                     case 'settings':
-                        this.loadSettings();
+                        await this.loadSettings();
                         break;
                 }
             } catch (error) {
@@ -576,7 +757,7 @@ class AdminPanel {
         if (pendingPaymentsEl) pendingPaymentsEl.textContent = '0';
     }
 
-    loadArtists() {
+    async loadArtists() {
         console.log('Loading artists...');
         const container = document.getElementById('artistsTable');
         if (!container) {
@@ -584,15 +765,44 @@ class AdminPanel {
             return;
         }
 
-        const artists = this.dataManager.getAllArtists();
+        let artists = [];
+        let tracks = [];
+
+        // Try to use Firestore if available, otherwise fallback to localStorage
+        try {
+            if (window.fetchArtists && window.fetchTracks) {
+                artists = await window.fetchArtists();
+                tracks = await window.fetchTracks();
+            } else {
+                // Fallback to localStorage
+                artists = this.dataManager.getAllArtists();
+                tracks = this.dataManager.getAllTracks();
+            }
+        } catch (error) {
+            console.error('Error loading from Firestore, using fallback:', error);
+            artists = this.dataManager.getAllArtists();
+            tracks = this.dataManager.getAllTracks();
+        }
+
         if (artists.length === 0) {
             container.innerHTML = '<tr><td colspan="7" class="text-center">No artists found</td></tr>';
             return;
         }
 
+        // Calculate stats for each artist
+        const statsByArtist = new Map();
+        for (const t of tracks || []) {
+            const artistId = String(t.artist || '');
+            if (!artistId) continue;
+            if (!statsByArtist.has(artistId)) statsByArtist.set(artistId, { tracks: 0, streams: 0 });
+            const s = statsByArtist.get(artistId);
+            s.tracks += 1;
+            s.streams += Number(t.streams || 0);
+        }
+
         container.innerHTML = artists.map(artist => {
-            const tracks = this.dataManager.getTracksByArtist(artist.id);
-            const totalStreams = tracks.reduce((sum, track) => sum + (track.streams || 0), 0);
+            const stats = statsByArtist.get(artist.id) || { tracks: 0, streams: 0 };
+            const since = artist.createdAt && artist.createdAt.toDate ? String(artist.createdAt.toDate().getFullYear()) : artist.since || '';
 
             return `
                 <tr>
@@ -603,9 +813,9 @@ class AdminPanel {
                         </div>
                     </td>
                     <td>${artist.genre}</td>
-                    <td>${tracks.length}</td>
-                    <td>${this.formatNumber(totalStreams)}</td>
-                    <td>${artist.since}</td>
+                    <td>${stats.tracks}</td>
+                    <td>${this.formatNumber(stats.streams)}</td>
+                    <td>${since}</td>
                     <td><span class="status-badge status-${artist.status}">${artist.status}</span></td>
                     <td>
                         <div class="action-buttons">
@@ -625,7 +835,7 @@ class AdminPanel {
         }).join('');
     }
 
-    loadTracks() {
+    async loadTracks() {
         console.log('Loading tracks...');
         const container = document.getElementById('tracksTable');
         if (!container) {
@@ -633,14 +843,38 @@ class AdminPanel {
             return;
         }
 
-        const tracks = this.dataManager.getAllTracks();
+        let tracks = [];
+        let artists = [];
+
+        // Try to use Firestore if available, otherwise fallback to localStorage
+        try {
+            if (window.fetchTracks && window.fetchArtists) {
+                tracks = await window.fetchTracks();
+                artists = await window.fetchArtists();
+            } else {
+                // Fallback to localStorage
+                tracks = this.dataManager.getAllTracks();
+                artists = this.dataManager.getAllArtists();
+            }
+        } catch (error) {
+            console.error('Error loading from Firestore, using fallback:', error);
+            tracks = this.dataManager.getAllTracks();
+            artists = this.dataManager.getAllArtists();
+        }
+
         if (tracks.length === 0) {
             container.innerHTML = '<tr><td colspan="7" class="text-center">No tracks found</td></tr>';
             return;
         }
 
+        // Create artist lookup map
+        const artistMap = new Map();
+        for (const a of artists || []) {
+            artistMap.set(a.id, a.name || 'Unknown Artist');
+        }
+
         container.innerHTML = tracks.map(track => {
-            const artist = this.dataManager.getArtist(track.artist);
+            const artistName = artistMap.get(track.artist) || track.artistName || 'Unknown Artist';
             return `
                 <tr>
                     <td>
@@ -649,7 +883,7 @@ class AdminPanel {
                             <span>${track.title}</span>
                         </div>
                     </td>
-                    <td>${artist?.name || track.artistName || 'Unknown Artist'}</td>
+                    <td>${artistName}</td>
                     <td>${track.genre}</td>
                     <td>${this.formatNumber(track.streams)}</td>
                     <td>${track.duration}</td>
@@ -672,11 +906,26 @@ class AdminPanel {
         }).join('');
     }
 
-    loadArtistsForSelect() {
+    async loadArtistsForSelect() {
         const artistSelect = document.getElementById('trackArtist');
         if (!artistSelect) return;
-        const artists = this.dataManager.getAllArtists();
-        artistSelect.innerHTML = '<option value="">Select Artist</option>' + artists.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+        
+        // Try to use Firestore if available, otherwise fallback to localStorage
+        try {
+            if (window.fetchArtists) {
+                const artists = await window.fetchArtists();
+                artistSelect.innerHTML = '<option value="">Select Artist</option>' + 
+                    artists.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+            } else {
+                // Fallback to localStorage
+                const artists = this.dataManager.getAllArtists();
+                artistSelect.innerHTML = '<option value="">Select Artist</option>' + artists.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+            }
+        } catch (error) {
+            console.error('Error loading artists from Firestore, using fallback:', error);
+            const artists = this.dataManager.getAllArtists();
+            artistSelect.innerHTML = '<option value="">Select Artist</option>' + artists.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+        }
     }
 
     loadPayments() {

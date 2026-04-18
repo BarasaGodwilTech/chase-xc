@@ -330,6 +330,8 @@ async function handleAudioUploadSubmit(e) {
   const audioFile = /** @type {File|null} */ (fd.get('audioFile'))
   const artworkFile = /** @type {File|null} */ (fd.get('trackArtwork'))
 
+  const spotifyArtworkUrl = document.getElementById('spotifyArtworkUrl')?.value || ''
+
   if (!title || !artistId || artistId === '__add_new__' || !genre) {
     alert('Please fill in Track Title, Artist and Genre.')
     return
@@ -351,9 +353,13 @@ async function handleAudioUploadSubmit(e) {
     const audioPath = `audio/${artistId}/${now}.${audioExt}`
     const audioUrl = await uploadFileToStorage(audioPath, audioFile)
 
-    // Upload artwork (optional)
+    // Handle artwork - either upload file or use Spotify URL
     let artworkUrl = ''
-    if (artworkFile && artworkFile instanceof File && artworkFile.size > 0) {
+    if (spotifyArtworkUrl && spotifyArtworkUrl.startsWith('http')) {
+      // Use the Spotify artwork URL
+      artworkUrl = spotifyArtworkUrl
+    } else if (artworkFile && artworkFile instanceof File && artworkFile.size > 0) {
+      // Upload the artwork file
       const artPath = `artwork/${artistId}/${now}.${artworkExt || 'jpg'}`
       artworkUrl = await uploadFileToStorage(artPath, artworkFile)
     }
@@ -380,6 +386,17 @@ async function handleAudioUploadSubmit(e) {
 
     alert('Track uploaded to Firebase successfully!')
     form.reset()
+
+    // Clear Spotify artwork URL
+    const spotifyArtworkInput = document.getElementById('spotifyArtworkUrl')
+    if (spotifyArtworkInput) spotifyArtworkInput.value = ''
+
+    // Clear artwork preview
+    const artworkPreview = document.getElementById('artworkPreview')
+    if (artworkPreview) {
+      artworkPreview.classList.remove('has-image')
+      artworkPreview.style.backgroundImage = ''
+    }
   } catch (err) {
     console.error(err)
     alert('Upload failed. Check console for details.')
@@ -404,6 +421,8 @@ async function saveTrackToFirestore(trackData) {
 
 // Make the function available globally for admin.js
 window.saveTrackToFirestore = saveTrackToFirestore;
+window.fetchArtists = fetchArtists;
+window.fetchTracks = fetchTracks;
 
 function initAdminFirebase() {
   console.log('[admin-firebase] init')
