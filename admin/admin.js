@@ -788,10 +788,21 @@ class AdminPanel {
         const activeProjectsEl = document.getElementById('activeProjects');
         const pendingPaymentsEl = document.getElementById('pendingPayments');
 
+        const totalTracksValueEl = document.getElementById('totalTracksValue');
+        const streamsValueEl = document.getElementById('streamsValue');
+        const bookingsValueEl = document.getElementById('bookingsValue');
+        const ratingValueEl = document.getElementById('ratingValue');
+
         if (totalRevenueEl) totalRevenueEl.textContent = `UGX ${this.formatNumber(totalRevenue)}`;
         if (totalArtistsEl) totalArtistsEl.textContent = artists.length;
         if (activeProjectsEl) activeProjectsEl.textContent = publishedTracks.length;
         if (pendingPaymentsEl) pendingPaymentsEl.textContent = pendingPayments;
+
+        // Update quick stats
+        if (totalTracksValueEl) totalTracksValueEl.textContent = tracks.length;
+        if (streamsValueEl) streamsValueEl.textContent = this.formatNumber(totalStreams);
+        if (bookingsValueEl) bookingsValueEl.textContent = '0'; // TODO: Implement bookings tracking
+        if (ratingValueEl) ratingValueEl.textContent = 'N/A'; // TODO: Implement rating system
     }
 
     async loadArtists() {
