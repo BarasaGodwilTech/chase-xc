@@ -50,6 +50,18 @@ class AdminPanel {
             this.handleLogout();
         });
 
+        document.getElementById('notificationsBtn')?.addEventListener('click', () => {
+            this.toggleNotifications();
+        });
+
+        document.getElementById('closeNotifications')?.addEventListener('click', () => {
+            this.toggleNotifications();
+        });
+
+        document.getElementById('fullscreenBtn')?.addEventListener('click', () => {
+            this.toggleFullscreen();
+        });
+
         document.getElementById('addTrackBtn')?.addEventListener('click', () => {
             this.addNewTrack();
         });
@@ -1597,6 +1609,23 @@ class AdminPanel {
 
     formatNumber(num) {
         return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    }
+
+    toggleNotifications() {
+        const panel = document.getElementById('notificationsPanel');
+        if (panel) {
+            panel.classList.toggle('active');
+        }
+    }
+
+    toggleFullscreen() {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(err => {
+                console.error('Error attempting to enable fullscreen:', err);
+            });
+        } else {
+            document.exitFullscreen();
+        }
     }
 
     handleLogout() {
