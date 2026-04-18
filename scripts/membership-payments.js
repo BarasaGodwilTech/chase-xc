@@ -150,6 +150,25 @@ class MembershipPaymentManager {
     selectPlan(planType, amount) {
         console.log('🎯 Selecting plan:', planType);
         
+        // Check if user is authenticated
+        if (window.userAuth && !window.userAuth.isLoggedIn()) {
+            console.log('🔒 User not authenticated, redirecting to login');
+            
+            // Store the current URL for redirect after login
+            const currentUrl = window.location.href;
+            window.userAuth.setRedirectUrl(currentUrl);
+            
+            // Show message before redirect
+            this.showMessage('Please sign in to continue with your membership selection', 'info');
+            
+            // Redirect to auth page
+            setTimeout(() => {
+                window.location.href = 'auth.html';
+            }, 1000);
+            
+            return;
+        }
+        
         this.currentPlan = {
             type: planType,
             amount: amount,

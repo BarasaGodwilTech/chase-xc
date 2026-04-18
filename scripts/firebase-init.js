@@ -1,6 +1,7 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js'
 import { getFirestore } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js'
 import { getStorage } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js'
+import { getAuth } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js'
 
 const firebaseConfig = {
   apiKey: "AIzaSyCv0TgA3_jFcC0fthmxyqxzg1phdXeMzkA",
@@ -14,3 +15,4 @@ const firebaseConfig = {
 export const firebaseApp = initializeApp(firebaseConfig)
 export const db = getFirestore(firebaseApp)
 export const storage = getStorage(firebaseApp)
+export const auth = getAuth(firebaseApp)
