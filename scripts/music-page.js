@@ -50,6 +50,11 @@ function getSampleTracks() {
       duration: '3:45',
       artwork: 'public/player-cover-1.jpg',
       audioUrl: '',
+      spotifyUrl: 'https://open.spotify.com/track/0BHDz4KmNBRE',
+      platformLinks: {
+        spotify: 'https://open.spotify.com/track/0BHDz4KmNBRE',
+        youtube: 'https://www.youtube.com/watch?v=BHDz4KmNBRE'
+      },
       streams: 125000,
       likes: 8500,
       downloads: 3200,
@@ -66,6 +71,10 @@ function getSampleTracks() {
       duration: '4:12',
       artwork: 'public/player-cover-2.jpg',
       audioUrl: '',
+      spotifyUrl: 'https://open.spotify.com/artist/1gxLasEE8iDV3Coz8NosqX',
+      platformLinks: {
+        spotify: 'https://open.spotify.com/artist/1gxLasEE8iDV3Coz8NosqX'
+      },
       streams: 89000,
       likes: 6200,
       downloads: 2100,
@@ -82,6 +91,10 @@ function getSampleTracks() {
       duration: '3:28',
       artwork: 'public/player-cover-3.jpg',
       audioUrl: '',
+      spotifyUrl: 'https://open.spotify.com/album/39fFMXy2GNHUhASF8qv9sf',
+      platformLinks: {
+        spotify: 'https://open.spotify.com/album/39fFMXy2GNHUhASF8qv9sf'
+      },
       streams: 67000,
       likes: 4100,
       downloads: 1800,
@@ -98,6 +111,10 @@ function getSampleTracks() {
       duration: '3:55',
       artwork: 'public/player-cover-4.jpg',
       audioUrl: '',
+      spotifyUrl: 'https://open.spotify.com/artist/1gxLasEE8iDV3Coz8NosqX',
+      platformLinks: {
+        spotify: 'https://open.spotify.com/artist/1gxLasEE8iDV3Coz8NosqX'
+      },
       streams: 45000,
       likes: 3200,
       downloads: 1200,
