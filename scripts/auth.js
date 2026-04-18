@@ -346,7 +346,12 @@ class UserAuth {
                 notification.classList.remove('show');
             }, 3000);
         } else {
-            alert(message);
+            // Use custom notification system if auth notification element doesn't exist
+            if (window.notifications) {
+                window.notifications.show(message, type);
+            } else {
+                console.log(`[${type}] ${message}`);
+            }
         }
     }
 

@@ -253,7 +253,11 @@ async function handleAddArtistSubmit(e) {
   const imageFile = /** @type {File|null} */ (fd.get('artistImage'))
 
   if (!name) {
-    alert('Artist name is required')
+    if (window.notifications) {
+      window.notifications.show('Artist name is required', 'error')
+    } else {
+      console.error('Artist name is required')
+    }
     return
   }
 
@@ -272,7 +276,12 @@ async function handleAddArtistSubmit(e) {
           'Artist image upload failed. This usually means Firebase Storage is not enabled or Storage rules block uploads.\n\n' +
           'I can still save the artist WITHOUT an image. Continue?'
 
-        const ok = confirm(msg)
+        let ok = false
+        if (window.notifications && window.notifications.confirm) {
+          ok = await window.notifications.confirm(msg, 'Continue Without Image?', 'warning')
+        } else {
+          ok = confirm(msg)
+        }
         if (!ok) return
         imageUrl = ''
       }
@@ -341,12 +350,20 @@ async function handleAudioUploadSubmit(e) {
   const spotifyArtworkUrl = document.getElementById('spotifyArtworkUrl')?.value || ''
 
   if (!title || !artistId || artistId === '__add_new__' || !genre) {
-    alert('Please fill in Track Title, Artist and Genre.')
+    if (window.notifications) {
+      window.notifications.show('Please fill in Track Title, Artist and Genre.', 'error')
+    } else {
+      console.error('Please fill in Track Title, Artist and Genre.')
+    }
     return
   }
 
   if (!audioFile || !(audioFile instanceof File) || audioFile.size === 0) {
-    alert('Please choose an audio file.')
+    if (window.notifications) {
+      window.notifications.show('Please choose an audio file.', 'error')
+    } else {
+      console.error('Please choose an audio file.')
+    }
     return
   }
 
@@ -392,7 +409,11 @@ async function handleAudioUploadSubmit(e) {
       updatedAt: serverTimestamp(),
     })
 
-    alert('Track uploaded to Firebase successfully!')
+    if (window.notifications) {
+      window.notifications.show('Track uploaded to Firebase successfully!', 'success')
+    } else {
+      console.log('Track uploaded to Firebase successfully!')
+    }
     form.reset()
 
     // Clear Spotify artwork URL
@@ -407,7 +428,11 @@ async function handleAudioUploadSubmit(e) {
     }
   } catch (err) {
     console.error(err)
-    alert('Upload failed. Check console for details.')
+    if (window.notifications) {
+      window.notifications.show('Upload failed. Check console for details.', 'error')
+    } else {
+      console.error('Upload failed. Check console for details.')
+    }
   }
 }
 
@@ -511,7 +536,7 @@ function initAdminFirebase() {
 
   const select = document.getElementById('trackArtist')
   if (select) {
-    select.addEventListener('change', () => {
+    select.addEventListener('change', async () => {
       if (select.value === '__add_new__') {
         // Save current form draft so user can continue after adding the artist
         window.__audioUploadDraft = captureAudioUploadDraft()
@@ -522,7 +547,12 @@ function initAdminFirebase() {
         const hasArtwork = artworkInput && artworkInput.files && artworkInput.files.length > 0
 
         if (hasAudio || hasArtwork) {
-          const ok = confirm('You have selected audio/artwork files. If you add a new artist now, you may need to re-select those files afterwards. Continue?')
+          let ok = false
+          if (window.notifications && window.notifications.confirm) {
+            ok = await window.notifications.confirm('You have selected audio/artwork files. If you add a new artist now, you may need to re-select those files afterwards. Continue?', 'Confirm Action', 'warning')
+          } else {
+            ok = confirm('You have selected audio/artwork files. If you add a new artist now, you may need to re-select those files afterwards. Continue?')
+          }
           if (!ok) {
             select.value = ''
             return

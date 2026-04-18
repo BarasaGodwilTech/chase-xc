@@ -1246,7 +1246,13 @@ class AdminPanel {
     }
 
     async deleteTeamMember(memberId) {
-        if (confirm('Are you sure you want to delete this team member?')) {
+        let ok = false;
+        if (window.notifications && window.notifications.confirm) {
+            ok = await window.notifications.confirm('Are you sure you want to delete this team member?', 'Delete Team Member', 'warning');
+        } else {
+            ok = confirm('Are you sure you want to delete this team member?');
+        }
+        if (ok) {
             try {
                 const { db } = await import('../scripts/firebase-init.js');
                 const { doc, deleteDoc } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
@@ -1553,11 +1559,22 @@ class AdminPanel {
             return;
         }
         const tracks = this.dataManager.getTracksByArtist(artistId) || [];
-        alert(`Artist: ${artist.name}\nGenre: ${artist.genre}\nTracks: ${tracks.length}\nStatus: ${artist.status}`);
+        const message = `Artist: ${artist.name}\nGenre: ${artist.genre}\nTracks: ${tracks.length}\nStatus: ${artist.status}`;
+        if (window.notifications) {
+            window.notifications.show(message, 'info');
+        } else {
+            console.log(message);
+        }
     }
 
     async deleteArtist(artistId) {
-        if (confirm('Are you sure you want to delete this artist?')) {
+        let ok = false;
+        if (window.notifications && window.notifications.confirm) {
+            ok = await window.notifications.confirm('Are you sure you want to delete this artist?', 'Delete Artist', 'warning');
+        } else {
+            ok = confirm('Are you sure you want to delete this artist?');
+        }
+        if (ok) {
             try {
                 await window.deleteArtistFromFirestore(artistId);
                 this.showNotification('Artist deleted successfully!', 'success');
@@ -1632,7 +1649,12 @@ class AdminPanel {
             }
             const artists = await window.fetchArtists();
             const artist = artists.find(a => a.id === track.artist);
-            alert(`Track: ${track.title}\nArtist: ${artist?.name || 'Unknown'}\nStreams: ${this.formatNumber(track.streams)}`);
+            const message = `Track: ${track.title}\nArtist: ${artist?.name || 'Unknown'}\nStreams: ${this.formatNumber(track.streams)}`;
+            if (window.notifications) {
+                window.notifications.show(message, 'info');
+            } else {
+                console.log(message);
+            }
         } catch (error) {
             console.error('Error fetching track:', error);
             this.showNotification('Error loading track: ' + error.message, 'error');
@@ -1640,7 +1662,13 @@ class AdminPanel {
     }
 
     async deleteTrack(trackId) {
-        if (confirm('Are you sure you want to delete this track?')) {
+        let ok = false;
+        if (window.notifications && window.notifications.confirm) {
+            ok = await window.notifications.confirm('Are you sure you want to delete this track?', 'Delete Track', 'warning');
+        } else {
+            ok = confirm('Are you sure you want to delete this track?');
+        }
+        if (ok) {
             try {
                 await window.deleteTrackFromFirestore(trackId);
                 this.showNotification('Track deleted successfully!', 'success');
@@ -1653,7 +1681,12 @@ class AdminPanel {
     }
 
     viewPayment(paymentId) {
-        alert(`Viewing payment: ${paymentId}`);
+        const message = `Viewing payment: ${paymentId}`;
+        if (window.notifications) {
+            window.notifications.show(message, 'info');
+        } else {
+            console.log(message);
+        }
     }
 
     addNewArtist() {
@@ -1929,8 +1962,14 @@ class AdminPanel {
         }
     }
 
-    handleLogout() {
-        if (confirm('Are you sure you want to logout?')) {
+    async handleLogout() {
+        let ok = false;
+        if (window.notifications && window.notifications.confirm) {
+            ok = await window.notifications.confirm('Are you sure you want to logout?', 'Logout', 'warning');
+        } else {
+            ok = confirm('Are you sure you want to logout?');
+        }
+        if (ok) {
             localStorage.removeItem('adminToken');
             sessionStorage.removeItem('adminToken');
             window.location.href = 'index.html';

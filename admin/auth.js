@@ -201,7 +201,12 @@ class AdminAuth {
                 notification.classList.remove('show');
             }, 3000);
         } else {
-            alert(message); // Fallback
+            // Use custom notification system as fallback
+            if (window.notifications) {
+                window.notifications.show(message, type);
+            } else {
+                console.log(`[${type}] ${message}`);
+            }
         }
     }
 

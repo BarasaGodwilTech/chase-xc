@@ -407,7 +407,11 @@ function handlePlayTrack(track) {
     if (externalUrl) {
       openExternalPlayer(externalUrl, track)
     } else {
-      alert('No audio available for this track')
+      if (window.notifications) {
+        window.notifications.show('No audio available for this track', 'warning')
+      } else {
+        console.warn('No audio available for this track')
+      }
     }
   }
 }
@@ -460,9 +464,17 @@ function handleShareTrack(track) {
     // Fallback: copy to clipboard
     const shareText = `${shareData.text} - ${shareData.url}`
     navigator.clipboard.writeText(shareText).then(() => {
-      alert('Link copied to clipboard!')
+      if (window.notifications) {
+        window.notifications.show('Link copied to clipboard!', 'success')
+      } else {
+        console.log('Link copied to clipboard!')
+      }
     }).catch(() => {
-      prompt('Copy this link:', shareText)
+      if (window.notifications && window.notifications.prompt) {
+        window.notifications.prompt('Copy this link:', shareText)
+      } else {
+        console.log('Copy this link:', shareText)
+      }
     })
   }
 }
@@ -482,7 +494,11 @@ function handleAddToPlaylist(track) {
   // This would typically make an API call to your backend
   // TODO: Call your backend API to add track to playlist
   console.log('[MusicPage] User authenticated, proceeding with add to playlist action')
-  alert('Added to playlist!')
+  if (window.notifications) {
+    window.notifications.show('Added to playlist!', 'success')
+  } else {
+    console.log('Added to playlist!')
+  }
 }
 
 // Helper function to check if user is authenticated
@@ -571,7 +587,11 @@ function handleLikeAfterLogin(trackId) {
 function handleAddToPlaylistAfterLogin(trackData) {
   // TODO: Call your backend API to add track to playlist
   console.log('[MusicPage] Added to playlist after login:', trackData.title)
-  alert('Added to playlist!')
+  if (window.notifications) {
+    window.notifications.show('Added to playlist!', 'success')
+  } else {
+    console.log('Added to playlist!')
+  }
 }
 
 function boot() {

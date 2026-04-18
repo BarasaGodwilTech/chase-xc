@@ -195,7 +195,11 @@ function initContactForm() {
 
         if (validateForm()) {
             // Show success message
-            alert("Thank you for reaching out! We'll get back to you soon.")
+            if (window.notifications) {
+                window.notifications.show("Thank you for reaching out! We'll get back to you soon.", 'success')
+            } else {
+                console.log("Thank you for reaching out! We'll get back to you soon.")
+            }
             form.reset()
             clearErrors()
         }
@@ -667,18 +671,30 @@ function initMembership() {
         const ref = transactionId?.value?.trim()
 
         if (!fullName || !email || !phone) {
-            alert('Please fill in all required fields.')
+            if (window.notifications) {
+                window.notifications.show('Please fill in all required fields.', 'error')
+            } else {
+                console.error('Please fill in all required fields.')
+            }
             return
         }
 
         if (!method) {
-            alert('Please select a payment method.')
+            if (window.notifications) {
+                window.notifications.show('Please select a payment method.', 'error')
+            } else {
+                console.error('Please select a payment method.')
+            }
             return
         }
 
         const needsReference = method === 'mtn' || method === 'airtel' || method === 'bank'
         if (needsReference && !ref) {
-            alert('Please enter your Transaction ID / Reference.')
+            if (window.notifications) {
+                window.notifications.show('Please enter your Transaction ID / Reference.', 'error')
+            } else {
+                console.error('Please enter your Transaction ID / Reference.')
+            }
             return
         }
 
@@ -698,7 +714,11 @@ function initMembership() {
         existing.push(record)
         localStorage.setItem('membershipSubscriptions', JSON.stringify(existing))
 
-        alert('Subscription submitted! We will confirm your payment shortly.')
+        if (window.notifications) {
+            window.notifications.show('Subscription submitted! We will confirm your payment shortly.', 'success')
+        } else {
+            console.log('Subscription submitted! We will confirm your payment shortly.')
+        }
         membershipForm.reset()
         closeMembershipModal()
     }

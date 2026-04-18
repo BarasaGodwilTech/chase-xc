@@ -294,7 +294,11 @@ correctTransactionId(paymentId, correctId) {
 }
 
 contactSupport(paymentId) {
-    alert('Please contact support at +256 757 858 462 with your payment details.');
+    if (window.notifications) {
+        window.notifications.show('Please contact support at +256 757 858 462 with your payment details.', 'info');
+    } else {
+        console.log('Please contact support at +256 757 858 462 with your payment details.');
+    }
     this.hidePaymentModal();
 }
 
@@ -424,8 +428,14 @@ completePaymentProcess(confirmation) {
         }
     }
 
-    showAddSavingsModal(goalId) {
-        const amount = prompt('Enter amount to add (UGX):')
+    async showAddSavingsModal(goalId) {
+        let amount;
+        if (window.notifications && window.notifications.prompt) {
+            amount = await window.notifications.prompt('Enter amount to add (UGX):', '');
+        } else {
+            amount = prompt('Enter amount to add (UGX):');
+        }
+        
         if (amount && !isNaN(amount) && parseInt(amount) > 0) {
             this.addSavings(goalId, parseInt(amount))
         } else if (amount) {
