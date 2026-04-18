@@ -708,7 +708,7 @@ class AdminPanel {
             try {
                 switch (sectionId) {
                     case 'dashboard':
-                        this.renderDashboard();
+                        await this.renderDashboard();
                         break;
                     case 'artists':
                         await this.loadArtists();
@@ -737,14 +737,38 @@ class AdminPanel {
         }, 300);
     }
 
-    renderDashboard() {
+    async renderDashboard() {
         console.log('Rendering dashboard...');
-        const artists = this.dataManager.getAllArtists();
-        const tracks = this.dataManager.getAllTracks();
-        const publishedTracks = this.dataManager.getPublishedTracks();
+        
+        let artists = [];
+        let tracks = [];
+        let payments = [];
+
+        // Try to use Firestore if available, otherwise fallback to localStorage
+        try {
+            if (window.fetchArtists && window.fetchTracks && window.fetchPayments) {
+                artists = await window.fetchArtists();
+                tracks = await window.fetchTracks();
+                payments = await window.fetchPayments();
+            } else {
+                // Fallback to localStorage
+                artists = this.dataManager.getAllArtists();
+                tracks = this.dataManager.getAllTracks();
+                const membershipSubscriptions = JSON.parse(localStorage.getItem('membershipSubscriptions') || '[]');
+                payments = membershipSubscriptions;
+            }
+        } catch (error) {
+            console.error('Error loading dashboard stats from Firestore, using fallback:', error);
+            artists = this.dataManager.getAllArtists();
+            tracks = this.dataManager.getAllTracks();
+            const membershipSubscriptions = JSON.parse(localStorage.getItem('membershipSubscriptions') || '[]');
+            payments = membershipSubscriptions;
+        }
 
         const totalStreams = tracks.reduce((sum, track) => sum + (track.streams || 0), 0);
         const totalRevenue = Math.round(totalStreams * 0.003);
+        const publishedTracks = tracks.filter(t => t.status === 'published');
+        const pendingPayments = payments.filter(p => p.status === 'pending').length;
 
         const totalRevenueEl = document.getElementById('totalRevenue');
         const totalArtistsEl = document.getElementById('totalArtists');
@@ -754,7 +778,7 @@ class AdminPanel {
         if (totalRevenueEl) totalRevenueEl.textContent = `UGX ${this.formatNumber(totalRevenue)}`;
         if (totalArtistsEl) totalArtistsEl.textContent = artists.length;
         if (activeProjectsEl) activeProjectsEl.textContent = publishedTracks.length;
-        if (pendingPaymentsEl) pendingPaymentsEl.textContent = '0';
+        if (pendingPaymentsEl) pendingPaymentsEl.textContent = pendingPayments;
     }
 
     async loadArtists() {
