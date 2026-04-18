@@ -778,6 +778,7 @@ class AdminPanel {
             payments: 'Payment Management',
             artists: 'Artist Management',
             tracks: 'Track Management',
+            team: 'Team Management',
             'music-management': 'Music Management',
             projects: 'Projects',
             settings: 'Studio Settings',
@@ -790,6 +791,7 @@ class AdminPanel {
             payments: 'Manage and track all payments',
             artists: 'Manage artist profiles and content',
             tracks: 'Manage music tracks and releases',
+            team: 'Manage team members and their profiles',
             'music-management': 'Upload and manage music tracks',
             projects: 'Manage studio projects and deliverables',
             settings: 'Configure studio settings and pricing',
@@ -806,7 +808,6 @@ class AdminPanel {
 
     async loadSectionData(sectionId) {
         console.log('Loading section data:', sectionId);
-
         try {
             switch (sectionId) {
                 case 'dashboard':
@@ -817,6 +818,9 @@ class AdminPanel {
                     break;
                 case 'tracks':
                     await this.loadTracks();
+                    break;
+                case 'team':
+                    await this.loadTeam();
                     break;
                 case 'music-management':
                     await this.loadArtistsForSelect();
@@ -1027,6 +1031,15 @@ class AdminPanel {
         `).join('');
     }
 
+    async loadTeam() {
+        console.log('Loading team members...');
+        // Team section functionality to be implemented
+        const table = document.getElementById('teamTable');
+        if (table) {
+            table.innerHTML = '<tr><td colspan="7" class="text-center">Team management coming soon</td></tr>';
+        }
+    }
+
     async loadSettings() {
         // Load settings from Firebase config
         try {
@@ -1175,6 +1188,13 @@ class AdminPanel {
         } catch (error) {
             console.error('Error saving settings:', error);
             this.showNotification('Error saving settings: ' + error.message, 'error');
+        }
+    }
+
+    editArtist(artistId) {
+        const artist = this.dataManager.getArtist(artistId);
+        if (artist) {
+            this.openArtistModal(artist);
         }
     }
 
