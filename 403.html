@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <title>403 - Access Denied | Chase x Records</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,20 +12,20 @@
     <link rel="stylesheet" href="styles/components.css">
     <style>
         :root {
-            --error-primary: #ff9800;
-            --error-secondary: #ff5722;
-            --error-accent: #f44336;
+            --error-primary: #f59e0b;
+            --error-secondary: #ea580c;
+            --error-accent: #dc2626;
             --bg-dark: #0a0e27;
             --bg-surface: #1a1f3a;
             --text-primary: #ffffff;
-            --text-secondary: rgba(255, 255, 255, 0.75);
-            --text-muted: rgba(255, 255, 255, 0.65);
+            --text-secondary: rgba(255, 255, 255, 0.8);
+            --text-muted: rgba(255, 255, 255, 0.6);
             --border-color: rgba(255, 255, 255, 0.08);
-            --glass-bg: rgba(255, 255, 255, 0.03);
-            --shadow-lg: 0 25px 50px rgba(0, 0, 0, 0.4), 0 0 100px rgba(255, 152, 0, 0.1);
-            --radius-lg: 24px;
-            --radius-md: 12px;
-            --radius-sm: 8px;
+            --glass-bg: rgba(10, 14, 39, 0.7);
+            --shadow-lg: 0 25px 50px rgba(0, 0, 0, 0.5), 0 0 100px rgba(245, 158, 11, 0.15);
+            --radius-lg: 32px;
+            --radius-md: 16px;
+            --radius-sm: 12px;
             --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
@@ -46,9 +46,9 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background: linear-gradient(135deg, var(--bg-dark) 0%, var(--bg-surface) 50%, var(--bg-dark) 100%);
+            background: var(--bg-dark);
             margin: 0;
-            padding: clamp(1rem, 3vw, 2rem);
+            padding: 16px;
             position: relative;
             overflow-x: hidden;
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -61,11 +61,16 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: radial-gradient(ellipse at 25% 60%, rgba(255, 152, 0, 0.08) 0%, transparent 50%),
-                        radial-gradient(ellipse at 75% 40%, rgba(255, 87, 34, 0.06) 0%, transparent 50%);
+            background: radial-gradient(ellipse at 25% 60%, rgba(245, 158, 11, 0.1) 0%, transparent 50%),
+                        radial-gradient(ellipse at 75% 40%, rgba(234, 88, 12, 0.07) 0%, transparent 50%);
             animation: pulse 8s ease-in-out infinite;
             pointer-events: none;
-            z-index: 1;
+            z-index: 0;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
         }
 
         .video-background {
@@ -75,8 +80,8 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-            z-index: 0;
-            opacity: 0.15;
+            z-index: -1;
+            opacity: 0.12;
         }
 
         .video-overlay {
@@ -85,54 +90,48 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(135deg, rgba(10, 14, 39, 0.85) 0%, rgba(26, 31, 58, 0.9) 50%, rgba(10, 14, 39, 0.85) 100%);
-            z-index: 0;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 0.5; }
-            50% { opacity: 1; }
+            background: linear-gradient(135deg, rgba(10, 14, 39, 0.88) 0%, rgba(26, 31, 58, 0.92) 50%, rgba(10, 14, 39, 0.88) 100%);
+            z-index: -1;
         }
 
         .error-page {
             text-align: center;
-            max-width: min(600px, 90vw);
+            max-width: 580px;
             width: 100%;
-            padding: clamp(2rem, 5vw, 3.5rem) clamp(1.5rem, 4vw, 2.5rem);
+            padding: 48px 40px;
             background: var(--glass-bg);
-            backdrop-filter: blur(30px);
-            -webkit-backdrop-filter: blur(30px);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
             border-radius: var(--radius-lg);
             border: 1px solid var(--border-color);
             box-shadow: var(--shadow-lg);
             position: relative;
-            z-index: 2;
+            z-index: 10;
         }
 
         .error-icon {
-            font-size: clamp(4rem, 12vw, 7rem);
+            font-size: 80px;
             color: var(--error-primary);
-            margin-bottom: clamp(0.75rem, 2vw, 1rem);
+            margin-bottom: 20px;
             animation: float 4s ease-in-out infinite, glow 2s ease-in-out infinite alternate;
-            filter: drop-shadow(0 0 30px rgba(255, 152, 0, 0.5));
+            filter: drop-shadow(0 0 30px rgba(245, 158, 11, 0.5));
             line-height: 1;
         }
 
         @keyframes glow {
-            from { filter: drop-shadow(0 0 20px rgba(255, 152, 0, 0.4)); }
-            to { filter: drop-shadow(0 0 40px rgba(255, 152, 0, 0.8)); }
+            from { filter: drop-shadow(0 0 20px rgba(245, 158, 11, 0.4)); }
+            to { filter: drop-shadow(0 0 45px rgba(245, 158, 11, 0.8)); }
         }
 
         @keyframes float {
             0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-20px); }
+            50% { transform: translateY(-15px); }
         }
 
         .error-code {
-            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
-            font-size: clamp(3.5rem, 10vw, 7rem);
+            font-family: 'Poppins', sans-serif;
+            font-size: 96px;
             font-weight: 800;
-            color: var(--text-primary);
             margin: 0;
             line-height: 1;
             background: linear-gradient(135deg, var(--error-primary) 0%, var(--error-secondary) 50%, var(--error-accent) 100%);
@@ -141,6 +140,7 @@
             background-clip: text;
             animation: shimmer 3s ease-in-out infinite;
             background-size: 200% 200%;
+            letter-spacing: -0.02em;
         }
 
         @keyframes shimmer {
@@ -149,36 +149,36 @@
         }
 
         .error-title {
-            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
-            font-size: clamp(1.5rem, 4vw, 2.2rem);
+            font-family: 'Poppins', sans-serif;
+            font-size: 32px;
             font-weight: 700;
             color: var(--text-primary);
-            margin: clamp(1rem, 3vw, 1.5rem) 0 clamp(0.75rem, 2vw, 1rem);
+            margin: 24px 0 16px;
             letter-spacing: -0.02em;
             line-height: 1.2;
         }
 
         .error-message {
             color: var(--text-secondary);
-            font-size: clamp(1rem, 2.5vw, 1.15rem);
-            margin-bottom: clamp(1.5rem, 4vw, 2.5rem);
-            line-height: 1.7;
+            font-size: 18px;
+            margin-bottom: 40px;
+            line-height: 1.6;
             font-weight: 400;
-            max-width: 500px;
+            max-width: 480px;
             margin-left: auto;
             margin-right: auto;
         }
 
         .error-actions {
             display: flex;
-            gap: clamp(0.75rem, 2vw, 1rem);
+            gap: 12px;
             justify-content: center;
             flex-wrap: wrap;
         }
 
         .error-actions .btn {
-            padding: clamp(0.75rem, 2vw, 0.875rem) clamp(1.25rem, 4vw, 2rem);
-            font-size: clamp(0.9rem, 2.5vw, 1rem);
+            padding: 10px 20px;
+            font-size: 16px;
             font-weight: 600;
             border-radius: var(--radius-sm);
             cursor: pointer;
@@ -187,75 +187,67 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 0.5rem;
-            min-height: 48px;
-            min-width: max-content;
+            gap: 8px;
+            min-height: 42px;
+            border: none;
         }
 
         .error-actions .btn-primary {
             background: linear-gradient(135deg, var(--error-primary) 0%, var(--error-secondary) 100%);
-            color: var(--text-primary);
-            border: none;
-            box-shadow: 0 4px 15px rgba(255, 152, 0, 0.3);
-            flex: 1 1 auto;
-            min-width: 160px;
+            color: white;
+            box-shadow: 0 4px 20px rgba(245, 158, 11, 0.3);
+            flex: 1 1 160px;
         }
 
         .error-actions .btn-primary:hover {
-            background: linear-gradient(135deg, var(--error-primary) 0%, var(--error-secondary) 100%);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(255, 152, 0, 0.5);
-        }
-
-        .error-actions .btn-primary:active {
-            transform: translateY(0);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(245, 158, 11, 0.5);
         }
 
         .error-actions .btn-secondary {
-            background: rgba(255, 255, 255, 0.05);
-            color: var(--text-primary);
-            border: 1px solid var(--border-color);
+            background: rgba(255, 255, 255, 0.06);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.15);
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
-            flex: 1 1 auto;
-            min-width: 160px;
+            flex: 1 1 160px;
         }
 
         .error-actions .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.12);
             border-color: rgba(255, 255, 255, 0.3);
-            transform: translateY(-2px);
-        }
-
-        .error-actions .btn-secondary:active {
-            transform: translateY(0);
+            transform: translateY(-3px);
         }
 
         .error-suggestions {
-            margin-top: clamp(1.5rem, 4vw, 2.5rem);
-            padding-top: clamp(1.25rem, 3vw, 2rem);
+            margin-top: 40px;
+            padding-top: 32px;
             border-top: 1px solid var(--border-color);
         }
 
         .error-suggestions h4 {
             color: var(--text-primary);
-            font-size: clamp(0.95rem, 2.5vw, 1.1rem);
-            margin-bottom: clamp(0.75rem, 2vw, 1.2rem);
+            font-size: 17px;
+            margin-bottom: 20px;
             font-weight: 600;
+            text-align: left;
         }
 
         .error-suggestions ul {
             list-style: none;
             padding: 0;
             margin: 0;
+            text-align: left;
         }
 
         .error-suggestions li {
             color: var(--text-muted);
-            font-size: clamp(0.85rem, 2vw, 0.95rem);
-            margin-bottom: clamp(0.5rem, 1.5vw, 0.75rem);
+            font-size: 15px;
+            margin-bottom: 12px;
             transition: var(--transition-smooth);
-            padding: 0.25rem 0;
+            padding: 6px 0;
+            display: flex;
+            align-items: center;
         }
 
         .error-suggestions li:hover {
@@ -264,12 +256,42 @@
 
         .error-suggestions li i {
             color: var(--error-primary);
-            margin-right: 0.6rem;
-            width: 1.2em;
+            margin-right: 14px;
+            width: 20px;
             text-align: center;
+            font-size: 16px;
         }
 
+        /* Tablet Styles */
         @media (max-width: 768px) {
+            body {
+                padding: 12px;
+            }
+
+            .error-page {
+                padding: 36px 24px;
+                border-radius: 24px;
+            }
+
+            .error-icon {
+                font-size: 64px;
+                margin-bottom: 16px;
+            }
+
+            .error-code {
+                font-size: 72px;
+            }
+
+            .error-title {
+                font-size: 28px;
+                margin: 20px 0 12px;
+            }
+
+            .error-message {
+                font-size: 16px;
+                margin-bottom: 32px;
+            }
+
             .error-actions {
                 flex-direction: column;
                 width: 100%;
@@ -277,19 +299,114 @@
 
             .error-actions .btn {
                 width: 100%;
+                padding: 12px 16px;
+            }
+
+            .error-suggestions {
+                margin-top: 32px;
+                padding-top: 24px;
+            }
+
+            .error-suggestions h4 {
+                font-size: 16px;
+                margin-bottom: 16px;
+            }
+
+            .error-suggestions li {
+                font-size: 14px;
+                margin-bottom: 10px;
             }
         }
 
+        /* Mobile Styles */
         @media (max-width: 480px) {
             body {
-                padding: 0.75rem;
+                padding: 8px;
             }
 
             .error-page {
-                padding: 1.5rem 1.25rem;
+                padding: 28px 16px;
+                border-radius: 20px;
+            }
+
+            .error-icon {
+                font-size: 52px;
+                margin-bottom: 12px;
+            }
+
+            .error-code {
+                font-size: 56px;
+            }
+
+            .error-title {
+                font-size: 24px;
+                margin: 16px 0 10px;
+            }
+
+            .error-message {
+                font-size: 15px;
+                margin-bottom: 28px;
+                line-height: 1.5;
+            }
+
+            .error-actions .btn {
+                padding: 12px 16px;
+                font-size: 15px;
+                min-height: 44px;
+            }
+
+            .error-suggestions {
+                margin-top: 28px;
+                padding-top: 20px;
+            }
+
+            .error-suggestions h4 {
+                font-size: 15px;
+                margin-bottom: 14px;
+            }
+
+            .error-suggestions li {
+                font-size: 13px;
+                margin-bottom: 8px;
+                padding: 4px 0;
+            }
+
+            .error-suggestions li i {
+                margin-right: 12px;
+                width: 18px;
+                font-size: 14px;
             }
         }
 
+        /* Small Mobile */
+        @media (max-width: 360px) {
+            .error-page {
+                padding: 24px 12px;
+            }
+
+            .error-icon {
+                font-size: 44px;
+            }
+
+            .error-code {
+                font-size: 48px;
+            }
+
+            .error-title {
+                font-size: 22px;
+            }
+
+            .error-message {
+                font-size: 14px;
+            }
+
+            .error-actions .btn {
+                padding: 12px 16px;
+                font-size: 14px;
+            }
+        }
+
+        /* Reduced Motion */
         @media (prefers-reduced-motion: reduce) {
             *,
             *::before,
@@ -306,32 +423,33 @@
         <source src="videos/Chase-Xc-Blessed-part1.mp4" type="video/mp4">
     </video>
     <div class="video-overlay"></div>
+    
     <div class="error-page">
         <div class="error-icon">
-            <i class="fas fa-shield-halved"></i>
+            <i class="fas fa-ban"></i>
         </div>
         <h1 class="error-code">403</h1>
         <h2 class="error-title">Access Denied</h2>
         <p class="error-message">
-            This VIP section is restricted to authorized personnel only. You may need elevated permissions or special artist credentials to access this exclusive content.
+            You don't have permission to view this page. This area is restricted to authorized personnel or requires elevated access privileges.
         </p>
         <div class="error-actions">
             <a href="index.html" class="btn btn-primary">
-                <i class="fas fa-home"></i> Back to Home
+                <i class="fas fa-home"></i> Go Home
             </a>
             <a href="auth.html" class="btn btn-secondary">
-                <i class="fas fa-sign-in-alt"></i> Login
+                <i class="fas fa-sign-in-alt"></i> Sign In
             </a>
             <a href="contact.html" class="btn btn-secondary">
-                <i class="fas fa-envelope"></i> Contact Us
+                <i class="fas fa-envelope"></i> Contact
             </a>
         </div>
         <div class="error-suggestions">
-            <h4>What you can do:</h4>
+            <h4><i class="fas fa-lightbulb" style="margin-right: 8px;"></i> What you can do:</h4>
             <ul>
                 <li><i class="fas fa-id-badge"></i> Verify you're logged in with the correct account</li>
                 <li><i class="fas fa-user-shield"></i> Request access from an administrator</li>
-                <li><i class="fas fa-home"></i> Return to the homepage and explore public content</li>
+                <li><i class="fas fa-arrow-left"></i> Go back to the previous page</li>
                 <li><i class="fas fa-question-circle"></i> Check your account permissions and role</li>
             </ul>
         </div>
