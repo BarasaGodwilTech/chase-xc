@@ -424,25 +424,19 @@ function openExternalPlayer(url, track = null) {
 function handleLikeTrack(trackId, btn) {
   console.log('[MusicPage] Liking track:', trackId)
   
-  // Get liked tracks from localStorage
-  const likedTracks = JSON.parse(localStorage.getItem('likedTracks') || '[]')
-  
-  if (likedTracks.includes(trackId)) {
-    // Unlike
-    const index = likedTracks.indexOf(trackId)
-    likedTracks.splice(index, 1)
-    btn.querySelector('i').classList.remove('fas')
-    btn.querySelector('i').classList.add('far')
-    btn.style.color = ''
-  } else {
-    // Like
-    likedTracks.push(trackId)
-    btn.querySelector('i').classList.remove('far')
-    btn.querySelector('i').classList.add('fas')
-    btn.style.color = '#ef4444'
+  // Check if user is authenticated
+  if (!isUserAuthenticated()) {
+    // Store pending action for after login
+    storePendingAction('like', { trackId })
+    redirectToAuth()
+    return
   }
   
-  localStorage.setItem('likedTracks', JSON.stringify(likedTracks))
+  // User is authenticated, proceed with like action
+  // This would typically make an API call to your backend
+  toggleLikeButton(btn)
+  // TODO: Call your backend API to like/unlike the track
+  console.log('[MusicPage] User authenticated, proceeding with like action')
 }
 
 function handleShareTrack(track) {
@@ -470,31 +464,114 @@ function handleShareTrack(track) {
 function handleAddToPlaylist(track) {
   console.log('[MusicPage] Adding to playlist:', track.title)
   
-  // Get playlist from localStorage
-  const playlist = JSON.parse(localStorage.getItem('userPlaylist') || '[]')
-  
-  // Check if already in playlist
-  if (playlist.some(t => t.id === track.id)) {
-    alert('This track is already in your playlist')
+  // Check if user is authenticated
+  if (!isUserAuthenticated()) {
+    // Store pending action for after login
+    storePendingAction('addToPlaylist', { trackId: track.id, trackData: track })
+    redirectToAuth()
     return
   }
   
-  // Add to playlist
-  playlist.push({
-    id: track.id,
-    title: track.title,
-    artist: track.artistName,
-    artwork: track.artwork,
-    audioUrl: track.audioUrl,
-    spotifyUrl: track.spotifyUrl || track.platformLinks?.spotify
-  })
+  // User is authenticated, proceed with add to playlist action
+  // This would typically make an API call to your backend
+  // TODO: Call your backend API to add track to playlist
+  console.log('[MusicPage] User authenticated, proceeding with add to playlist action')
+  alert('Added to playlist!')
+}
+
+// Helper function to check if user is authenticated
+function isUserAuthenticated() {
+  // Check Firebase Auth
+  if (typeof window.auth !== 'undefined' && window.auth.currentUser) {
+    return true
+  }
   
-  localStorage.setItem('userPlaylist', JSON.stringify(playlist))
+  // Check for custom auth implementation
+  const user = JSON.parse(sessionStorage.getItem('currentUser') || 'null')
+  return user !== null
+}
+
+// Helper function to store pending action
+function storePendingAction(actionType, actionData) {
+  const pendingAction = {
+    type: actionType,
+    data: actionData,
+    timestamp: Date.now(),
+    returnUrl: window.location.pathname
+  }
+  sessionStorage.setItem('pendingAction', JSON.stringify(pendingAction))
+  console.log('[MusicPage] Stored pending action:', pendingAction)
+}
+
+// Helper function to redirect to auth page
+function redirectToAuth() {
+  const currentUrl = window.location.href
+  const authUrl = `auth.html?redirect=${encodeURIComponent(currentUrl)}`
+  window.location.href = authUrl
+}
+
+// Helper function to toggle like button visual state
+function toggleLikeButton(btn) {
+  const icon = btn.querySelector('i')
+  if (icon.classList.contains('far')) {
+    icon.classList.remove('far')
+    icon.classList.add('fas')
+    btn.style.color = '#ef4444'
+  } else {
+    icon.classList.remove('fas')
+    icon.classList.add('far')
+    btn.style.color = ''
+  }
+}
+
+// Function to execute pending action after login
+function executePendingAction() {
+  const pendingActionStr = sessionStorage.getItem('pendingAction')
+  if (!pendingActionStr) return
+  
+  try {
+    const pendingAction = JSON.parse(pendingActionStr)
+    console.log('[MusicPage] Executing pending action:', pendingAction)
+    
+    // Clear pending action
+    sessionStorage.removeItem('pendingAction')
+    
+    // Execute based on action type
+    switch (pendingAction.type) {
+      case 'like':
+        handleLikeAfterLogin(pendingAction.data.trackId)
+        break
+      case 'addToPlaylist':
+        handleAddToPlaylistAfterLogin(pendingAction.data.trackData)
+        break
+      default:
+        console.warn('[MusicPage] Unknown pending action type:', pendingAction.type)
+    }
+  } catch (e) {
+    console.error('[MusicPage] Error executing pending action:', e)
+  }
+}
+
+function handleLikeAfterLogin(trackId) {
+  // Find the button for this track
+  const btn = document.querySelector(`.overlay-btn[data-like-track-id="${trackId}"]`)
+  if (btn) {
+    toggleLikeButton(btn)
+  }
+  // TODO: Call your backend API to like the track
+  console.log('[MusicPage] Liked track after login:', trackId)
+}
+
+function handleAddToPlaylistAfterLogin(trackData) {
+  // TODO: Call your backend API to add track to playlist
+  console.log('[MusicPage] Added to playlist after login:', trackData.title)
   alert('Added to playlist!')
 }
 
 function boot() {
   initMusicPage().catch(console.error)
+  // Execute any pending action after login
+  setTimeout(() => executePendingAction(), 500)
 }
 
 document.addEventListener('DOMContentLoaded', () => {

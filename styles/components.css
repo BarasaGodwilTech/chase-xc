@@ -436,7 +436,7 @@
   display: flex;
   align-items: flex-end;
   padding: 16px;
-  z-index: 4;
+  z-index: 15;
 }
 
 .track-card:hover .track-overlay {
