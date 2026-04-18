@@ -495,7 +495,7 @@
                                 </div>
                             </div>
 
-                            <div class="form-group">
+                            <div class="form-group hidden" id="searchSection">
                                 <label for="externalSearch">Search for Track</label>
                                 <div class="search-box">
                                     <input type="text" id="externalSearch" placeholder="Search for track on the web...">
@@ -507,17 +507,17 @@
                                 <div class="external-results" id="externalResults"></div>
                             </div>
 
-                            <div class="form-group">
+                            <div class="form-group hidden" id="urlSection">
                                 <label for="externalUrl">Track URL *</label>
                                 <input type="url" id="externalUrl" name="externalUrl" required placeholder="Paste track URL from the selected platform">
                             </div>
 
-                            <div class="form-group">
+                            <div class="form-group hidden" id="titleSection">
                                 <label for="externalTitle">Track Title *</label>
                                 <input type="text" id="externalTitle" name="externalTitle" required>
                             </div>
 
-                            <div class="form-row">
+                            <div class="form-row hidden" id="detailsSection">
                                 <div class="form-group">
                                     <label for="externalArtist">Artist *</label>
                                     <input type="text" id="externalArtist" name="externalArtist" required>
@@ -536,7 +536,7 @@
                                 </div>
                             </div>
 
-                            <div class="form-actions">
+                            <div class="form-actions hidden" id="actionsSection">
                                 <button type="button" class="btn btn-secondary" id="cancelExternal">Cancel</button>
                                 <button type="submit" class="btn btn-primary">
                                     <i class="fas fa-plus"></i> Add Track

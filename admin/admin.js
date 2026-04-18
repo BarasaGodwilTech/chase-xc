@@ -136,6 +136,13 @@ class AdminPanel {
             this.switchUploadMethod('upload');
         });
 
+        // Platform selection listeners
+        document.querySelectorAll('input[name="platform"]').forEach(radio => {
+            radio.addEventListener('change', () => {
+                this.handlePlatformSelection(radio.value);
+            });
+        });
+
         document.getElementById('searchExternal')?.addEventListener('click', () => {
             this.searchExternalPlatform();
         });
@@ -192,6 +199,84 @@ class AdminPanel {
         const targetContent = document.getElementById(contentMap[method]);
         if (targetContent) {
             targetContent.classList.add('active');
+        }
+
+        // Reset external form when switching away
+        if (method !== 'external') {
+            this.resetExternalForm();
+        }
+    }
+
+    handlePlatformSelection(platform) {
+        const sections = ['searchSection', 'urlSection', 'titleSection', 'detailsSection', 'actionsSection'];
+
+        // Update platform option styling
+        document.querySelectorAll('.platform-option').forEach(option => {
+            option.classList.remove('selected');
+        });
+        const selectedOption = document.querySelector(`input[name="platform"][value="${platform}"]`)?.closest('.platform-option');
+        if (selectedOption) {
+            selectedOption.classList.add('selected');
+        }
+
+        if (platform) {
+            // Show all form sections
+            sections.forEach(sectionId => {
+                const section = document.getElementById(sectionId);
+                if (section) {
+                    section.classList.remove('hidden');
+                }
+            });
+
+            // Update placeholder based on platform
+            const urlInput = document.getElementById('externalUrl');
+            if (urlInput) {
+                const platformNames = {
+                    'youtube': 'YouTube',
+                    'apple-music': 'Apple Music',
+                    'soundcloud': 'SoundCloud',
+                    'other': 'the selected platform'
+                };
+                urlInput.placeholder = `Paste track URL from ${platformNames[platform] || 'the selected platform'}`;
+            }
+
+            this.showNotification(`${platform === 'youtube' ? 'YouTube' : platform === 'apple-music' ? 'Apple Music' : platform === 'soundcloud' ? 'SoundCloud' : platform} selected. You can now search or paste a URL.`, 'info');
+        } else {
+            // Hide all form sections
+            sections.forEach(sectionId => {
+                const section = document.getElementById(sectionId);
+                if (section) {
+                    section.classList.add('hidden');
+                }
+            });
+        }
+    }
+
+    resetExternalForm() {
+        // Clear platform selection
+        document.querySelectorAll('input[name="platform"]').forEach(radio => {
+            radio.checked = false;
+        });
+
+        // Hide form sections
+        const sections = ['searchSection', 'urlSection', 'titleSection', 'detailsSection', 'actionsSection'];
+        sections.forEach(sectionId => {
+            const section = document.getElementById(sectionId);
+            if (section) {
+                section.classList.add('hidden');
+            }
+        });
+
+        // Clear form values
+        const form = document.getElementById('externalTrackForm');
+        if (form) {
+            form.reset();
+        }
+
+        // Clear search results
+        const resultsContainer = document.getElementById('externalResults');
+        if (resultsContainer) {
+            resultsContainer.innerHTML = '';
         }
     }
 
