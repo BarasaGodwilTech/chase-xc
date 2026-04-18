@@ -79,7 +79,7 @@ async function renderArtistsTable() {
         const stats = statsByArtist.get(a.id) || { tracks: 0, streams: 0 }
 
         return `
-          <tr data-artist-id="${a.id}">
+          <tr data-artist-id="${a.id}" data-artist-name="${name.replace(/'/g, "\\'")}">
             <td>
               <div class="artist-cell">
                 ${image ? `<img src="${image}" alt="${name}" class="artist-avatar">` : ''}
@@ -93,10 +93,10 @@ async function renderArtistsTable() {
             <td><span class="status-badge status-${status}">${status}</span></td>
             <td>
               <div class="action-buttons">
-                <button class="btn btn-secondary btn-sm" type="button" onclick="window.editArtist('${a.id}')" title="Edit">
+                <button class="btn btn-secondary btn-sm edit-artist-btn" type="button" title="Edit">
                   <i class="fas fa-edit"></i>
                 </button>
-                <button class="btn btn-danger btn-sm" type="button" onclick="window.deleteArtist('${a.id}', '${name.replace(/'/g, "\\'")}')" title="Delete">
+                <button class="btn btn-danger btn-sm delete-artist-btn" type="button" title="Delete">
                   <i class="fas fa-trash"></i>
                 </button>
               </div>
@@ -105,6 +105,32 @@ async function renderArtistsTable() {
         `
       })
       .join('')
+
+    // Add event delegation for edit and delete buttons
+    tbody.off?.('click')
+    tbody.addEventListener('click', async (e) => {
+      const editBtn = e.target.closest('.edit-artist-btn')
+      const deleteBtn = e.target.closest('.delete-artist-btn')
+      
+      if (editBtn) {
+        const row = editBtn.closest('tr')
+        const artistId = row?.dataset?.artistId
+        if (artistId) {
+          console.log('[admin-firebase] Edit button clicked for artist ID:', artistId)
+          await window.editArtist(artistId)
+        }
+      }
+      
+      if (deleteBtn) {
+        const row = deleteBtn.closest('tr')
+        const artistId = row?.dataset?.artistId
+        const artistName = row?.dataset?.artistName || 'Unknown'
+        if (artistId) {
+          console.log('[admin-firebase] Delete button clicked for artist ID:', artistId, 'name:', artistName)
+          await window.deleteArtist(artistId, artistName)
+        }
+      }
+    })
   } catch (e) {
     console.error(e)
     tbody.innerHTML = '<tr><td colspan="7" class="text-center">Failed to load artists</td></tr>'
@@ -542,8 +568,10 @@ async function getArtistById(artistId) {
 
 // Global function to edit artist
 window.editArtist = async function(artistId) {
+  console.log('[admin-firebase] editArtist called with ID:', artistId);
   try {
     const artist = await getArtistById(artistId);
+    console.log('[admin-firebase] Retrieved artist:', artist);
     if (!artist) {
       console.error('[admin-firebase] Artist not found:', artistId);
       if (window.notifications) {
@@ -592,6 +620,7 @@ window.editArtist = async function(artistId) {
 
 // Global function to delete artist
 window.deleteArtist = async function(artistId, artistName) {
+  console.log('[admin-firebase] deleteArtist called with ID:', artistId, 'name:', artistName);
   const confirmMsg = `Are you sure you want to delete "${artistName}"? This action cannot be undone.`;
   
   let confirmed = false;
