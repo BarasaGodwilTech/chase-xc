@@ -8,7 +8,7 @@ function formatNumber(num) {
 }
 
 function renderArtistCard(artist, index) {
-  const imageUrl = artist.image || artist.artwork || '/placeholder.svg?height=300&width=300'
+  const imageUrl = artist.image || artist.artwork || 'images/headphones.png'
   const genre = artist.genre || 'Music'
   const bio = artist.bio || artist.description || 'Talented artist at Chase x Records'
   const socials = artist.socials || {}
@@ -178,8 +178,12 @@ function initHomePage() {
   loadFeaturedTracks()
 }
 
-function boot() {
-  initHomePage().catch(console.error)
+async function boot() {
+  try {
+    await initHomePage()
+  } catch (error) {
+    console.error('[HomePage] Boot error:', error)
+  }
 }
 
 document.addEventListener('DOMContentLoaded', () => {

@@ -2,8 +2,7 @@ import { auth } from './firebase-init.js'
 import { 
     signInWithEmailAndPassword, 
     createUserWithEmailAndPassword, 
-    signInWithRedirect,
-    getRedirectResult,
+    signInWithPopup, 
     GoogleAuthProvider,
     onAuthStateChanged,
     signOut,
@@ -18,24 +17,6 @@ class UserAuth {
     }
 
     init() {
-        // Check for redirect result from Google sign-in
-        getRedirectResult(auth).then((result) => {
-            if (result) {
-                // User successfully signed in with redirect
-                this.showNotification('Google sign-in successful!', 'success');
-                
-                // Redirect after short delay
-                setTimeout(() => {
-                    this.handleRedirect();
-                }, 1000);
-            }
-        }).catch((error) => {
-            console.error('Redirect result error:', error);
-            if (error.code !== 'auth/popup-closed-by-user') {
-                this.showNotification(this.getErrorMessage(error.code), 'error');
-            }
-        });
-
         // Listen for auth state changes
         onAuthStateChanged(auth, (user) => {
             this.currentUser = user;
@@ -185,10 +166,14 @@ class UserAuth {
         const provider = new GoogleAuthProvider();
         
         try {
-            await signInWithRedirect(auth, provider);
-            // The redirect will handle the result in init() via getRedirectResult
+            await signInWithPopup(auth, provider);
+            this.showNotification('Google sign-in successful!', 'success');
+            
+            setTimeout(() => {
+                this.handleRedirect();
+            }, 1000);
+            
         } catch (error) {
-            console.error('Google sign-in error:', error);
             this.showNotification(this.getErrorMessage(error.code), 'error');
         }
     }
