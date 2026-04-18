@@ -58,7 +58,8 @@ let studioConfig = {
   contact: {
     phone: '',
     email: '',
-    location: ''
+    location: '',
+    whatsapp: ''
   },
   social: {
     instagram: '',
@@ -186,10 +187,18 @@ function populateContactAndSocialData() {
   const footerPhone = document.getElementById('footerPhone')
   const footerEmail = document.getElementById('footerEmail')
   const footerLocation = document.getElementById('footerLocation')
+  const whatsappFloat = document.getElementById('whatsappFloat')
 
   if (footerPhone && contact.phone) footerPhone.textContent = contact.phone
   if (footerEmail && contact.email) footerEmail.textContent = contact.email
   if (footerLocation && contact.location) footerLocation.textContent = contact.location
+
+  // Populate WhatsApp floating button
+  if (whatsappFloat && contact.whatsapp) {
+    // Remove any non-digit characters for the WhatsApp API
+    const cleanNumber = contact.whatsapp.replace(/\D/g, '')
+    whatsappFloat.href = `https://wa.me/${cleanNumber}`
+  }
 
   // Populate footer social links
   const footerInstagram = document.getElementById('footerInstagram')

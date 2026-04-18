@@ -28,12 +28,6 @@ class AudioPlayer {
     this.repeatMode = 0; // 0: no repeat, 1: repeat all, 2: repeat one
     this.shuffleHistory = [];
     this.originalTrackOrder = [];
-    
-    // External player support
-    this.isPlayingExternal = false;
-    this.externalTrackData = null;
-    this.ytPlayer = null;
-    this.previousVolume = 70;
 
     // Use data from dataManager instead of hardcoded tracks
     this.tracks = [];
@@ -166,25 +160,25 @@ class AudioPlayer {
 
   toggleShuffle() {
     this.isShuffled = !this.isShuffled;
-
+    
     if (this.isShuffled) {
       // Store current order and shuffle
       this.originalTrackOrder = [...this.tracks];
       this.shuffleTracks();
       // Find current track in shuffled array
       const currentTrack = this.tracks[this.currentTrackIndex];
-      this.currentTrackIndex = this.tracks.findIndex(track =>
+      this.currentTrackIndex = this.tracks.findIndex(track => 
         track.id === currentTrack.id
       );
     } else {
       // Restore original order
       const currentTrack = this.tracks[this.currentTrackIndex];
       this.tracks = [...this.originalTrackOrder];
-      this.currentTrackIndex = this.tracks.findIndex(track =>
+      this.currentTrackIndex = this.tracks.findIndex(track => 
         track.id === currentTrack.id
       );
     }
-
+    
     this.updateButtonStates();
   }
 
@@ -198,24 +192,14 @@ class AudioPlayer {
   toggleLike() {
     if (this.likeBtn) {
       const isLiked = this.likeBtn.classList.contains("liked");
-      const currentTrack = this.tracks[this.currentTrackIndex];
-
       if (isLiked) {
         this.likeBtn.classList.remove("liked");
         this.likeBtn.innerHTML = '<i class="far fa-heart"></i>';
-        
-        // Only decrement likes for non-external tracks
-        if (!currentTrack.isExternal) {
-          this.decrementLikes();
-        }
+        this.decrementLikes();
       } else {
         this.likeBtn.classList.add("liked");
         this.likeBtn.innerHTML = '<i class="fas fa-heart"></i>';
-        
-        // Only increment likes for non-external tracks
-        if (!currentTrack.isExternal) {
-          this.incrementLikes();
-        }
+        this.incrementLikes();
       }
     }
   }
@@ -279,13 +263,8 @@ class AudioPlayer {
 
     switch (this.repeatMode) {
       case 2: // Repeat one
-        if (this.isPlayingExternal && this.ytPlayer) {
-          this.ytPlayer.seekTo(0);
-          this.ytPlayer.playVideo();
-        } else {
-          this.audio.currentTime = 0;
-          this.play();
-        }
+        this.audio.currentTime = 0;
+        this.play();
         break;
       case 1: // Repeat all
         this.nextTrack();
@@ -295,11 +274,7 @@ class AudioPlayer {
           this.nextTrack();
         } else {
           this.pause();
-          if (!this.isPlayingExternal) {
-            this.audio.currentTime = 0;
-          } else if (this.ytPlayer) {
-            this.ytPlayer.stopVideo();
-          }
+          this.audio.currentTime = 0;
         }
         break;
     }
@@ -317,16 +292,7 @@ class AudioPlayer {
     if (index < 0 || index >= this.tracks.length) return;
     
     const track = this.tracks[index];
-    
-    // If it's an external track, don't load into HTML5 audio
-    if (track.isExternal) {
-      this.isPlayingExternal = true;
-      this.externalTrackData = track.originalData;
-    } else {
-      this.isPlayingExternal = false;
-      this.externalTrackData = null;
-      this.audio.src = track.src;
-    }
+    this.audio.src = track.src;
     
     // Update main player
     if (this.playerTitle) this.playerTitle.textContent = track.title;
@@ -349,13 +315,6 @@ class AudioPlayer {
       this.likeBtn.innerHTML = '<i class="far fa-heart"></i>';
     }
 
-    // For external tracks, don't show like button since we can't save likes
-    if (track.isExternal && this.likeBtn) {
-      this.likeBtn.style.display = 'none';
-    } else if (this.likeBtn) {
-      this.likeBtn.style.display = 'flex';
-    }
-
     // Show floating player
     const floatingPlayer = document.getElementById("floatingPlayer");
     if (floatingPlayer) {
@@ -375,79 +334,163 @@ class AudioPlayer {
   togglePlay() {
     if (this.isPlaying) {
       this.pause();
-    } else {
-      this.play();
-    }
+      }
+      break;
+  }
+}
+
+incrementStreams() {
+  const currentTrack = this.getCurrentOriginalTrack();
+  if (currentTrack && this.dataManager) {
+    currentTrack.streams = (currentTrack.streams || 0) + 1;
+    this.dataManager.saveTrack(currentTrack);
+  }
+}
+
+loadTrack(index) {
+  if (index < 0 || index >= this.tracks.length) return;
+  
+  const track = this.tracks[index];
+  this.audio.src = track.src;
+  
+  // Update main player
+  if (this.playerTitle) this.playerTitle.textContent = track.title;
+  if (this.playerArtist) this.playerArtist.textContent = track.artist;
+  if (this.playerCover) this.playerCover.src = track.cover;
+  if (this.durationDisplay) this.durationDisplay.textContent = track.duration;
+
+  // Update floating player
+  const floatingTitle = document.getElementById("floatingTitle");
+  const floatingArtist = document.getElementById("floatingArtist");
+  const floatingCover = document.getElementById("floatingCover");
+  
+  if (floatingTitle) floatingTitle.textContent = track.title;
+  if (floatingArtist) floatingArtist.textContent = track.artist;
+  if (floatingCover) floatingCover.src = track.cover;
+
+  // Reset like state for new track
+  if (this.likeBtn) {
+    this.likeBtn.classList.remove("liked");
+    this.likeBtn.innerHTML = '<i class="far fa-heart"></i>';
   }
 
-  play() {
-    // If playing external track with YouTube player
-    if (this.isPlayingExternal && this.ytPlayer && this.externalTrackData?.platform === 'youtube') {
-      this.ytPlayer.playVideo();
-      this.isPlaying = true;
-      if (this.playBtn) {
-        this.playBtn.innerHTML = '<i class="fas fa-pause"></i>';
-        this.playBtn.classList.add("playing");
-      }
-      const floatingPlayBtn = document.getElementById("floatingPlayBtn");
-      if (floatingPlayBtn) {
-        floatingPlayBtn.innerHTML = '<i class="fas fa-pause"></i>';
-      }
-      return;
-    }
-
-    // Regular audio playback
-    this.audio.play().then(() => {
-      this.isPlaying = true;
-      if (this.playBtn) {
-        this.playBtn.innerHTML = '<i class="fas fa-pause"></i>';
-        this.playBtn.classList.add("playing");
-      }
-
-      const floatingPlayBtn = document.getElementById("floatingPlayBtn");
-      if (floatingPlayBtn) {
-        floatingPlayBtn.innerHTML = '<i class="fas fa-pause"></i>';
-      }
-    }).catch(error => {
-      console.error("Error playing audio:", error);
-      // Fallback: try to load the track again
-      this.loadTrack(this.currentTrackIndex);
-    });
+  // Show floating player
+  const floatingPlayer = document.getElementById("floatingPlayer");
+  if (floatingPlayer) {
+    floatingPlayer.classList.add("active");
   }
 
-  pause() {
-    // If playing external track with YouTube player
-    if (this.isPlayingExternal && this.ytPlayer && this.externalTrackData?.platform === 'youtube') {
-      this.ytPlayer.pauseVideo();
-      this.isPlaying = false;
-      if (this.playBtn) {
-        this.playBtn.innerHTML = '<i class="fas fa-play"></i>';
-        this.playBtn.classList.remove("playing");
-      }
-      const floatingPlayBtn = document.getElementById("floatingPlayBtn");
-      if (floatingPlayBtn) {
-        floatingPlayBtn.innerHTML = '<i class="fas fa-play"></i>';
-      }
-      return;
+  // Update active track card
+  document.querySelectorAll('.track-card').forEach(card => {
+    card.classList.remove('active');
+  });
+  const trackCards = document.querySelectorAll('.track-card');
+  if (trackCards[index]) {
+    trackCards[index].classList.add('active');
+  }
+}
+
+togglePlay() {
+  if (this.isPlaying) {
+    this.pause();
+  } else {
+    this.play();
+  }
+}
+
+play() {
+  // If playing external track with YouTube player
+  if (this.isPlayingExternal && this.ytPlayer && this.externalTrackData?.platform === 'youtube') {
+    this.ytPlayer.playVideo();
+    this.isPlaying = true;
+    if (this.playBtn) {
+      this.playBtn.innerHTML = '<i class="fas fa-pause"></i>';
+      this.playBtn.classList.add("playing");
+    }
+    const floatingPlayBtn = document.getElementById("floatingPlayBtn");
+    if (floatingPlayBtn) {
+      floatingPlayBtn.innerHTML = '<i class="fas fa-pause"></i>';
+    }
+    return;
+  }
+
+  // Regular audio playback
+  this.audio.play().then(() => {
+    this.isPlaying = true;
+    if (this.playBtn) {
+      this.playBtn.innerHTML = '<i class="fas fa-pause"></i>';
+      this.playBtn.classList.add("playing");
     }
 
-    // Regular audio pause
-    this.audio.pause();
+    const floatingPlayBtn = document.getElementById("floatingPlayBtn");
+    if (floatingPlayBtn) {
+      floatingPlayBtn.innerHTML = '<i class="fas fa-pause"></i>';
+    }
+  }).catch(error => {
+    console.error("Error playing audio:", error);
+    // Fallback: try to load the track again
+    this.loadTrack(this.currentTrackIndex);
+  });
+}
+
+pause() {
+  // If playing external track with YouTube player
+  if (this.isPlayingExternal && this.ytPlayer && this.externalTrackData?.platform === 'youtube') {
+    this.ytPlayer.pauseVideo();
     this.isPlaying = false;
     if (this.playBtn) {
       this.playBtn.innerHTML = '<i class="fas fa-play"></i>';
       this.playBtn.classList.remove("playing");
     }
-
     const floatingPlayBtn = document.getElementById("floatingPlayBtn");
     if (floatingPlayBtn) {
       floatingPlayBtn.innerHTML = '<i class="fas fa-play"></i>';
     }
+    return;
   }
 
-  nextTrack() {
-    if (this.tracks.length === 0) return;
+  // Regular audio pause
+  this.audio.pause();
+  this.isPlaying = false;
+  if (this.playBtn) {
+    this.playBtn.innerHTML = '<i class="fas fa-play"></i>';
+    this.playBtn.classList.remove("playing");
+  }
 
+  const floatingPlayBtn = document.getElementById("floatingPlayBtn");
+  if (floatingPlayBtn) {
+    floatingPlayBtn.innerHTML = '<i class="fas fa-play"></i>';
+  }
+}
+
+nextTrack() {
+  if (this.tracks.length === 0) return;
+
+  if (this.isShuffled && this.repeatMode !== 2) {
+    let nextIndex;
+    do {
+      nextIndex = Math.floor(Math.random() * this.tracks.length);
+    } while (nextIndex === this.currentTrackIndex && this.tracks.length > 1);
+    
+    this.currentTrackIndex = nextIndex;
+  } else {
+    this.currentTrackIndex = (this.currentTrackIndex + 1) % this.tracks.length;
+  }
+  
+  this.loadTrack(this.currentTrackIndex);
+  this.play();
+}
+
+prevTrack() {
+  if (this.tracks.length === 0) return;
+
+  if (this.audio.currentTime > 3) {
+    // If more than 3 seconds into track, restart current track
+    this.audio.currentTime = 0;
+  } else {
+    // Otherwise go to previous track
+    if (this.isShuffled) {
+      let prevIndex;
     if (this.isShuffled && this.repeatMode !== 2) {
       let nextIndex;
       do {
@@ -459,14 +502,6 @@ class AudioPlayer {
       this.currentTrackIndex = (this.currentTrackIndex + 1) % this.tracks.length;
     }
     
-    // If current is external YouTube, destroy it
-    if (this.isPlayingExternal && this.ytPlayer) {
-      this.ytPlayer.destroy();
-      this.ytPlayer = null;
-      const playerContainer = document.getElementById('youtubePlayerContainer');
-      if (playerContainer) playerContainer.remove();
-    }
-    
     this.loadTrack(this.currentTrackIndex);
     this.play();
   }
@@ -474,7 +509,7 @@ class AudioPlayer {
   prevTrack() {
     if (this.tracks.length === 0) return;
 
-    if (!this.isPlayingExternal && this.audio.currentTime > 3) {
+    if (this.audio.currentTime > 3) {
       // If more than 3 seconds into track, restart current track
       this.audio.currentTime = 0;
     } else {
@@ -490,49 +525,18 @@ class AudioPlayer {
         this.currentTrackIndex = (this.currentTrackIndex - 1 + this.tracks.length) % this.tracks.length;
       }
       
-      // If current is external YouTube, destroy it
-      if (this.isPlayingExternal && this.ytPlayer) {
-        this.ytPlayer.destroy();
-        this.ytPlayer = null;
-        const playerContainer = document.getElementById('youtubePlayerContainer');
-        if (playerContainer) playerContainer.remove();
-      }
-      
       this.loadTrack(this.currentTrackIndex);
       this.play();
     }
   }
 
   seek(e) {
-    if (this.isPlayingExternal && this.ytPlayer) {
-      // Seek in YouTube player
-      const duration = this.ytPlayer.getDuration();
-      const seekTime = (e.target.value / 100) * duration;
-      this.ytPlayer.seekTo(seekTime);
-    } else {
-      const seekTime = (e.target.value / 100) * this.audio.duration;
-      this.audio.currentTime = seekTime;
-    }
+    const seekTime = (e.target.value / 100) * this.audio.duration;
+    this.audio.currentTime = seekTime;
   }
 
   updateProgress() {
-    if (this.isPlayingExternal && this.ytPlayer) {
-      // Update progress from YouTube player
-      const currentTime = this.ytPlayer.getCurrentTime();
-      const duration = this.ytPlayer.getDuration();
-      if (duration) {
-        const progress = (currentTime / duration) * 100;
-        if (this.progressBar) this.progressBar.style.width = progress + "%";
-        if (this.seekBar) this.seekBar.value = progress;
-        if (this.currentTimeDisplay) this.currentTimeDisplay.textContent = this.formatTime(currentTime);
-        
-        // Update floating player progress
-        const floatingProgressBar = document.getElementById("floatingProgressBar");
-        if (floatingProgressBar) {
-          floatingProgressBar.style.width = progress + "%";
-        }
-      }
-    } else if (this.audio.duration) {
+    if (this.audio.duration) {
       const progress = (this.audio.currentTime / this.audio.duration) * 100;
       if (this.progressBar) this.progressBar.style.width = progress + "%";
       if (this.seekBar) this.seekBar.value = progress;
@@ -547,35 +551,22 @@ class AudioPlayer {
   }
 
   updateDuration() {
-    if (this.isPlayingExternal && this.ytPlayer) {
-      const duration = this.ytPlayer.getDuration();
-      if (this.durationDisplay && duration) {
-        this.durationDisplay.textContent = this.formatTime(duration);
-      }
-    } else if (this.durationDisplay && this.audio.duration) {
+    if (this.durationDisplay && this.audio.duration) {
       this.durationDisplay.textContent = this.formatTime(this.audio.duration);
     }
   }
 
   updateVolume() {
     if (this.volumeControl) {
-      const volume = this.volumeControl.value / 100;
-      
-      // Update HTML5 audio volume
-      this.audio.volume = volume;
-      
-      // Update YouTube player volume if playing external track
-      if (this.isPlayingExternal && this.ytPlayer && this.externalTrackData?.platform === 'youtube') {
-        this.ytPlayer.setVolume(this.volumeControl.value);
-      }
+      this.audio.volume = this.volumeControl.value / 100;
       
       // Update volume icon based on volume level
       const volumeToggle = document.getElementById("volumeToggle");
       if (volumeToggle) {
-        const volumeValue = this.volumeControl.value;
-        if (volumeValue == 0) {
+        const volume = this.volumeControl.value;
+        if (volume == 0) {
           volumeToggle.innerHTML = '<i class="fas fa-volume-mute"></i>';
-        } else if (volumeValue < 50) {
+        } else if (volume < 50) {
           volumeToggle.innerHTML = '<i class="fas fa-volume-down"></i>';
         } else {
           volumeToggle.innerHTML = '<i class="fas fa-volume-up"></i>';
@@ -619,7 +610,7 @@ class AudioPlayer {
     // Update player UI
     if (this.playerTitle) this.playerTitle.textContent = title;
     if (this.playerArtist) this.playerArtist.textContent = artist;
-    if (this.playerCover) this.playerCover.src = artwork;
+    if (this.playerCover && artwork) this.playerCover.src = artwork;
 
     // Update floating player
     const floatingTitle = document.getElementById("floatingTitle");
@@ -628,7 +619,7 @@ class AudioPlayer {
 
     if (floatingTitle) floatingTitle.textContent = title;
     if (floatingArtist) floatingArtist.textContent = artist;
-    if (floatingCover) floatingCover.src = artwork;
+    if (floatingCover && artwork) floatingCover.src = artwork;
 
     // Show floating player
     const floatingPlayer = document.getElementById("floatingPlayer");
@@ -708,10 +699,7 @@ class AudioPlayer {
       closeBtn.onclick = () => {
         if (this.ytPlayer) {
           this.ytPlayer.destroy();
-          this.ytPlayer = null;
         }
-        this.isPlayingExternal = false;
-        this.externalTrackData = null;
         playerContainer.remove();
       };
       playerContainer.appendChild(closeBtn);
@@ -732,41 +720,12 @@ class AudioPlayer {
       events: {
         'onReady': (event) => {
           event.target.playVideo();
-          this.isPlaying = true;
-          if (this.playBtn) {
-            this.playBtn.innerHTML = '<i class="fas fa-pause"></i>';
-            this.playBtn.classList.add("playing");
-          }
-          const floatingPlayBtn = document.getElementById("floatingPlayBtn");
-          if (floatingPlayBtn) {
-            floatingPlayBtn.innerHTML = '<i class="fas fa-pause"></i>';
-          }
           console.log('[AudioPlayer] YouTube player ready and playing');
         },
         'onStateChange': (event) => {
           if (event.data === YT.PlayerState.ENDED) {
             // Video ended, handle next track
             this.handleTrackEnd();
-          } else if (event.data === YT.PlayerState.PLAYING) {
-            this.isPlaying = true;
-            if (this.playBtn) {
-              this.playBtn.innerHTML = '<i class="fas fa-pause"></i>';
-              this.playBtn.classList.add("playing");
-            }
-            const floatingPlayBtn = document.getElementById("floatingPlayBtn");
-            if (floatingPlayBtn) {
-              floatingPlayBtn.innerHTML = '<i class="fas fa-pause"></i>';
-            }
-          } else if (event.data === YT.PlayerState.PAUSED) {
-            this.isPlaying = false;
-            if (this.playBtn) {
-              this.playBtn.innerHTML = '<i class="fas fa-play"></i>';
-              this.playBtn.classList.remove("playing");
-            }
-            const floatingPlayBtn = document.getElementById("floatingPlayBtn");
-            if (floatingPlayBtn) {
-              floatingPlayBtn.innerHTML = '<i class="fas fa-play"></i>';
-            }
           }
         }
       }
@@ -816,21 +775,10 @@ document.addEventListener("DOMContentLoaded", () => {
   // Volume toggle for mobile
   const volumeToggle = document.getElementById("volumeToggle");
   const volumeControlContainer = document.getElementById("volumeControlContainer");
-
+  
   if (volumeToggle && volumeControlContainer) {
     volumeToggle.addEventListener("click", () => {
-      // Toggle mute/unmute
-      if (window.audioPlayer) {
-        const currentVolume = window.audioPlayer.volumeControl.value;
-        if (currentVolume > 0) {
-          window.audioPlayer.previousVolume = currentVolume;
-          window.audioPlayer.volumeControl.value = 0;
-          window.audioPlayer.updateVolume();
-        } else {
-          window.audioPlayer.volumeControl.value = window.audioPlayer.previousVolume || 70;
-          window.audioPlayer.updateVolume();
-        }
-      }
+      volumeControlContainer.classList.toggle("show");
     });
   }
 

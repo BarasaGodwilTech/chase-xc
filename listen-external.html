@@ -243,6 +243,101 @@
         font-size: 0.9rem;
       }
     }
+
+    /* Collapsed/Minimized State */
+    .external-player-container.collapsed {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      padding: 15px 20px;
+      max-width: 350px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      z-index: 10000;
+    }
+
+    .external-player-container.collapsed:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 40px rgba(0, 212, 255, 0.3);
+    }
+
+    .external-player-container.collapsed .track-header {
+      margin-bottom: 0;
+    }
+
+    .external-player-container.collapsed .track-artwork-large {
+      width: 50px;
+      height: 50px;
+    }
+
+    .external-player-container.collapsed .track-info-large h1 {
+      font-size: 1rem;
+      margin-bottom: 4px;
+    }
+
+    .external-player-container.collapsed .track-info-large p {
+      font-size: 0.85rem;
+    }
+
+    .external-player-container.collapsed .platform-badge {
+      margin-top: 5px;
+      padding: 4px 10px;
+      font-size: 0.7rem;
+    }
+
+    .external-player-container.collapsed .player-iframe-container,
+    .external-player-container.collapsed .action-buttons,
+    .external-player-container.collapsed .close-hint {
+      display: none !important;
+    }
+
+    .external-player-container.collapsed .expand-hint {
+      display: block;
+      text-align: center;
+      margin-top: 10px;
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 0.75rem;
+    }
+
+    .expand-hint {
+      display: none;
+    }
+
+    .btn-collapse {
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-collapse:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .btn-continue {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white;
+    }
+
+    .btn-continue:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(16, 185, 129, 0.3);
+    }
+
+    /* Audio-only player for video content */
+    .audio-only-player {
+      display: none;
+      margin-bottom: 25px;
+    }
+
+    .audio-only-player.active {
+      display: block;
+    }
+
+    .audio-only-player audio {
+      width: 100%;
+      border-radius: 12px;
+    }
   </style>
 </head>
 <body>
@@ -269,28 +364,41 @@
       </div>
 
       <div class="action-buttons">
-        <button id="collapseBtn" class="btn-external btn-external-secondary">
-          <i class="fas fa-window-minimize"></i>
-          Minimize & Continue Playing
+        <button id="playInOurPlayerBtn" class="btn-external btn-external-primary">
+          <i class="fas fa-headphones"></i>
+          Play in Our Player
         </button>
-        <button id="closeContinueBtn" class="btn-external btn-external-secondary">
-          <i class="fas fa-check"></i>
-          Close & Continue Playing
-        </button>
-        <button id="openExternalBtn" class="btn-external btn-external-primary">
+        <button id="openExternalBtn" class="btn-external btn-external-secondary">
           <i class="fas fa-external-link-alt"></i>
           Open in Original Platform
         </button>
+        <button id="collapseBtn" class="btn-external btn-collapse">
+          <i class="fas fa-compress-alt"></i>
+          Minimize
+        </button>
+        <button id="continueBtn" class="btn-external btn-continue">
+          <i class="fas fa-play-circle"></i>
+          Close & Continue Playing
+        </button>
         <button id="closeBtn" class="btn-external btn-external-secondary">
           <i class="fas fa-times"></i>
-          Stop & Close
+          Close Player
         </button>
       </div>
 
       <p class="close-hint">
-        Press <kbd>Esc</kbd> to minimize window
+        Press <kbd>Esc</kbd> to close this window
+      </p>
+
+      <p class="expand-hint">
+        Click to expand player
       </p>
     </div>
+  </div>
+
+  <!-- Audio-only player for video content -->
+  <div class="audio-only-player" id="audioOnlyPlayer">
+    <audio id="audioOnlyElement" controls></audio>
   </div>
 
   <script>
@@ -311,6 +419,12 @@
     const playerIframe = document.getElementById('playerIframe')
     const openExternalBtn = document.getElementById('openExternalBtn')
     const closeBtn = document.getElementById('closeBtn')
+    const collapseBtn = document.getElementById('collapseBtn')
+    const continueBtn = document.getElementById('continueBtn')
+    const playInOurPlayerBtn = document.getElementById('playInOurPlayerBtn')
+    const audioOnlyPlayer = document.getElementById('audioOnlyPlayer')
+    const audioOnlyElement = document.getElementById('audioOnlyElement')
+    const externalPlayerContainer = document.querySelector('.external-player-container')
 
     // Set track info
     trackTitle.textContent = title
@@ -321,13 +435,18 @@
       trackArtwork.style.display = 'none'
     }
 
+    // Track platform and video type
+    let currentPlatform = 'other'
+    let isVideo = false
+
     // Detect platform and generate embed URL
     function getEmbedUrl(originalUrl) {
       // Spotify
       if (originalUrl.includes('spotify.com')) {
+        currentPlatform = 'spotify'
         platformBadge.className = 'platform-badge spotify'
         platformBadge.textContent = 'Spotify'
-        
+
         // Convert to embed URL
         const match = originalUrl.match(/spotify\.com\/(track|album|playlist)\/([a-zA-Z0-9]+)/)
         if (match) {
@@ -336,21 +455,24 @@
           return `https://open.spotify.com/embed/${type}/${id}`
         }
       }
-      
+
       // SoundCloud
       else if (originalUrl.includes('soundcloud.com')) {
+        currentPlatform = 'soundcloud'
         platformBadge.className = 'platform-badge soundcloud'
         platformBadge.textContent = 'SoundCloud'
-        
+
         // Use SoundCloud oEmbed
         return `https://w.soundcloud.com/player/?url=${encodeURIComponent(originalUrl)}&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&visual=true`
       }
-      
+
       // YouTube
       else if (originalUrl.includes('youtube.com') || originalUrl.includes('youtu.be')) {
+        currentPlatform = 'youtube'
+        isVideo = true
         platformBadge.className = 'platform-badge youtube'
         platformBadge.textContent = 'YouTube'
-        
+
         // Extract video ID
         let videoId = ''
         if (originalUrl.includes('youtu.be')) {
@@ -359,13 +481,14 @@
           const match = originalUrl.match(/[?&]v=([^&]+)/)
           if (match) videoId = match[1]
         }
-        
+
         if (videoId) {
           return `https://www.youtube.com/embed/${videoId}`
         }
       }
-      
+
       // Default/Other
+      currentPlatform = 'other'
       platformBadge.className = 'platform-badge other'
       platformBadge.textContent = 'External'
       return null
@@ -406,10 +529,165 @@
       window.close()
     })
 
+    // Collapse/Expand functionality
+    let isCollapsed = false
+
+    collapseBtn.addEventListener('click', (e) => {
+      e.stopPropagation()
+      isCollapsed = true
+      externalPlayerContainer.classList.add('collapsed')
+    })
+
+    externalPlayerContainer.addEventListener('click', () => {
+      if (isCollapsed) {
+        isCollapsed = false
+        externalPlayerContainer.classList.remove('collapsed')
+      }
+    })
+
+    // Close & Continue Playing functionality
+    continueBtn.addEventListener('click', () => {
+      // Store current playing state in localStorage
+      const playingState = {
+        url: url,
+        title: title,
+        artist: artist,
+        artwork: artwork,
+        platform: currentPlatform,
+        isVideo: isVideo,
+        timestamp: Date.now()
+      }
+      localStorage.setItem('externalPlayerState', JSON.stringify(playingState))
+
+      // For videos, try to load in main player first before closing
+      if (isVideo) {
+        try {
+          if (window.opener && !window.opener.closed) {
+            // Send message to load the video in main player
+            window.opener.postMessage({
+              type: 'loadExternalTrack',
+              data: playingState
+            }, '*')
+
+            // Also send a message that we're closing
+            window.opener.postMessage({
+              type: 'externalPlayerPlaying',
+              data: playingState
+            }, '*')
+
+            // Give the main page a moment to process, then close
+            setTimeout(() => {
+              window.close()
+            }, 500)
+          } else {
+            // No opener window, can't continue playing
+            alert('Cannot continue playing video after closing. Please use "Play in Our Player" instead.')
+          }
+        } catch (e) {
+          console.log('Could not communicate with opener:', e)
+          alert('Cannot continue playing video after closing. Please use "Play in Our Player" instead.')
+        }
+      } else {
+        // For audio, just notify and close
+        try {
+          if (window.opener && !window.opener.closed) {
+            window.opener.postMessage({
+              type: 'externalPlayerPlaying',
+              data: playingState
+            }, '*')
+          }
+        } catch (e) {
+          console.log('Could not communicate with opener:', e)
+        }
+
+        // Close this window
+        window.close()
+      }
+    })
+
+    // Play in Our Player functionality
+    playInOurPlayerBtn.addEventListener('click', () => {
+      // For YouTube, try to extract audio
+      if (currentPlatform === 'youtube' && isVideo) {
+        // Extract video ID and create audio-only URL
+        let videoId = ''
+        if (url.includes('youtu.be')) {
+          videoId = url.split('/').pop().split('?')[0]
+        } else {
+          const match = url.match(/[?&]v=([^&]+)/)
+          if (match) videoId = match[1]
+        }
+
+        if (videoId) {
+          // Use a service to get audio-only stream
+          // Note: This requires a backend service or YouTube API
+          // For now, we'll try a direct approach with YouTube embed
+          const audioUrl = `https://www.youtube.com/embed/${videoId}?enablejsapi=1`
+
+          // Hide iframe and show audio-only player
+          playerIframe.parentElement.style.display = 'none'
+          audioOnlyPlayer.classList.add('active')
+
+          // Try to load audio (this may not work due to CORS)
+          // In production, you'd use a backend service to extract audio
+          audioOnlyElement.src = audioUrl
+
+          // Notify user about limitations
+          alert('Audio-only mode for YouTube requires a backend service. The video will continue to play in the embed player.')
+        }
+      } else {
+        // For other platforms, try to communicate with main player
+        try {
+          if (window.opener && !window.opener.closed) {
+            window.opener.postMessage({
+              type: 'loadExternalTrack',
+              data: {
+                url: url,
+                title: title,
+                artist: artist,
+                artwork: artwork,
+                platform: currentPlatform
+              }
+            }, '*')
+            alert('Track sent to main player. Please check the music page.')
+          } else {
+            alert('Could not communicate with main player. Please open the music page and try again.')
+          }
+        } catch (e) {
+          console.log('Could not communicate with opener:', e)
+          alert('Could not communicate with main player.')
+        }
+      }
+    })
+
+    // Listen for messages from main page
+    window.addEventListener('message', (event) => {
+      if (event.data.type === 'requestPlayerState') {
+        // Send current state back to main page
+        const state = {
+          url: url,
+          title: title,
+          artist: artist,
+          artwork: artwork,
+          platform: currentPlatform,
+          isVideo: isVideo
+        }
+        event.source.postMessage({
+          type: 'playerState',
+          data: state
+        }, event.origin)
+      }
+    })
+
     // Close on Escape key
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
-        window.close()
+        if (isCollapsed) {
+          isCollapsed = false
+          externalPlayerContainer.classList.remove('collapsed')
+        } else {
+          window.close()
+        }
       }
     })
 

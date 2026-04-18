@@ -1558,7 +1558,8 @@ class AdminPanel {
                 contact: {
                     phone: document.getElementById('contactPhone').value,
                     email: document.getElementById('contactEmail').value,
-                    location: document.getElementById('contactLocation').value
+                    location: document.getElementById('contactLocation').value,
+                    whatsapp: document.getElementById('whatsappNumber').value
                 },
                 about: {
                     projects: document.getElementById('statProjects').value,
