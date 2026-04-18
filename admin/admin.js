@@ -61,6 +61,32 @@ class AdminPanel {
         console.log('Event listeners setup complete');
     }
 
+    switchUploadMethod(method) {
+        // Update tab active states
+        document.querySelectorAll('.method-tab').forEach(tab => {
+            tab.classList.remove('active');
+            if (tab.getAttribute('data-method') === method) {
+                tab.classList.add('active');
+            }
+        });
+
+        // Show/hide corresponding content
+        document.querySelectorAll('.method-content').forEach(content => {
+            content.classList.remove('active');
+        });
+
+        const contentMap = {
+            'upload': 'uploadForm',
+            'spotify': 'spotifyForm',
+            'external': 'externalForm'
+        };
+
+        const targetContent = document.getElementById(contentMap[method]);
+        if (targetContent) {
+            targetContent.classList.add('active');
+        }
+    }
+
     setupBasicMusicManagement() {
         document.addEventListener('click', (e) => {
             if (e.target.closest('.method-tab')) {
