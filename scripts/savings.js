@@ -116,10 +116,24 @@ class SavingsManager {
         const instructions = document.getElementById('paymentInstructions')
         const instructionsText = document.getElementById('instructionsText')
         
+        // Load payment details from Firebase config
+        let mtnNumber = 'the studio MTN number'
+        let airtelNumber = 'the studio Airtel number'
+        let bankDetails = 'the studio bank account'
+        
+        if (window.studioConfig && window.studioConfig.payment) {
+            const payment = window.studioConfig.payment
+            if (payment.mtn) mtnNumber = payment.mtn
+            if (payment.airtel) airtelNumber = payment.airtel
+            if (payment.bank && payment.bank.name && payment.bank.account) {
+                bankDetails = `${payment.bank.name} - Account: ${payment.bank.account} (${payment.bank.accountName})`
+            }
+        }
+        
         const methodInstructions = {
-            mtn: `Send UGX ${this.formatNumber(this.currentGoalData.currentAmount)} to MTN Mobile Money number 0783 123 456. Use your project name as reference.`,
-            airtel: `Send UGX ${this.formatNumber(this.currentGoalData.currentAmount)} to Airtel Money number 0756 123 456. Use your project name as reference.`,
-            bank: `Transfer UGX ${this.formatNumber(this.currentGoalData.currentAmount)} to:\nBank: Centenary Bank\nAccount: 3100045678\nName: Chase x Records\nUse your project name as reference.`,
+            mtn: `Send UGX ${this.formatNumber(this.currentGoalData.currentAmount)} to ${mtnNumber}. Use your project name as reference.`,
+            airtel: `Send UGX ${this.formatNumber(this.currentGoalData.currentAmount)} to ${airtelNumber}. Use your project name as reference.`,
+            bank: `Transfer UGX ${this.formatNumber(this.currentGoalData.currentAmount)} to:\n${bankDetails}\nUse your project name as reference.`,
             card: `You will be redirected to our secure payment gateway to complete your card payment of UGX ${this.formatNumber(this.currentGoalData.currentAmount)}.`
         }
         
@@ -580,93 +594,4 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 })
 
-// Development Payment Bypass - Add this to the end of your savings.js file
-class DevPaymentBypass {
-    constructor(savingsManager) {
-        this.savingsManager = savingsManager;
-        this.setupBypass();
-    }
-
-    setupBypass() {
-        // Override the processPayment method
-        const originalProcessPayment = this.savingsManager.processPayment.bind(this.savingsManager);
-        
-        this.savingsManager.processPayment = () => {
-            const transactionId = document.getElementById('transactionId').value.trim();
-            
-            if (!transactionId) {
-                this.savingsManager.showMessage('Please enter a transaction ID/reference', 'error');
-                return;
-            }
-
-            // Show processing state
-            const confirmBtn = document.getElementById('confirmPayment');
-            confirmBtn.innerHTML = '<div class="spinner"></div> Processing...';
-            confirmBtn.disabled = true;
-
-            // Simulate payment processing delay
-            setTimeout(() => {
-                // Auto-approve any transaction ID for development
-                const mockConfirmation = {
-                    id: `dev_payment_${Date.now()}`,
-                    matched: true,
-                    amount: this.savingsManager.currentGoalData.currentAmount,
-                    studioTransactionId: transactionId || `DEV_${Math.random().toString(36).substr(2, 9)}`,
-                    userPaymentId: `dev_${Date.now()}`,
-                    userTransactionId: transactionId,
-                    sender: "DEV_USER"
-                };
-
-                // Complete payment process directly
-                if (this.savingsManager.currentGoalData.isAdditional) {
-                    this.savingsManager.processAdditionalPayment(mockConfirmation.studioTransactionId);
-                } else {
-                    this.savingsManager.saveGoal({
-                        ...this.savingsManager.currentGoalData,
-                        transactionId: mockConfirmation.studioTransactionId,
-                        paymentDate: new Date().toISOString(),
-                        verified: true
-                    });
-                }
-
-                // Show success message
-                this.savingsManager.showPaymentSuccess();
-                
-                // Reset button
-                confirmBtn.innerHTML = 'Confirm Payment';
-                confirmBtn.disabled = false;
-
-                console.log('✅ Development Payment Bypass: Payment auto-approved with transaction ID:', mockConfirmation.studioTransactionId);
-                
-            }, 1500); // 1.5 second delay to simulate processing
-        };
-
-        console.log('<i class="fas fa-history"></i> Development Payment Bypass: Active - All payments will be auto-approved');
-    }
-}
-
-// Initialize the bypass when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-    if (document.getElementById('savingsForm') && savingsManager) {
-        new DevPaymentBypass(savingsManager);
-        
-        // Also add a helper function to quickly fill test data
-        window.fillTestPayment = function() {
-            const testIds = ['TEST123456', 'DEV789012', 'FAKE_TRANSACTION', 'BY_PASS_ME'];
-            const randomId = testIds[Math.floor(Math.random() * testIds.length)];
-            document.getElementById('transactionId').value = randomId;
-            console.log('🧪 Test transaction ID filled:', randomId);
-        };
-        
-        // Auto-fill test ID when payment modal opens (optional)
-        const originalShowModal = savingsManager.showPaymentModal.bind(savingsManager);
-        savingsManager.showPaymentModal = function() {
-            originalShowModal();
-            setTimeout(() => {
-                if (document.getElementById('transactionId')) {
-                    window.fillTestPayment();
-                }
-            }, 100);
-        };
-    }
-});
+// Development Payment Bypass removed - using real payment verification system

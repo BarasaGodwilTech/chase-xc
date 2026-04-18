@@ -295,6 +295,124 @@ function initTrackCards() {
     })
 }
 
+// Global function to update plan cards from config (called from config-loader)
+window.updatePlanCardsFromConfig = function(config) {
+    if (!config || !config.plans) return
+    
+    const weeklyPrice = config.plans.weekly?.price || 0
+    const monthlyPrice = config.plans.monthly?.price || 0
+    const yearlyPrice = config.plans.yearly?.price || 0
+    
+    // Update weekly plan
+    if (config.plans.weekly) {
+        const weeklyPriceEl = document.getElementById('weekly-plan-price')
+        const weeklyBtn = document.getElementById('weekly-plan-btn')
+        if (weeklyPriceEl) weeklyPriceEl.textContent = `UGX ${weeklyPrice.toLocaleString()}`
+        if (weeklyBtn) weeklyBtn.setAttribute('data-amount', weeklyPrice)
+    }
+    
+    // Update monthly plan
+    if (config.plans.monthly) {
+        const monthlyPriceEl = document.getElementById('monthly-plan-price')
+        const monthlyBtn = document.getElementById('monthly-plan-btn')
+        const monthlySavingsEl = document.getElementById('monthly-plan-savings')
+        
+        if (monthlyPriceEl) monthlyPriceEl.textContent = `UGX ${monthlyPrice.toLocaleString()}`
+        if (monthlyBtn) monthlyBtn.setAttribute('data-amount', monthlyPrice)
+        
+        // Calculate monthly savings: (weekly × 4) - monthly
+        const weeklyMonthlyEquivalent = weeklyPrice * 4
+        const monthlySavings = weeklyMonthlyEquivalent - monthlyPrice
+        if (monthlySavingsEl && monthlySavings > 0) {
+            monthlySavingsEl.textContent = `Save UGX ${monthlySavings.toLocaleString()}`
+            monthlySavingsEl.style.display = 'block'
+        } else if (monthlySavingsEl) {
+            monthlySavingsEl.style.display = 'none'
+        }
+    }
+    
+    // Update yearly plan
+    if (config.plans.yearly) {
+        const yearlyPriceEl = document.getElementById('yearly-plan-price')
+        const yearlyBtn = document.getElementById('yearly-plan-btn')
+        const yearlySavingsEl = document.getElementById('yearly-plan-savings')
+        
+        if (yearlyPriceEl) yearlyPriceEl.textContent = `UGX ${yearlyPrice.toLocaleString()}`
+        if (yearlyBtn) yearlyBtn.setAttribute('data-amount', yearlyPrice)
+        
+        // Calculate yearly savings: (monthly × 12) - yearly
+        const monthlyYearlyEquivalent = monthlyPrice * 12
+        const yearlySavings = monthlyYearlyEquivalent - yearlyPrice
+        if (yearlySavingsEl && yearlySavings > 0) {
+            yearlySavingsEl.textContent = `Save UGX ${yearlySavings.toLocaleString()}`
+            yearlySavingsEl.style.display = 'block'
+        } else if (yearlySavingsEl) {
+            yearlySavingsEl.style.display = 'none'
+        }
+    }
+}
+
+// Global function to update service prices from config
+window.updateServicePricesFromConfig = function(config) {
+    if (!config || !config.services) return
+    
+    const services = config.services
+    
+    // Update production price
+    if (services.production) {
+        const el = document.getElementById('production-price')
+        if (el) el.textContent = `UGX ${services.production.toLocaleString()}`
+    }
+    
+    // Update mixing price
+    if (services.mixing) {
+        const el = document.getElementById('mixing-price')
+        if (el) el.textContent = `UGX ${services.mixing.toLocaleString()}`
+    }
+    
+    // Update mastering price
+    if (services.mastering) {
+        const el = document.getElementById('mastering-price')
+        if (el) el.textContent = `UGX ${services.mastering.toLocaleString()}`
+    }
+    
+    // Update vocal price
+    if (services.vocal) {
+        const el = document.getElementById('vocal-price')
+        if (el) el.textContent = `UGX ${services.vocal.toLocaleString()}`
+    }
+    
+    // Update hourly rate
+    if (services.hourlyRate) {
+        const el = document.getElementById('hourly-rate')
+        if (el) el.textContent = `UGX ${services.hourlyRate.toLocaleString()}`
+    }
+    
+    // Update package price
+    if (services.packagePrice) {
+        const el = document.getElementById('package-price')
+        if (el) el.textContent = `UGX ${services.packagePrice.toLocaleString()}`
+    }
+    
+    // Update songwriting price
+    if (services.songwriting) {
+        const el = document.getElementById('songwriting-price')
+        if (el) el.textContent = `UGX ${services.songwriting.toLocaleString()}`
+    }
+    
+    // Update restoration price
+    if (services.restoration) {
+        const el = document.getElementById('restoration-price')
+        if (el) el.textContent = `UGX ${services.restoration.toLocaleString()}`
+    }
+    
+    // Update session musician price (range)
+    if (services.sessionMusicianMin && services.sessionMusicianMax) {
+        const el = document.getElementById('session-musician-price')
+        if (el) el.textContent = `UGX ${services.sessionMusicianMin.toLocaleString()}-${services.sessionMusicianMax.toLocaleString()}`
+    }
+}
+
 function initMembership() {
     const membershipModal = document.getElementById('membershipModal')
     const planSelectButtons = document.querySelectorAll('.plan-select')
@@ -312,25 +430,97 @@ function initMembership() {
     const transactionInput = document.getElementById('transactionInput')
     const transactionId = document.getElementById('transactionId')
 
+    // Load plans from Firebase config
     const plans = {
         weekly: {
             name: 'Weekly Pass',
-            price: 'UGX 150,000',
+            price: 'UGX 150,000', // Default fallback
             period: 'week',
-            description: '10 hours of studio time, basic mixing for 2 tracks'
+            description: '10 hours of studio time, basic mixing for 2 tracks' // Default fallback
         },
         monthly: {
             name: 'Monthly Pro',
-            price: 'UGX 500,000',
+            price: 'UGX 500,000', // Default fallback
             period: 'month',
-            description: '50 hours of studio time, unlimited mixing sessions'
+            description: '50 hours of studio time, unlimited mixing sessions' // Default fallback
         },
         yearly: {
             name: 'Yearly Elite',
-            price: 'UGX 5,000,000',
+            price: 'UGX 5,000,000', // Default fallback
             period: 'year',
-            description: '600 hours of studio time, unlimited mixing & mastering'
+            description: '600 hours of studio time, unlimited mixing & mastering' // Default fallback
         }
+    }
+
+    // Try to load from Firebase config if available
+    if (window.studioConfig && window.studioConfig.plans) {
+        if (window.studioConfig.plans.weekly) {
+            plans.weekly.price = `UGX ${window.studioConfig.plans.weekly.price.toLocaleString()}`
+            plans.weekly.description = window.studioConfig.plans.weekly.description
+        }
+        if (window.studioConfig.plans.monthly) {
+            plans.monthly.price = `UGX ${window.studioConfig.plans.monthly.price.toLocaleString()}`
+            plans.monthly.description = window.studioConfig.plans.monthly.description
+        }
+        if (window.studioConfig.plans.yearly) {
+            plans.yearly.price = `UGX ${window.studioConfig.plans.yearly.price.toLocaleString()}`
+            plans.yearly.description = window.studioConfig.plans.yearly.description
+        }
+    }
+
+    // Listen for settings updates
+    window.addEventListener('settingsUpdated', (event) => {
+        const config = event.detail
+        if (config && config.plans) {
+            if (config.plans.weekly) {
+                plans.weekly.price = `UGX ${config.plans.weekly.price.toLocaleString()}`
+                plans.weekly.description = config.plans.weekly.description
+            }
+            if (config.plans.monthly) {
+                plans.monthly.price = `UGX ${config.plans.monthly.price.toLocaleString()}`
+                plans.monthly.description = config.plans.monthly.description
+            }
+            if (config.plans.yearly) {
+                plans.yearly.price = `UGX ${config.plans.yearly.price.toLocaleString()}`
+                plans.yearly.description = config.plans.yearly.description
+            }
+        }
+        // Update homepage plan cards
+        updateHomepagePlanCards(config)
+    })
+
+    // Function to update homepage plan cards from config
+    function updateHomepagePlanCards(config) {
+        if (!config || !config.plans) return
+        
+        // Update weekly plan
+        if (config.plans.weekly) {
+            const weeklyPriceEl = document.getElementById('weekly-plan-price')
+            const weeklyBtn = document.getElementById('weekly-plan-btn')
+            if (weeklyPriceEl) weeklyPriceEl.textContent = `UGX ${config.plans.weekly.price.toLocaleString()}`
+            if (weeklyBtn) weeklyBtn.setAttribute('data-amount', config.plans.weekly.price)
+        }
+        
+        // Update monthly plan
+        if (config.plans.monthly) {
+            const monthlyPriceEl = document.getElementById('monthly-plan-price')
+            const monthlyBtn = document.getElementById('monthly-plan-btn')
+            if (monthlyPriceEl) monthlyPriceEl.textContent = `UGX ${config.plans.monthly.price.toLocaleString()}`
+            if (monthlyBtn) monthlyBtn.setAttribute('data-amount', config.plans.monthly.price)
+        }
+        
+        // Update yearly plan
+        if (config.plans.yearly) {
+            const yearlyPriceEl = document.getElementById('yearly-plan-price')
+            const yearlyBtn = document.getElementById('yearly-plan-btn')
+            if (yearlyPriceEl) yearlyPriceEl.textContent = `UGX ${config.plans.yearly.price.toLocaleString()}`
+            if (yearlyBtn) yearlyBtn.setAttribute('data-amount', config.plans.yearly.price)
+        }
+    }
+
+    // Initial update when config is available
+    if (window.studioConfig && window.studioConfig.plans) {
+        updateHomepagePlanCards(window.studioConfig)
     }
 
     function openMembershipModal(planType) {

@@ -112,13 +112,14 @@ class StudioVerifier {
     }
 
     simulateIncomingPayment() {
-        const amount = document.getElementById('simAmount').value || '50000';
-        const sender = document.getElementById('simSender').value || 'JOHN DOE';
+        const amount = document.getElementById('simAmount').value || '';
+        const sender = document.getElementById('simSender').value || '';
         const provider = document.getElementById('simProvider').value;
         
+        // SMS templates will use real data from configuration
         const smsTemplates = {
-            mtn: `You have received UGX ${this.formatNumber(amount)} from ${sender} 25678XXXXXX. Transaction ID: MTN${Date.now()}. Balance: UGX 1,250,000.`,
-            airtel: `You have received ${amount} UGX from ${sender} 25675XXXXXX. Ref: AIR${Date.now()}. Bal: 1,250,000 UGX.`
+            mtn: `You have received UGX ${this.formatNumber(amount)} from ${sender}. Transaction ID: MTN${Date.now()}.`,
+            airtel: `You have received ${amount} UGX from ${sender}. Ref: AIR${Date.now()}.`
         };
 
         const sms = smsTemplates[provider];

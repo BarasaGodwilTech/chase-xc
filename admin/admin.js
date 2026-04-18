@@ -222,47 +222,13 @@ class AdminPanel {
                 }
             });
         }
-
-        // Setup clipboard support for all text inputs
-        this.setupClipboardSupport();
-    }
-
-    setupClipboardSupport() {
-        // Add clipboard support to all text inputs and textareas
-        const textInputs = document.querySelectorAll('input[type="text"], input[type="url"], input[type="email"], input[type="tel"], textarea');
-
-        textInputs.forEach(input => {
-            // Ensure paste works with clipboard API
-            input.addEventListener('paste', (e) => {
-                // Let the default behavior happen
-                // This ensures compatibility across all browsers
-                setTimeout(() => {
-                    // Trigger any custom handling if needed
-                    const eventType = new Event('input', { bubbles: true });
-                    input.dispatchEvent(eventType);
-                }, 0);
-            });
-
-            // Add support for Ctrl+V / Cmd+V explicitly
-            input.addEventListener('keydown', (e) => {
-                if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
-                    // The paste will be handled by the browser
-                    // This event is just for any additional logic if needed
-                }
-            });
-        });
-
-        // Add global clipboard error handling
-        window.addEventListener('error', (e) => {
-            if (e.message && e.message.includes('clipboard')) {
-                console.warn('Clipboard access error:', e);
             }
         });
     }
 
-    async searchSpotify() {
-        const searchInput = document.getElementById('spotifySearch');
-        const resultsContainer = document.getElementById('spotifyResults');
+    // Setup clipboard support for all text inputs
+    this.setupClipboardSupport();
+}
         const query = searchInput?.value?.trim();
 
         if (!query) {
@@ -533,7 +499,8 @@ class AdminPanel {
             artists: 'Artist Management',
             tracks: 'Track Management',
             'music-management': 'Music Management',
-            projects: 'Projects'
+            projects: 'Projects',
+            settings: 'Studio Settings'
         };
 
         const subtitles = {
@@ -542,7 +509,8 @@ class AdminPanel {
             artists: 'Manage artist profiles and content',
             tracks: 'Manage music tracks and releases',
             'music-management': 'Upload and manage music tracks',
-            projects: 'Manage studio projects and deliverables'
+            projects: 'Manage studio projects and deliverables',
+            settings: 'Configure studio settings and pricing'
         };
 
         const pageTitle = document.getElementById('pageTitle');
@@ -574,6 +542,9 @@ class AdminPanel {
                         break;
                     case 'payments':
                         this.loadPayments();
+                        break;
+                    case 'settings':
+                        this.loadSettings();
                         break;
                 }
             } catch (error) {
@@ -711,10 +682,12 @@ class AdminPanel {
     loadPayments() {
         const table = document.getElementById('paymentsTable');
         if (!table) return;
-        const payments = [
-            { id: 'TX001', artist: 'Sarah Miles', amount: 1800000, service: 'Music Production', date: '2025-03-15', status: 'completed' },
-            { id: 'TX002', artist: 'DJ Kato', amount: 2500000, service: 'Mixing & Mastering', date: '2025-03-10', status: 'pending' }
-        ];
+        // Return empty array - payments will be loaded from real data source
+        const payments = [];
+        if (payments.length === 0) {
+            table.innerHTML = '<tr><td colspan="7" class="text-center">No payments found</td></tr>';
+            return;
+        }
         table.innerHTML = payments.map(payment => `
             <tr>
                 <td>${payment.id}</td>
@@ -730,6 +703,120 @@ class AdminPanel {
                 </td>
             </tr>
         `).join('');
+    }
+
+    async loadSettings() {
+        // Load settings from Firebase config
+        try {
+            const { getConfig } = await import('../scripts/config-loader.js');
+            const config = getConfig();
+            
+            // Populate payment settings form
+            if (config.payment) {
+                document.getElementById('mtnNumber').value = config.payment.mtn || '';
+                document.getElementById('airtelNumber').value = config.payment.airtel || '';
+                document.getElementById('bankName').value = config.payment.bank?.name || '';
+                document.getElementById('bankAccount').value = config.payment.bank?.account || '';
+                document.getElementById('bankAccountName').value = config.payment.bank?.accountName || '';
+                document.getElementById('supportPhone').value = config.payment.supportPhone || '';
+            }
+            
+            // Populate plans settings form
+            if (config.plans) {
+                document.getElementById('weeklyPrice').value = config.plans.weekly?.price || '';
+                document.getElementById('weeklyDescription').value = config.plans.weekly?.description || '';
+                document.getElementById('monthlyPrice').value = config.plans.monthly?.price || '';
+                document.getElementById('monthlyDescription').value = config.plans.monthly?.description || '';
+                document.getElementById('yearlyPrice').value = config.plans.yearly?.price || '';
+                document.getElementById('yearlyDescription').value = config.plans.yearly?.description || '';
+            }
+            
+            // Populate service pricing form
+            if (config.services) {
+                document.getElementById('productionPrice').value = config.services.production || '';
+                document.getElementById('mixingPrice').value = config.services.mixing || '';
+                document.getElementById('masteringPrice').value = config.services.mastering || '';
+                document.getElementById('vocalPrice').value = config.services.vocal || '';
+                document.getElementById('hourlyRate').value = config.services.hourlyRate || '';
+                document.getElementById('packagePrice').value = config.services.packagePrice || '';
+                document.getElementById('songwritingPrice').value = config.services.songwriting || '';
+                document.getElementById('restorationPrice').value = config.services.restoration || '';
+                document.getElementById('sessionMusicianMin').value = config.services.sessionMusicianMin || '';
+                document.getElementById('sessionMusicianMax').value = config.services.sessionMusicianMax || '';
+            }
+            
+            // Setup save button handler
+            this.setupSettingsSaveHandler();
+            
+        } catch (error) {
+            console.error('Error loading settings:', error);
+            this.showNotification('Error loading settings. Config loader may not be available yet.', 'error');
+        }
+    }
+
+    setupSettingsSaveHandler() {
+        const saveBtn = document.getElementById('saveSettings');
+        if (saveBtn) {
+            saveBtn.onclick = async () => {
+                this.saveSettings();
+            };
+        }
+    }
+
+    async saveSettings() {
+        try {
+            const { saveSettings: saveToFirebase } = await import('../scripts/config-loader.js');
+            
+            const config = {
+                payment: {
+                    mtn: document.getElementById('mtnNumber').value,
+                    airtel: document.getElementById('airtelNumber').value,
+                    bank: {
+                        name: document.getElementById('bankName').value,
+                        account: document.getElementById('bankAccount').value,
+                        accountName: document.getElementById('bankAccountName').value
+                    },
+                    supportPhone: document.getElementById('supportPhone').value
+                },
+                plans: {
+                    weekly: {
+                        price: parseInt(document.getElementById('weeklyPrice').value) || 0,
+                        description: document.getElementById('weeklyDescription').value
+                    },
+                    monthly: {
+                        price: parseInt(document.getElementById('monthlyPrice').value) || 0,
+                        description: document.getElementById('monthlyDescription').value
+                    },
+                    yearly: {
+                        price: parseInt(document.getElementById('yearlyPrice').value) || 0,
+                        description: document.getElementById('yearlyDescription').value
+                    }
+                },
+                services: {
+                    production: parseInt(document.getElementById('productionPrice').value) || 0,
+                    mixing: parseInt(document.getElementById('mixingPrice').value) || 0,
+                    mastering: parseInt(document.getElementById('masteringPrice').value) || 0,
+                    vocal: parseInt(document.getElementById('vocalPrice').value) || 0,
+                    hourlyRate: parseInt(document.getElementById('hourlyRate').value) || 0,
+                    packagePrice: parseInt(document.getElementById('packagePrice').value) || 0,
+                    songwriting: parseInt(document.getElementById('songwritingPrice').value) || 0,
+                    restoration: parseInt(document.getElementById('restorationPrice').value) || 0,
+                    sessionMusicianMin: parseInt(document.getElementById('sessionMusicianMin').value) || 0,
+                    sessionMusicianMax: parseInt(document.getElementById('sessionMusicianMax').value) || 0
+                }
+            };
+            
+            const success = await saveToFirebase(config);
+            
+            if (success) {
+                this.showNotification('Settings saved successfully!', 'success');
+            } else {
+                this.showNotification('Failed to save settings', 'error');
+            }
+        } catch (error) {
+            console.error('Error saving settings:', error);
+            this.showNotification('Error saving settings: ' + error.message, 'error');
+        }
     }
 
     // Basic CRUD operations

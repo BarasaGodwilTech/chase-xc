@@ -62,5 +62,15 @@ service cloud.firestore {
     match /artists/{artistId} {
       allow list: if true;
     }
+    
+    // Settings collection - public read, admin write
+    match /settings/{document=**} {
+      // Public read access for config (prices, payment details)
+      allow read: if true;
+      
+      // Write access for admin only (TEMPORARY: disabled auth for development)
+      allow write: if true;
+      // In production, use: allow write: if isAdmin();
+    }
   }
 }

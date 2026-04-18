@@ -2031,7 +2031,7 @@ body.admin-page {
 .notification-content {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 0.75rem;
     color: white;
     font-weight: 500;
     font-size: 14px;
@@ -2042,13 +2042,13 @@ body.admin-page {
 }
 
 .notification-close {
-    background: rgba(255, 255, 255, 0.2);
+    background: none;
     border: none;
-    color: #666;
+    color: currentColor;
     cursor: pointer;
-    padding: 6px 8px;
-    margin-left: auto;
-    border-radius: 6px;
+    padding: 0.5rem;
+    opacity: 0.7;
+    transition: opacity 0.2s;
     transition: all 0.2s ease;
     display: flex;
     align-items: center;
@@ -2131,4 +2131,115 @@ body.admin-page {
 .status-archived, .status-failed {
     background: var(--danger-light);
     color: var(--danger);
+}
+
+/* Settings Section */
+.settings-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 2rem;
+}
+
+.settings-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 2rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.settings-card .card-header {
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.settings-card .card-header h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 0.5rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.settings-card .card-header h3 i {
+    color: var(--primary);
+}
+
+.settings-card .card-header p {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    margin: 0;
+}
+
+.plan-config {
+    margin-bottom: 2rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.plan-config:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.plan-config h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 1rem 0;
+}
+
+.settings-card .form-row {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 1rem;
+}
+
+.settings-card .form-group {
+    margin-bottom: 1rem;
+}
+
+.settings-card .form-group label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+}
+
+.settings-card .form-group input,
+.settings-card .form-group textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 0.875rem;
+    background: var(--background);
+    color: var(--text-primary);
+    transition: border-color 0.2s;
+}
+
+.settings-card .form-group input:focus,
+.settings-card .form-group textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+}
+
+.settings-card .form-group textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+@media (max-width: 768px) {
+    .settings-container {
+        grid-template-columns: 1fr;
+    }
+    
+    .settings-card .form-row {
+        grid-template-columns: 1fr;
+    }
 }
