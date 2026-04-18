@@ -16,7 +16,6 @@ function initApp() {
     initMusicHero()
     initVideoAutoplay()
     initClipboardSupport()
-    initTeamMembers()
     initSocialLinks()
 }
 
