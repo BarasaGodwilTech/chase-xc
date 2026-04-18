@@ -2074,10 +2074,39 @@ class AdminPanel {
             }
         } catch (error) {
             console.error('Web search error:', error);
+            const platformSearchUrls = {
+                'youtube': `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`,
+                'apple-music': `https://music.apple.com/search?term=${encodeURIComponent(query)}`,
+                'soundcloud': `https://soundcloud.com/search?q=${encodeURIComponent(query)}`,
+                'other': `https://www.google.com/search?q=${encodeURIComponent(query + ' music')}`
+            };
+            
+            const searchUrl = platformSearchUrls[platform] || platformSearchUrls['other'];
+            const platformIcon = platform === 'youtube' ? 'fab fa-youtube' :
+                               platform === 'apple-music' ? 'fab fa-apple' :
+                               platform === 'soundcloud' ? 'fab fa-soundcloud' :
+                               'fas fa-globe';
+            const platformColor = platform === 'youtube' ? '#FF0000' :
+                                  platform === 'apple-music' ? '#FA2D48' :
+                                  platform === 'soundcloud' ? '#FF5500' :
+                                  '#666666';
+
             resultsContainer.innerHTML = `
                 <div class="spotify-search-info">
                     <p><i class="fas fa-info-circle"></i> Web search unavailable</p>
-                    <p>Please manually find the track on ${platformName} and paste the URL below.</p>
+                    <p class="text-muted">Search directly on ${platformName}:</p>
+                    <div class="spotify-track" onclick="window.open('${searchUrl}', '_blank')">
+                        <div class="spotify-track-info">
+                            <i class="${platformIcon}" style="font-size: 24px; color: ${platformColor};"></i>
+                            <div class="spotify-track-details">
+                                <div class="spotify-track-name">Search "${query}" on ${platformName}</div>
+                                <div class="spotify-track-url">
+                                    <i class="fas fa-external-link-alt"></i> Opens in new tab
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-muted" style="margin-top: 12px;">After finding your track, copy the URL and paste it in the "Track URL" field below, then fill in the title and artist.</p>
                 </div>
             `;
         }
