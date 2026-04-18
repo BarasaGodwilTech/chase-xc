@@ -82,12 +82,13 @@ class AdminPanel {
         if (cancelAddArtist) {
             cancelAddArtist.addEventListener('click', () => this.closeArtistModal());
         }
-        if (addArtistForm) {
-            addArtistForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                this.saveArtist();
-            });
-        }
+        // addArtistForm is handled by admin-firebase.js
+        // if (addArtistForm) {
+        //     addArtistForm.addEventListener('submit', (e) => {
+        //         e.preventDefault();
+        //         this.saveArtist();
+        //     });
+        // }
 
         // Add team member modal event listeners
         const closeTeamMemberModal = document.getElementById('closeTeamMemberModal');
@@ -121,12 +122,7 @@ class AdminPanel {
             });
         }
 
-        // Music management form handlers
-        document.getElementById('audioUploadForm')?.addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.handleAudioUpload();
-        });
-
+        // Music management form handlers - audioUploadForm is handled by admin-firebase.js
         document.getElementById('cancelUpload')?.addEventListener('click', () => {
             this.resetUploadForm();
         });

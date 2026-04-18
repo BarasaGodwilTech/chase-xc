@@ -14,9 +14,15 @@ export async function fetchPublishedTracks() {
   console.log('[ContentRepo] Fetching published tracks...')
   try {
     const tracksRef = collection(db, 'tracks')
-    const q = query(tracksRef, where('status', '==', 'published'), orderBy('releaseDate', 'desc'))
+    const q = query(tracksRef, where('status', '==', 'published'))
     const snap = await getDocs(q)
     const tracks = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+    // Sort by releaseDate in JavaScript instead of Firestore to avoid requiring a composite index
+    tracks.sort((a, b) => {
+      const dateA = new Date(a.releaseDate || 0)
+      const dateB = new Date(b.releaseDate || 0)
+      return dateB - dateA // descending order
+    })
     console.log('[ContentRepo] Fetched', tracks.length, 'published tracks')
     return tracks
   } catch (error) {
