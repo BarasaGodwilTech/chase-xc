@@ -1560,11 +1560,16 @@ class AdminPanel {
         alert(`Artist: ${artist.name}\nGenre: ${artist.genre}\nTracks: ${tracks.length}\nStatus: ${artist.status}`);
     }
 
-    deleteArtist(artistId) {
+    async deleteArtist(artistId) {
         if (confirm('Are you sure you want to delete this artist?')) {
-            this.dataManager.deleteArtist(artistId);
-            this.showNotification('Artist deleted successfully!', 'success');
-            this.loadArtists();
+            try {
+                await window.deleteArtistFromFirestore(artistId);
+                this.showNotification('Artist deleted successfully!', 'success');
+                this.loadArtists();
+            } catch (error) {
+                console.error('Error deleting artist:', error);
+                this.showNotification('Failed to delete artist: ' + error.message, 'error');
+            }
         }
     }
 
@@ -1625,11 +1630,16 @@ class AdminPanel {
         alert(`Track: ${track.title}\nArtist: ${artist?.name || 'Unknown'}\nStreams: ${this.formatNumber(track.streams)}`);
     }
 
-    deleteTrack(trackId) {
+    async deleteTrack(trackId) {
         if (confirm('Are you sure you want to delete this track?')) {
-            this.dataManager.deleteTrack(trackId);
-            this.showNotification('Track deleted successfully!', 'success');
-            this.loadTracks();
+            try {
+                await window.deleteTrackFromFirestore(trackId);
+                this.showNotification('Track deleted successfully!', 'success');
+                this.loadTracks();
+            } catch (error) {
+                console.error('Error deleting track:', error);
+                this.showNotification('Failed to delete track: ' + error.message, 'error');
+            }
         }
     }
 

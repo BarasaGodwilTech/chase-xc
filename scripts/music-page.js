@@ -40,6 +40,75 @@ function getTrackBadge(track) {
   return null
 }
 
+function getSampleTracks() {
+  return [
+    {
+      id: 'sample-1',
+      title: 'Blessed',
+      artistName: 'Chase XC',
+      genre: 'Afro-Pop',
+      duration: '3:45',
+      artwork: 'public/player-cover-1.jpg',
+      audioUrl: '',
+      streams: 125000,
+      likes: 8500,
+      downloads: 3200,
+      status: 'published',
+      releaseDate: '2024-01-15',
+      featured: true,
+      categories: ['afro-pop', 'dance']
+    },
+    {
+      id: 'sample-2',
+      title: 'Midnight Groove',
+      artistName: 'Chase XC',
+      genre: 'Electronic',
+      duration: '4:12',
+      artwork: 'public/player-cover-2.jpg',
+      audioUrl: '',
+      streams: 89000,
+      likes: 6200,
+      downloads: 2100,
+      status: 'published',
+      releaseDate: '2024-02-20',
+      featured: false,
+      categories: ['electronic', 'house']
+    },
+    {
+      id: 'sample-3',
+      title: 'Summer Vibes',
+      artistName: 'Chase XC',
+      genre: 'Dancehall',
+      duration: '3:28',
+      artwork: 'public/player-cover-3.jpg',
+      audioUrl: '',
+      streams: 67000,
+      likes: 4100,
+      downloads: 1800,
+      status: 'published',
+      releaseDate: '2024-03-10',
+      featured: true,
+      categories: ['dancehall', 'afrobeat']
+    },
+    {
+      id: 'sample-4',
+      title: 'City Lights',
+      artistName: 'Chase XC',
+      genre: 'R&B',
+      duration: '3:55',
+      artwork: 'public/player-cover-4.jpg',
+      audioUrl: '',
+      streams: 45000,
+      likes: 3200,
+      downloads: 1200,
+      status: 'published',
+      releaseDate: '2024-04-05',
+      featured: false,
+      categories: ['r&b', 'soul']
+    }
+  ]
+}
+
 function renderTrackCard(track, index, artistName) {
   const categories = getTrackCategories(track)
   const badge = getTrackBadge(track)
@@ -92,59 +161,6 @@ function renderTrackCard(track, index, artistName) {
       </div>
     </div>
   `
-}
-
-async function initMusicPage() {
-  const grid = document.getElementById('musicGrid')
-  if (!grid) return
-
-  const resultsCount = document.getElementById('resultsCount')
-
-  let tracks
-  try {
-    tracks = await fetchPublishedTracks()
-  } catch (e) {
-    console.error(e)
-    grid.innerHTML = ''
-    if (resultsCount) resultsCount.textContent = '0 tracks'
-    return
-  }
-
-  if (!Array.isArray(tracks) || tracks.length === 0) {
-    grid.innerHTML = ''
-    if (resultsCount) resultsCount.textContent = '0 tracks'
-    window.__tracks = []
-    return
-  }
-
-  const artistCache = new Map()
-  async function resolveArtistName(track) {
-    const id = track.artist
-    if (!id) return track.artistName || 'Unknown Artist'
-    if (artistCache.has(id)) return artistCache.get(id)
-    const artist = await fetchArtistById(id)
-    const name = artist?.name || track.artistName || 'Unknown Artist'
-    artistCache.set(id, name)
-    return name
-  }
-
-  const cards = []
-  const normalizedTracks = []
-  for (let i = 0; i < tracks.length; i++) {
-    const name = await resolveArtistName(tracks[i])
-    const normalized = {
-      ...tracks[i],
-      artistName: name,
-    }
-    normalizedTracks.push(normalized)
-    cards.push(renderTrackCard(normalized, i, name))
-  }
-
-  // Used by audio-player.js (which prefers window.__tracks when present)
-  window.__tracks = normalizedTracks
-
-  grid.innerHTML = cards.join('')
-  if (resultsCount) resultsCount.textContent = `${tracks.length} track${tracks.length !== 1 ? 's' : ''}`
 }
 
 async function renderLatestReleases(tracks) {
@@ -257,15 +273,9 @@ async function initMusicPage() {
   }
 
   if (!Array.isArray(tracks) || tracks.length === 0) {
-    console.log('[MusicPage] No tracks found or invalid data format')
-    if (grid) grid.innerHTML = '<p class="text-center">No tracks available yet. Check back soon!</p>'
-    if (resultsCount) resultsCount.textContent = '0 tracks'
-    window.__tracks = []
-
-    // Still render empty states for other sections
-    await renderLatestReleases([])
-    await renderGenreCards([])
-    return
+    console.log('[MusicPage] No tracks found or invalid data format, using sample tracks')
+    // Use sample tracks as fallback
+    tracks = getSampleTracks()
   }
 
   const artistCache = new Map()

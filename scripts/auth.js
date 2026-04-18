@@ -98,15 +98,11 @@ class UserAuth {
         // Profile dropdown toggle - wait for includes to load
         const setupProfileBtn = () => {
             const profileBtn = document.getElementById('profileBtn');
-            console.log('Profile button found:', profileBtn);
             if (profileBtn) {
                 profileBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    console.log('Profile button clicked');
                     this.toggleProfileDropdown();
                 });
-            } else {
-                console.warn('Profile button not found');
             }
         };
 
@@ -371,6 +367,12 @@ class UserAuth {
     }
 
     toggleProfileDropdown() {
+        // If user is not logged in, redirect directly to auth.html
+        if (!this.currentUser) {
+            window.location.href = 'auth.html';
+            return;
+        }
+
         const dropdown = document.getElementById('profileDropdown');
         if (dropdown) {
             dropdown.classList.toggle('active');
@@ -423,15 +425,11 @@ class UserAuth {
                 logoutBtn.addEventListener('click', () => this.handleLogout());
             }
         } else {
-            // User is not logged in - show login/signup options
+            // User is not logged in - show only Sign In option
             dropdown.innerHTML = `
                 <a href="auth.html" class="profile-menu-item">
                     <i class="fas fa-sign-in-alt"></i>
                     <span>Sign In</span>
-                </a>
-                <a href="auth.html" class="profile-menu-item">
-                    <i class="fas fa-user-plus"></i>
-                    <span>Create Account</span>
                 </a>
             `;
         }

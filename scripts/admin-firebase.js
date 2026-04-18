@@ -5,6 +5,8 @@ import {
   query,
   orderBy,
   serverTimestamp,
+  deleteDoc,
+  doc,
 } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js'
 
 import {
@@ -425,11 +427,37 @@ async function saveTrackToFirestore(trackData) {
   }
 }
 
+// Delete artist from Firestore
+async function deleteArtistFromFirestore(artistId) {
+  try {
+    await deleteDoc(doc(db, 'artists', artistId));
+    console.log('[admin-firebase] Artist deleted:', artistId);
+    return true;
+  } catch (error) {
+    console.error('[admin-firebase] Error deleting artist:', error);
+    throw error;
+  }
+}
+
+// Delete track from Firestore
+async function deleteTrackFromFirestore(trackId) {
+  try {
+    await deleteDoc(doc(db, 'tracks', trackId));
+    console.log('[admin-firebase] Track deleted:', trackId);
+    return true;
+  } catch (error) {
+    console.error('[admin-firebase] Error deleting track:', error);
+    throw error;
+  }
+}
+
 // Make the function available globally for admin.js
 window.saveTrackToFirestore = saveTrackToFirestore;
 window.fetchArtists = fetchArtists;
 window.fetchTracks = fetchTracks;
 window.fetchPayments = fetchPayments;
+window.deleteArtistFromFirestore = deleteArtistFromFirestore;
+window.deleteTrackFromFirestore = deleteTrackFromFirestore;
 
 function initAdminFirebase() {
   console.log('[admin-firebase] init')
