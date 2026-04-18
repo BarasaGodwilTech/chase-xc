@@ -54,6 +54,23 @@ let studioConfig = {
     classic: 0,
     premium: 0,
     deluxe: 0
+  },
+  contact: {
+    phone: '',
+    email: '',
+    location: ''
+  },
+  social: {
+    instagram: '',
+    youtube: '',
+    tiktok: '',
+    twitter: '',
+    spotify: ''
+  },
+  about: {
+    projects: '',
+    artists: '',
+    streams: ''
   }
 }
 
@@ -102,9 +119,92 @@ function getConfig() {
   return studioConfig
 }
 
-// Get payment details
-function getPaymentDetails() {
-  return studioConfig.payment || {}
+// Get budget tiers
+function getBudgetTiers() {
+  return studioConfig.budgetTiers || {}
+}
+
+// Get contact details
+function getContactDetails() {
+  return studioConfig.contact || {}
+}
+
+// Get social links
+function getSocialLinks() {
+  return studioConfig.social || {}
+}
+
+// Populate DOM with contact and social data
+function populateContactAndSocialData() {
+  const contact = studioConfig.contact || {}
+  const social = studioConfig.social || {}
+
+  // Populate homepage hero social links
+  const heroInstagram = document.getElementById('heroInstagram')
+  const heroYouTube = document.getElementById('heroYouTube')
+  const heroTikTok = document.getElementById('heroTikTok')
+
+  if (heroInstagram && social.instagram) heroInstagram.href = social.instagram
+  if (heroYouTube && social.youtube) heroYouTube.href = social.youtube
+  if (heroTikTok && social.tiktok) heroTikTok.href = social.tiktok
+
+  // Populate contact page elements
+  const contactEmailLink = document.getElementById('contactEmailLink')
+  const contactPhone = document.getElementById('contactPhone')
+  const contactEmail = document.getElementById('contactEmail')
+  const contactPhoneLink = document.getElementById('contactPhoneLink')
+
+  if (contactEmailLink && contact.email) {
+    contactEmailLink.href = `mailto:${contact.email}`
+    contactEmailLink.textContent = contact.email
+  }
+  if (contactPhone && contact.phone) {
+    contactPhone.textContent = contact.phone
+  }
+  if (contactEmail && contact.email) {
+    contactEmail.textContent = contact.email
+  }
+  if (contactPhoneLink && contact.phone) {
+    contactPhoneLink.href = `tel:${contact.phone}`
+    contactPhoneLink.textContent = contact.phone
+  }
+
+  // Populate contact page social links
+  const contactInstagram = document.getElementById('contactInstagram')
+  const contactYouTube = document.getElementById('contactYouTube')
+  const contactSpotify = document.getElementById('contactSpotify')
+  const contactTikTok = document.getElementById('contactTikTok')
+  const contactTwitter = document.getElementById('contactTwitter')
+
+  if (contactInstagram && social.instagram) contactInstagram.href = social.instagram
+  if (contactYouTube && social.youtube) contactYouTube.href = social.youtube
+  if (contactSpotify && social.spotify) contactSpotify.href = social.spotify
+  if (contactTikTok && social.tiktok) contactTikTok.href = social.tiktok
+  if (contactTwitter && social.twitter) contactTwitter.href = social.twitter
+
+  // Populate footer contact info
+  const footerPhone = document.getElementById('footerPhone')
+  const footerEmail = document.getElementById('footerEmail')
+  const footerLocation = document.getElementById('footerLocation')
+
+  if (footerPhone && contact.phone) footerPhone.textContent = contact.phone
+  if (footerEmail && contact.email) footerEmail.textContent = contact.email
+  if (footerLocation && contact.location) footerLocation.textContent = contact.location
+
+  // Populate footer social links
+  const footerInstagram = document.getElementById('footerInstagram')
+  const footerYouTube = document.getElementById('footerYouTube')
+  const footerSpotify = document.getElementById('footerSpotify')
+  const footerTikTok = document.getElementById('footerTikTok')
+  const footerTwitter = document.getElementById('footerTwitter')
+
+  if (footerInstagram && social.instagram) footerInstagram.href = social.instagram
+  if (footerYouTube && social.youtube) footerYouTube.href = social.youtube
+  if (footerSpotify && social.spotify) footerSpotify.href = social.spotify
+  if (footerTikTok && social.tiktok) footerTikTok.href = social.tiktok
+  if (footerTwitter && social.twitter) footerTwitter.href = social.twitter
+
+  console.log('✅ Contact and social data populated in DOM')
 }
 
 // Get plans
@@ -131,6 +231,9 @@ async function initSettings() {
   // Make config available globally
   window.studioConfig = studioConfig
   
+  // Populate contact and social data
+  populateContactAndSocialData()
+  
   // Update homepage plan cards if the global function exists
   if (window.updatePlanCardsFromConfig && window.studioConfig) {
     window.updatePlanCardsFromConfig(window.studioConfig)
@@ -155,6 +258,9 @@ async function initSettings() {
   onSettingsUpdate((newConfig) => {
     studioConfig = newConfig
     window.studioConfig = newConfig
+    
+    // Populate contact and social data when settings change
+    populateContactAndSocialData()
     
     // Update homepage plan cards when settings change
     if (window.updatePlanCardsFromConfig) {
@@ -191,6 +297,10 @@ export {
   saveSettings,
   getConfig,
   getPaymentDetails,
+  getBudgetTiers,
+  getContactDetails,
+  getSocialLinks,
+  populateContactAndSocialData,
   getPlans,
   onSettingsUpdate,
   initSettings
