@@ -270,12 +270,21 @@ function clearErrors() {
     })
 }
 
-// Track Card Click - Play Track
+// Track Card Click - Redirect to Spotify or Play Track
 function initTrackCards() {
     const trackCards = document.querySelectorAll(".track-card")
 
     trackCards.forEach((card) => {
         card.addEventListener("click", function () {
+            const spotifyUrl = this.getAttribute("data-spotify-url")
+            
+            // If Spotify URL exists, redirect to Spotify
+            if (spotifyUrl && spotifyUrl.trim() !== '') {
+                window.open(spotifyUrl, '_blank')
+                return
+            }
+            
+            // Otherwise, use the regular audio player
             const trackIndex = this.getAttribute("data-track")
             const audioPlayer = document.getElementById("audioPlayer")
             // Scroll to player if it exists on this page

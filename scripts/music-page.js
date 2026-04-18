@@ -43,15 +43,17 @@ function getTrackBadge(track) {
 function renderTrackCard(track, index, artistName) {
   const categories = getTrackCategories(track)
   const badge = getTrackBadge(track)
+  const spotifyUrl = track.spotifyUrl || (track.platformLinks?.spotify) || ''
 
   return `
-    <div class="track-card" data-track="${index}" data-category="${categories.join(' ')}">
+    <div class="track-card" data-track="${index}" data-category="${categories.join(' ')}" data-spotify-url="${spotifyUrl}" data-track-id="${track.id || ''}">
       <div class="track-artwork">
         <img src="${track.artwork || ''}" alt="${track.title || ''}">
         <button class="play-btn-card" type="button">
           <i class="fas fa-play"></i>
         </button>
         ${badge ? `<div class="track-badge ${badge.type}">${badge.text}</div>` : ''}
+        ${spotifyUrl ? '<div class="spotify-indicator" title="Listen on Spotify"><i class="fab fa-spotify"></i></div>' : ''}
         <div class="track-overlay">
           <div class="overlay-actions">
             <button class="overlay-btn" title="Add to playlist" type="button">

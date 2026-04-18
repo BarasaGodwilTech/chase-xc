@@ -25,21 +25,23 @@ class MusicDataRenderer {
             const artist = this.dataManager.getArtist(track.artist);
             const categories = this.getTrackCategories(track);
             const badge = this.getTrackBadge(track);
+            const spotifyUrl = track.spotifyUrl || (track.platformLinks?.spotify) || '';
             
             return `
-                <div class="track-card" data-track="${index}" data-category="${categories.join(' ')}">
+                <div class="track-card" data-track="${index}" data-category="${categories.join(' ')}" data-spotify-url="${spotifyUrl}" data-track-id="${track.id || ''}">
                     <div class="track-artwork">
                         <img src="${track.artwork}" alt="${track.title}">
                         <button class="play-btn-card" type="button">
                             <i class="fas fa-play"></i>
                         </button>
                         ${badge ? `<div class="track-badge ${badge.type}">${badge.text}</div>` : ''}
+                        ${spotifyUrl ? '<div class="spotify-indicator" title="Listen on Spotify"><i class="fab fa-spotify"></i></div>' : ''}
                         <div class="track-overlay">
                             <div class="overlay-actions">
                                 <button class="overlay-btn" title="Add to playlist">
                                     <i class="fas fa-plus"></i>
                                 </button>
-                                <button class="overlay-btn" title="Like" data-like-track-id="${track.id}" type="button">
+                                <button class="overlay-btn" title="Like" data-like-track-id="${track.id}">
                                     <i class="far fa-heart"></i>
                                 </button>
                                 <button class="overlay-btn" title="Share">
