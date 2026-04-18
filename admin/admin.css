@@ -1717,6 +1717,10 @@ body.admin-page {
     padding: 2rem;
 }
 
+.modal.active {
+    display: flex;
+}
+
 .modal-content {
     background-color: var(--surface);
     margin: 0;

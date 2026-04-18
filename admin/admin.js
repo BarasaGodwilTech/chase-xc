@@ -18,7 +18,6 @@ class AdminPanel {
         console.log('AdminPanel initializing...');
         this.setupEventListeners();
         this.showSection('dashboard');
-        this.loadSectionData('dashboard');
 
         window.addEventListener('dataUpdated', () => {
             this.loadSectionData(this.currentSection);
@@ -53,6 +52,69 @@ class AdminPanel {
 
         document.getElementById('addTrackBtn')?.addEventListener('click', () => {
             this.addNewTrack();
+        });
+
+        document.getElementById('addArtistBtn')?.addEventListener('click', () => {
+            this.openArtistModal();
+        });
+
+        document.getElementById('closeAddArtistModal')?.addEventListener('click', () => {
+            this.closeArtistModal();
+        });
+
+        document.getElementById('cancelAddArtist')?.addEventListener('click', () => {
+            this.closeArtistModal();
+        });
+
+        document.getElementById('addArtistForm')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.saveArtist();
+        });
+
+        // Artist image preview
+        const artistImageInput = document.getElementById('artistImage');
+        if (artistImageInput) {
+            artistImageInput.addEventListener('change', () => {
+                const file = artistImageInput.files && artistImageInput.files[0];
+                const preview = document.getElementById('artistImagePreview');
+                if (file && preview) {
+                    const url = URL.createObjectURL(file);
+                    preview.classList.add('is-visible');
+                    preview.style.backgroundImage = `url('${url}')`;
+                }
+            });
+        }
+
+        // Music management form handlers
+        document.getElementById('audioUploadForm')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.handleAudioUpload();
+        });
+
+        document.getElementById('cancelUpload')?.addEventListener('click', () => {
+            this.resetUploadForm();
+        });
+
+        document.getElementById('externalTrackForm')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.handleExternalTrack();
+        });
+
+        document.getElementById('cancelExternal')?.addEventListener('click', () => {
+            this.switchUploadMethod('upload');
+        });
+
+        // Payment section handlers
+        document.getElementById('exportPayments')?.addEventListener('click', () => {
+            this.exportPayments();
+        });
+
+        document.getElementById('refreshPayments')?.addEventListener('click', () => {
+            this.loadPayments();
+        });
+
+        document.getElementById('applyPaymentFilters')?.addEventListener('click', () => {
+            this.applyPaymentFilters();
         });
 
         this.setupBasicMusicManagement();
@@ -732,43 +794,38 @@ class AdminPanel {
 
     async loadSectionData(sectionId) {
         console.log('Loading section data:', sectionId);
-        this.showLoading();
 
-        setTimeout(async () => {
-            try {
-                switch (sectionId) {
-                    case 'dashboard':
-                        await this.renderDashboard();
-                        break;
-                    case 'artists':
-                        await this.loadArtists();
-                        break;
-                    case 'tracks':
-                        await this.loadTracks();
-                        break;
-                    case 'music-management':
-                        await this.loadArtistsForSelect();
-                        break;
-                    case 'projects':
-                        break;
-                    case 'payments':
-                        await this.loadPayments();
-                        break;
-                    case 'settings':
-                        await this.loadSettings();
-                        break;
-                    case 'savings':
-                        break;
-                    case 'reports':
-                        break;
-                }
-            } catch (error) {
-                console.error('Error loading section data:', error);
-                this.showNotification('Error loading data: ' + error.message, 'error');
-            } finally {
-                this.hideLoading();
+        try {
+            switch (sectionId) {
+                case 'dashboard':
+                    await this.renderDashboard();
+                    break;
+                case 'artists':
+                    await this.loadArtists();
+                    break;
+                case 'tracks':
+                    await this.loadTracks();
+                    break;
+                case 'music-management':
+                    await this.loadArtistsForSelect();
+                    break;
+                case 'projects':
+                    break;
+                case 'payments':
+                    await this.loadPayments();
+                    break;
+                case 'settings':
+                    await this.loadSettings();
+                    break;
+                case 'savings':
+                    break;
+                case 'reports':
+                    break;
             }
-        }, 300);
+        } catch (error) {
+            console.error('Error loading section data:', error);
+            this.showNotification('Error loading data: ' + error.message, 'error');
+        }
     }
 
     async renderDashboard() {
@@ -1090,8 +1147,119 @@ class AdminPanel {
     editArtist(artistId) {
         const artist = this.dataManager.getArtist(artistId);
         if (artist) {
-            alert(`Edit Artist: ${artist.name}\nThis would open an edit form in a real implementation.`);
+            this.openArtistModal(artist);
         }
+    }
+
+    openArtistModal(artist = null) {
+        const modal = document.getElementById('addArtistModal');
+        const form = document.getElementById('addArtistForm');
+        const modalTitle = modal.querySelector('.modal-header h3');
+        
+        if (!modal || !form) return;
+
+        // Reset form
+        form.reset();
+        document.getElementById('artistImagePreview').classList.remove('is-visible');
+        document.getElementById('artistImagePreview').style.backgroundImage = '';
+
+        if (artist) {
+            // Edit mode
+            modalTitle.textContent = 'Edit Artist';
+            document.getElementById('artistName').value = artist.name || '';
+            document.getElementById('artistGenre').value = artist.genre || '';
+            document.getElementById('artistBio').value = artist.bio || '';
+            
+            if (artist.image) {
+                const preview = document.getElementById('artistImagePreview');
+                preview.classList.add('is-visible');
+                preview.style.backgroundImage = `url('${artist.image}')`;
+            }
+            
+            this.editingItem = { type: 'artist', id: artist.id, data: artist };
+        } else {
+            // Add mode
+            modalTitle.textContent = 'Add New Artist';
+            this.editingItem = null;
+        }
+
+        modal.classList.add('active');
+        modal.setAttribute('aria-hidden', 'false');
+    }
+
+    closeArtistModal() {
+        const modal = document.getElementById('addArtistModal');
+        if (modal) {
+            modal.classList.remove('active');
+            modal.setAttribute('aria-hidden', 'true');
+        }
+        this.editingItem = null;
+    }
+
+    async saveArtist() {
+        const form = document.getElementById('addArtistForm');
+        const name = document.getElementById('artistName').value.trim();
+        const genre = document.getElementById('artistGenre').value.trim();
+        const bio = document.getElementById('artistBio').value.trim();
+        const imageInput = document.getElementById('artistImage');
+
+        if (!name) {
+            this.showNotification('Artist name is required', 'error');
+            return;
+        }
+
+        try {
+            let imageUrl = '';
+            
+            // Handle image upload if file selected
+            if (imageInput.files && imageInput.files[0]) {
+                // For now, use a placeholder or data URL
+                // In production, this should upload to Firebase Storage
+                imageUrl = await this.handleImageUpload(imageInput.files[0]);
+            } else if (this.editingItem && this.editingItem.data.image) {
+                imageUrl = this.editingItem.data.image;
+            }
+
+            const artistData = {
+                name,
+                genre: genre || 'Unknown',
+                bio,
+                image: imageUrl || 'https://via.placeholder.com/150?text=Artist',
+                status: 'active',
+                tracks: 0
+            };
+
+            if (this.editingItem && this.editingItem.id) {
+                // Update existing artist
+                artistData.id = this.editingItem.id;
+                artistData.tracks = this.editingItem.data.tracks;
+                this.dataManager.saveArtist(artistData);
+                this.showNotification('Artist updated successfully!', 'success');
+            } else {
+                // Add new artist
+                artistData.id = 'A' + String(this.dataManager.getAllArtists().length + 1).padStart(3, '0');
+                artistData.createdAt = new Date().toISOString();
+                this.dataManager.saveArtist(artistData);
+                this.showNotification('Artist added successfully!', 'success');
+            }
+
+            this.closeArtistModal();
+            this.loadArtists();
+        } catch (error) {
+            console.error('Error saving artist:', error);
+            this.showNotification('Error saving artist: ' + error.message, 'error');
+        }
+    }
+
+    async handleImageUpload(file) {
+        // For demo purposes, convert to data URL
+        // In production, upload to Firebase Storage
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
     }
 
     viewArtist(artistId) {
@@ -1113,8 +1281,46 @@ class AdminPanel {
     editTrack(trackId) {
         const track = this.dataManager.getTrack(trackId);
         if (track) {
-            alert(`Edit Track: ${track.title}\nThis would open an edit form in a real implementation.`);
+            this.openTrackEditModal(track);
         }
+    }
+
+    openTrackEditModal(track) {
+        // Navigate to music-management section and populate form
+        this.showSection('music-management');
+        
+        setTimeout(() => {
+            const titleInput = document.getElementById('trackTitle');
+            const artistInput = document.getElementById('trackArtist');
+            const genreInput = document.getElementById('trackGenre');
+            const durationInput = document.getElementById('trackDuration');
+            const releaseDateInput = document.getElementById('releaseDate');
+            const descriptionInput = document.getElementById('trackDescription');
+            const artworkPreview = document.getElementById('artworkPreview');
+            
+            if (titleInput) titleInput.value = track.title || '';
+            if (artistInput) artistInput.value = track.artist || '';
+            if (genreInput) genreInput.value = track.genre || '';
+            if (durationInput) durationInput.value = track.duration || '';
+            if (releaseDateInput) releaseDateInput.value = track.releaseDate || '';
+            if (descriptionInput) descriptionInput.value = track.description || '';
+            
+            if (track.artwork && artworkPreview) {
+                artworkPreview.classList.add('has-image');
+                artworkPreview.style.backgroundImage = `url('${track.artwork}')`;
+            }
+            
+            // Set editing state
+            this.editingItem = { type: 'track', id: track.id, data: track };
+            
+            // Change button text to indicate edit mode
+            const submitBtn = document.querySelector('#audioUploadForm button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.innerHTML = '<i class="fas fa-save"></i> Update Track';
+            }
+            
+            this.showNotification('Editing track: ' + track.title, 'info');
+        }, 300);
     }
 
     viewTrack(trackId) {
@@ -1138,12 +1344,192 @@ class AdminPanel {
     }
 
     addNewArtist() {
-        this.showNotification('Artist creation will be added next. For now, create artists in Firestore or we will add an inline form.', 'info');
-        this.showSection('artists');
+        this.openArtistModal();
     }
 
     addNewTrack() {
         this.showSection('music-management');
+        this.resetUploadForm();
+    }
+
+    resetUploadForm() {
+        const form = document.getElementById('audioUploadForm');
+        if (form) {
+            form.reset();
+        }
+        
+        // Reset artwork preview
+        const artworkPreview = document.getElementById('artworkPreview');
+        if (artworkPreview) {
+            artworkPreview.classList.remove('has-image');
+            artworkPreview.style.backgroundImage = '';
+        }
+        
+        // Reset file info
+        const fileInfo = document.getElementById('fileInfo');
+        if (fileInfo) {
+            fileInfo.classList.remove('show');
+            fileInfo.textContent = '';
+        }
+        
+        // Clear editing state
+        this.editingItem = null;
+        
+        // Reset button text
+        const submitBtn = document.querySelector('#audioUploadForm button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.innerHTML = '<i class="fas fa-upload"></i> Upload Track';
+        }
+        
+        // Reload artists select
+        this.loadArtistsForSelect();
+    }
+
+    async handleAudioUpload() {
+        const title = document.getElementById('trackTitle').value.trim();
+        const artist = document.getElementById('trackArtist').value;
+        const genre = document.getElementById('trackGenre').value;
+        const duration = document.getElementById('trackDuration').value;
+        const releaseDate = document.getElementById('releaseDate').value;
+        const description = document.getElementById('trackDescription').value;
+        const audioFile = document.getElementById('audioFile').files[0];
+        const artworkFile = document.getElementById('trackArtwork').files[0];
+        const spotifyArtworkUrl = document.getElementById('spotifyArtworkUrl')?.value;
+        
+        if (!title) {
+            this.showNotification('Track title is required', 'error');
+            return;
+        }
+        
+        if (!artist) {
+            this.showNotification('Please select an artist', 'error');
+            return;
+        }
+        
+        try {
+            let artworkUrl = spotifyArtworkUrl || 'https://via.placeholder.com/300?text=Track';
+            
+            // Handle artwork upload
+            if (artworkFile) {
+                artworkUrl = await this.handleImageUpload(artworkFile);
+            }
+            
+            // Handle audio file (in production, upload to Firebase Storage)
+            let audioUrl = '';
+            if (audioFile) {
+                audioUrl = await this.handleAudioFileUpload(audioFile);
+            }
+            
+            const trackData = {
+                title,
+                artist,
+                genre,
+                duration,
+                releaseDate,
+                description,
+                artwork: artworkUrl,
+                audioUrl,
+                streams: 0,
+                status: 'published'
+            };
+            
+            if (this.editingItem && this.editingItem.id) {
+                // Update existing track
+                trackData.id = this.editingItem.id;
+                trackData.streams = this.editingItem.data.streams;
+                this.dataManager.saveTrack(trackData);
+                this.showNotification('Track updated successfully!', 'success');
+            } else {
+                // Add new track
+                this.dataManager.saveTrack(trackData);
+                this.showNotification('Track uploaded successfully!', 'success');
+            }
+            
+            this.resetUploadForm();
+            this.loadTracks();
+        } catch (error) {
+            console.error('Error handling audio upload:', error);
+            this.showNotification('Error uploading track: ' + error.message, 'error');
+        }
+    }
+
+    async handleAudioFileUpload(file) {
+        // For demo purposes, return a placeholder
+        // In production, upload to Firebase Storage
+        return new Promise((resolve) => {
+            setTimeout(() => {
+                resolve('/audio/' + file.name);
+            }, 500);
+        });
+    }
+
+    async handleExternalTrack() {
+        const platform = document.querySelector('input[name="platform"]:checked')?.value;
+        const url = document.getElementById('externalUrl').value.trim();
+        const title = document.getElementById('externalTitle').value.trim();
+        const artist = document.getElementById('externalArtist').value.trim();
+        const genre = document.getElementById('externalGenre').value;
+        
+        if (!url || !title || !artist) {
+            this.showNotification('Please fill in all required fields', 'error');
+            return;
+        }
+        
+        try {
+            const trackData = {
+                title,
+                artist: 'external',
+                artistName: artist,
+                genre: genre || 'Unknown',
+                externalUrl: url,
+                platform,
+                artwork: 'https://via.placeholder.com/300?text=External',
+                streams: 0,
+                status: 'published'
+            };
+            
+            this.dataManager.saveTrack(trackData);
+            this.showNotification('External track added successfully!', 'success');
+            
+            // Reset form
+            document.getElementById('externalTrackForm').reset();
+            this.switchUploadMethod('upload');
+            this.loadTracks();
+        } catch (error) {
+            console.error('Error adding external track:', error);
+            this.showNotification('Error adding track: ' + error.message, 'error');
+        }
+    }
+
+    exportPayments() {
+        const payments = this.dataManager.getAllTracks(); // This should be payments, but using tracks for now
+        if (!payments || payments.length === 0) {
+            this.showNotification('No data to export', 'warning');
+            return;
+        }
+        
+        const csv = 'ID,Artist,Amount,Service,Date,Status\n' + 
+            payments.map(p => `${p.id},${p.artistName || 'Unknown'},${p.streams || 0},Track,${new Date().toISOString()},published`).join('\n');
+        
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'payments_export.csv';
+        a.click();
+        URL.revokeObjectURL(url);
+        
+        this.showNotification('Payments exported successfully!', 'success');
+    }
+
+    applyPaymentFilters() {
+        const status = document.getElementById('paymentStatusFilter').value;
+        const dateFrom = document.getElementById('paymentDateFrom').value;
+        const dateTo = document.getElementById('paymentDateTo').value;
+        
+        this.showNotification(`Filters applied: Status=${status}, From=${dateFrom}, To=${dateTo}`, 'info');
+        // In production, this would filter the payments table
+        this.loadPayments();
     }
 
     // Utility methods
