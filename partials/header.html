@@ -13,6 +13,18 @@
             <!-- <a href="savings.html" class="nav-link"><i class="fas fa-piggy-bank"></i> Savings</a> -->
             <a href="about.html" class="nav-link"><i class="fas fa-info-circle"></i> About</a>
             <a href="contact.html" class="nav-link"><i class="fas fa-envelope"></i> Contact</a>
+            
+            <div class="nav-profile" id="navProfile">
+                <button class="profile-btn" id="profileBtn" aria-label="Profile menu">
+                    <i class="fas fa-user-circle"></i>
+                </button>
+                <div class="profile-dropdown" id="profileDropdown">
+                    <!-- Content will be populated by auth.js -->
+                    <div class="profile-menu-loading">
+                        <i class="fas fa-spinner fa-spin"></i> Loading...
+                    </div>
+                </div>
+            </div>
         </nav>
         <button class="hamburger" id="hamburger">
             <span></span>

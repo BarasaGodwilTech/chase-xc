@@ -21,6 +21,9 @@ class UserAuth {
         onAuthStateChanged(auth, (user) => {
             this.currentUser = user;
             
+            // Update profile UI based on auth state
+            this.updateProfileUI();
+            
             // If user is logged in and there's a redirect URL, redirect them
             if (user && this.redirectUrl) {
                 const redirectTarget = this.redirectUrl;
@@ -90,6 +93,20 @@ class UserAuth {
         const passwordToggles = document.querySelectorAll('.password-toggle');
         passwordToggles.forEach(toggle => {
             toggle.addEventListener('click', (e) => this.togglePasswordVisibility(e));
+        });
+
+        // Profile dropdown toggle
+        const profileBtn = document.getElementById('profileBtn');
+        if (profileBtn) {
+            profileBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.toggleProfileDropdown();
+            });
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', () => {
+            this.closeProfileDropdown();
         });
     }
 
@@ -341,6 +358,73 @@ class UserAuth {
         };
 
         return errorMessages[errorCode] || 'An error occurred. Please try again.';
+    }
+
+    toggleProfileDropdown() {
+        const dropdown = document.getElementById('profileDropdown');
+        if (dropdown) {
+            dropdown.classList.toggle('active');
+        }
+    }
+
+    closeProfileDropdown() {
+        const dropdown = document.getElementById('profileDropdown');
+        if (dropdown) {
+            dropdown.classList.remove('active');
+        }
+    }
+
+    updateProfileUI() {
+        const dropdown = document.getElementById('profileDropdown');
+        if (!dropdown) return;
+
+        if (this.currentUser) {
+            // User is logged in - show profile menu
+            const displayName = this.currentUser.displayName || 'User';
+            const email = this.currentUser.email;
+
+            dropdown.innerHTML = `
+                <div class="profile-user-info">
+                    <div class="profile-user-name">${displayName}</div>
+                    <div class="profile-user-email">${email}</div>
+                </div>
+                <a href="#" class="profile-menu-item" id="profileMenu">
+                    <i class="fas fa-user"></i>
+                    <span>My Profile</span>
+                </a>
+                <a href="#" class="profile-menu-item" id="membershipMenu">
+                    <i class="fas fa-crown"></i>
+                    <span>My Membership</span>
+                </a>
+                <a href="#" class="profile-menu-item" id="settingsMenu">
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
+                </a>
+                <div class="profile-divider"></div>
+                <button class="profile-menu-item" id="userLogoutBtn">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Sign Out</span>
+                </button>
+            `;
+
+            // Add event listener for logout button
+            const logoutBtn = document.getElementById('userLogoutBtn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', () => this.handleLogout());
+            }
+        } else {
+            // User is not logged in - show login/signup options
+            dropdown.innerHTML = `
+                <a href="auth.html" class="profile-menu-item">
+                    <i class="fas fa-sign-in-alt"></i>
+                    <span>Sign In</span>
+                </a>
+                <a href="auth.html" class="profile-menu-item">
+                    <i class="fas fa-user-plus"></i>
+                    <span>Create Account</span>
+                </a>
+            `;
+        }
     }
 }
 
