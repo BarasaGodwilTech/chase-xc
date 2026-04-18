@@ -739,31 +739,10 @@ class AdminPanel {
 
     async renderDashboard() {
         console.log('Rendering dashboard...');
-        
-        let artists = [];
-        let tracks = [];
-        let payments = [];
 
-        // Try to use Firestore if available, otherwise fallback to localStorage
-        try {
-            if (window.fetchArtists && window.fetchTracks && window.fetchPayments) {
-                artists = await window.fetchArtists();
-                tracks = await window.fetchTracks();
-                payments = await window.fetchPayments();
-            } else {
-                // Fallback to localStorage
-                artists = this.dataManager.getAllArtists();
-                tracks = this.dataManager.getAllTracks();
-                const membershipSubscriptions = JSON.parse(localStorage.getItem('membershipSubscriptions') || '[]');
-                payments = membershipSubscriptions;
-            }
-        } catch (error) {
-            console.error('Error loading dashboard stats from Firestore, using fallback:', error);
-            artists = this.dataManager.getAllArtists();
-            tracks = this.dataManager.getAllTracks();
-            const membershipSubscriptions = JSON.parse(localStorage.getItem('membershipSubscriptions') || '[]');
-            payments = membershipSubscriptions;
-        }
+        const artists = await window.fetchArtists();
+        const tracks = await window.fetchTracks();
+        const payments = await window.fetchPayments();
 
         const totalStreams = tracks.reduce((sum, track) => sum + (track.streams || 0), 0);
         const totalRevenue = Math.round(totalStreams * 0.003);
@@ -789,24 +768,8 @@ class AdminPanel {
             return;
         }
 
-        let artists = [];
-        let tracks = [];
-
-        // Try to use Firestore if available, otherwise fallback to localStorage
-        try {
-            if (window.fetchArtists && window.fetchTracks) {
-                artists = await window.fetchArtists();
-                tracks = await window.fetchTracks();
-            } else {
-                // Fallback to localStorage
-                artists = this.dataManager.getAllArtists();
-                tracks = this.dataManager.getAllTracks();
-            }
-        } catch (error) {
-            console.error('Error loading from Firestore, using fallback:', error);
-            artists = this.dataManager.getAllArtists();
-            tracks = this.dataManager.getAllTracks();
-        }
+        const artists = await window.fetchArtists();
+        const tracks = await window.fetchTracks();
 
         if (artists.length === 0) {
             container.innerHTML = '<tr><td colspan="7" class="text-center">No artists found</td></tr>';
@@ -867,24 +830,8 @@ class AdminPanel {
             return;
         }
 
-        let tracks = [];
-        let artists = [];
-
-        // Try to use Firestore if available, otherwise fallback to localStorage
-        try {
-            if (window.fetchTracks && window.fetchArtists) {
-                tracks = await window.fetchTracks();
-                artists = await window.fetchArtists();
-            } else {
-                // Fallback to localStorage
-                tracks = this.dataManager.getAllTracks();
-                artists = this.dataManager.getAllArtists();
-            }
-        } catch (error) {
-            console.error('Error loading from Firestore, using fallback:', error);
-            tracks = this.dataManager.getAllTracks();
-            artists = this.dataManager.getAllArtists();
-        }
+        const tracks = await window.fetchTracks();
+        const artists = await window.fetchArtists();
 
         if (tracks.length === 0) {
             container.innerHTML = '<tr><td colspan="7" class="text-center">No tracks found</td></tr>';
@@ -934,44 +881,16 @@ class AdminPanel {
         const artistSelect = document.getElementById('trackArtist');
         if (!artistSelect) return;
         
-        // Try to use Firestore if available, otherwise fallback to localStorage
-        try {
-            if (window.fetchArtists) {
-                const artists = await window.fetchArtists();
-                artistSelect.innerHTML = '<option value="">Select Artist</option>' + 
-                    artists.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
-            } else {
-                // Fallback to localStorage
-                const artists = this.dataManager.getAllArtists();
-                artistSelect.innerHTML = '<option value="">Select Artist</option>' + artists.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
-            }
-        } catch (error) {
-            console.error('Error loading artists from Firestore, using fallback:', error);
-            const artists = this.dataManager.getAllArtists();
-            artistSelect.innerHTML = '<option value="">Select Artist</option>' + artists.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
-        }
+        const artists = await window.fetchArtists();
+        artistSelect.innerHTML = '<option value="">Select Artist</option>' + 
+            artists.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
     }
 
     async loadPayments() {
         const table = document.getElementById('paymentsTable');
         if (!table) return;
         
-        let payments = [];
-        
-        // Try to use Firestore if available, otherwise fallback to localStorage
-        try {
-            if (window.fetchPayments) {
-                payments = await window.fetchPayments();
-            } else {
-                // Fallback to localStorage
-                const membershipSubscriptions = JSON.parse(localStorage.getItem('membershipSubscriptions') || '[]');
-                payments = membershipSubscriptions;
-            }
-        } catch (error) {
-            console.error('Error loading payments from Firestore, using fallback:', error);
-            const membershipSubscriptions = JSON.parse(localStorage.getItem('membershipSubscriptions') || '[]');
-            payments = membershipSubscriptions;
-        }
+        const payments = await window.fetchPayments();
         
         if (payments.length === 0) {
             table.innerHTML = '<tr><td colspan="7" class="text-center">No payments found</td></tr>';
