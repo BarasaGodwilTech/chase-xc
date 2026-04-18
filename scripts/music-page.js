@@ -109,7 +109,7 @@ function getSampleTracks() {
   ]
 }
 
-function renderTrackCard(track, index, artistName) {
+function renderTrackCard(track, index, artistName, artistSocials = {}) {
   const categories = getTrackCategories(track)
   const badge = getTrackBadge(track)
   const spotifyUrl = track.spotifyUrl || (track.platformLinks?.spotify) || ''
@@ -148,19 +148,13 @@ function renderTrackCard(track, index, artistName) {
           <span class="track-genre">${track.genre || ''}</span>
           <span class="track-duration">${track.duration || ''}</span>
         </div>
-        <div class="track-stats">
-          <div class="stat">
-            <i class="fas fa-play"></i>
-            <span>${formatNumber(track.streams || 0)}</span>
-          </div>
-          <div class="stat">
-            <i class="fas fa-heart"></i>
-            <span>${formatNumber(track.likes || 0)}</span>
-          </div>
-          <div class="stat">
-            <i class="fas fa-download"></i>
-            <span>${formatNumber(track.downloads || 0)}</span>
-          </div>
+        <div class="track-socials">
+          ${artistSocials.instagram ? `<a href="${artistSocials.instagram}" target="_blank" title="Instagram"><i class="fab fa-instagram"></i></a>` : ''}
+          ${artistSocials.youtube ? `<a href="${artistSocials.youtube}" target="_blank" title="YouTube"><i class="fab fa-youtube"></i></a>` : ''}
+          ${artistSocials.tiktok ? `<a href="${artistSocials.tiktok}" target="_blank" title="TikTok"><i class="fab fa-tiktok"></i></a>` : ''}
+          ${artistSocials.spotify ? `<a href="${artistSocials.spotify}" target="_blank" title="Spotify"><i class="fab fa-spotify"></i></a>` : ''}
+          ${artistSocials.soundcloud ? `<a href="${artistSocials.soundcloud}" target="_blank" title="SoundCloud"><i class="fab fa-soundcloud"></i></a>` : ''}
+          ${artistSocials.twitter ? `<a href="${artistSocials.twitter}" target="_blank" title="Twitter"><i class="fab fa-twitter"></i></a>` : ''}
         </div>
       </div>
     </div>
@@ -260,24 +254,27 @@ async function initMusicPage() {
   const artistCache = new Map()
   async function resolveArtistName(track) {
     const id = track.artist
-    if (!id) return track.artistName || 'Unknown Artist'
+    if (!id) return { name: track.artistName || 'Unknown Artist', socials: {} }
     if (artistCache.has(id)) return artistCache.get(id)
     const artist = await fetchArtistById(id)
-    const name = artist?.name || track.artistName || 'Unknown Artist'
-    artistCache.set(id, name)
-    return name
+    const artistData = {
+      name: artist?.name || track.artistName || 'Unknown Artist',
+      socials: artist?.socials || {}
+    }
+    artistCache.set(id, artistData)
+    return artistData
   }
 
   const cards = []
   const normalizedTracks = []
   for (let i = 0; i < tracks.length; i++) {
-    const name = await resolveArtistName(tracks[i])
+    const artistData = await resolveArtistName(tracks[i])
     const normalized = {
       ...tracks[i],
-      artistName: name,
+      artistName: artistData.name,
     }
     normalizedTracks.push(normalized)
-    cards.push(renderTrackCard(normalized, i, name))
+    cards.push(renderTrackCard(normalized, i, artistData.name, artistData.socials))
   }
 
   // Used by audio-player.js (which prefers window.__tracks when present)

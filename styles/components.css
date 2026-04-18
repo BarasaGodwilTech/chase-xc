@@ -594,28 +594,37 @@
   color: var(--text-tertiary);
 }
 
-.track-stats {
+.track-socials {
   display: flex;
-  gap: 16px;
+  gap: 12px;
   padding-top: 8px;
   border-top: 1px solid var(--border);
 }
 
-.stat {
+.track-socials a {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.8rem;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
   color: var(--text-secondary);
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  text-decoration: none;
 }
 
-.stat i {
-  color: var(--primary);
-  font-size: 0.85rem;
+.track-socials a:hover {
+  background: var(--primary);
+  color: white;
+  transform: translateY(-2px);
 }
 
-.stat span {
-  font-weight: 500;
+.track-socials a i {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Track Cards Responsive Design */
@@ -633,6 +642,16 @@
 
   .track-stats {
     gap: 12px;
+  }
+
+  .track-socials {
+    gap: 10px;
+  }
+
+  .track-socials a {
+    width: 28px;
+    height: 28px;
+    font-size: 0.85rem;
   }
 }
 
@@ -690,6 +709,17 @@
   }
 
   .stat i {
+    font-size: 0.8rem;
+  }
+
+  .track-socials {
+    gap: 8px;
+    padding-top: 6px;
+  }
+
+  .track-socials a {
+    width: 26px;
+    height: 26px;
     font-size: 0.8rem;
   }
 
@@ -776,6 +806,17 @@
   }
 
   .stat i {
+    font-size: 0.75rem;
+  }
+
+  .track-socials {
+    gap: 6px;
+    padding-top: 6px;
+  }
+
+  .track-socials a {
+    width: 24px;
+    height: 24px;
     font-size: 0.75rem;
   }
 

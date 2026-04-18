@@ -38,6 +38,7 @@ class MusicDataRenderer {
             const categories = this.getTrackCategories(track);
             const badge = this.getTrackBadge(track);
             const spotifyUrl = track.spotifyUrl || (track.platformLinks?.spotify) || '';
+            const artistSocials = artist?.socials || {};
 
             return `
                 <div class="track-card" data-track="${index}" data-category="${categories.join(' ')}" data-spotify-url="${spotifyUrl}" data-track-id="${track.id || ''}">
@@ -73,19 +74,13 @@ class MusicDataRenderer {
                             <span class="track-genre">${track.genre}</span>
                             <span class="track-duration">${track.duration}</span>
                         </div>
-                        <div class="track-stats">
-                            <div class="stat">
-                                <i class="fas fa-play"></i>
-                                <span>${this.formatNumber(track.streams)}</span>
-                            </div>
-                            <div class="stat">
-                                <i class="fas fa-heart"></i>
-                                <span>${this.formatNumber(track.likes)}</span>
-                            </div>
-                            <div class="stat">
-                                <i class="fas fa-download"></i>
-                                <span>${this.formatNumber(track.downloads)}</span>
-                            </div>
+                        <div class="track-socials">
+                            ${artistSocials.instagram ? `<a href="${artistSocials.instagram}" target="_blank" title="Instagram"><i class="fab fa-instagram"></i></a>` : ''}
+                            ${artistSocials.youtube ? `<a href="${artistSocials.youtube}" target="_blank" title="YouTube"><i class="fab fa-youtube"></i></a>` : ''}
+                            ${artistSocials.tiktok ? `<a href="${artistSocials.tiktok}" target="_blank" title="TikTok"><i class="fab fa-tiktok"></i></a>` : ''}
+                            ${artistSocials.spotify ? `<a href="${artistSocials.spotify}" target="_blank" title="Spotify"><i class="fab fa-spotify"></i></a>` : ''}
+                            ${artistSocials.soundcloud ? `<a href="${artistSocials.soundcloud}" target="_blank" title="SoundCloud"><i class="fab fa-soundcloud"></i></a>` : ''}
+                            ${artistSocials.twitter ? `<a href="${artistSocials.twitter}" target="_blank" title="Twitter"><i class="fab fa-twitter"></i></a>` : ''}
                         </div>
                         <div class="release-date">Released: ${new Date(track.releaseDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</div>
                     </div>

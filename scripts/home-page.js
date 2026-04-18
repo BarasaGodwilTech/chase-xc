@@ -83,7 +83,7 @@ async function loadFeaturedTracks() {
   }
 
   try {
-    const { fetchPublishedTracks } = await import('./data/content-repo.js')
+    const { fetchPublishedTracks, fetchArtistById } = await import('./data/content-repo.js')
     const tracks = await fetchPublishedTracks()
     console.log('[HomePage] Fetched tracks:', tracks.length)
 
@@ -95,13 +95,29 @@ async function loadFeaturedTracks() {
     // Limit to 4 featured tracks for the homepage
     const featuredTracks = tracks.slice(0, 4)
 
+    // Fetch artist data for each track
+    const artistCache = new Map()
+    const tracksWithArtists = await Promise.all(featuredTracks.map(async (track) => {
+      let artistSocials = {}
+      if (track.artist) {
+        if (artistCache.has(track.artist)) {
+          artistSocials = artistCache.get(track.artist)
+        } else {
+          const artist = await fetchArtistById(track.artist)
+          artistSocials = artist?.socials || {}
+          artistCache.set(track.artist, artistSocials)
+        }
+      }
+      return { ...track, artistSocials }
+    }))
+
     // Populate window.__tracks for audio player compatibility (same as music-page.js)
-    window.__tracks = featuredTracks.map((track) => ({
+    window.__tracks = tracksWithArtists.map((track) => ({
       ...track,
       artistName: track.artistName || 'Unknown Artist'
     }))
 
-    container.innerHTML = featuredTracks.map((track, index) => {
+    container.innerHTML = tracksWithArtists.map((track, index) => {
       const categories = ['all']
       if (track.featured) categories.push('featured')
       if ((track.streams || 0) > 50000) categories.push('popular')
@@ -154,19 +170,13 @@ async function loadFeaturedTracks() {
               <span class="track-genre">${track.genre || ''}</span>
               <span class="track-duration">${track.duration || ''}</span>
             </div>
-            <div class="track-stats">
-              <div class="stat">
-                <i class="fas fa-play"></i>
-                <span>${formatNumber(track.streams || 0)}</span>
-              </div>
-              <div class="stat">
-                <i class="fas fa-heart"></i>
-                <span>${formatNumber(track.likes || 0)}</span>
-              </div>
-              <div class="stat">
-                <i class="fas fa-download"></i>
-                <span>${formatNumber(track.downloads || 0)}</span>
-              </div>
+            <div class="track-socials">
+              ${track.artistSocials?.instagram ? `<a href="${track.artistSocials.instagram}" target="_blank" title="Instagram"><i class="fab fa-instagram"></i></a>` : ''}
+              ${track.artistSocials?.youtube ? `<a href="${track.artistSocials.youtube}" target="_blank" title="YouTube"><i class="fab fa-youtube"></i></a>` : ''}
+              ${track.artistSocials?.tiktok ? `<a href="${track.artistSocials.tiktok}" target="_blank" title="TikTok"><i class="fab fa-tiktok"></i></a>` : ''}
+              ${track.artistSocials?.spotify ? `<a href="${track.artistSocials.spotify}" target="_blank" title="Spotify"><i class="fab fa-spotify"></i></a>` : ''}
+              ${track.artistSocials?.soundcloud ? `<a href="${track.artistSocials.soundcloud}" target="_blank" title="SoundCloud"><i class="fab fa-soundcloud"></i></a>` : ''}
+              ${track.artistSocials?.twitter ? `<a href="${track.artistSocials.twitter}" target="_blank" title="Twitter"><i class="fab fa-twitter"></i></a>` : ''}
             </div>
           </div>
         </div>
