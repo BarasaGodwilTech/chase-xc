@@ -722,7 +722,7 @@ class AdminPanel {
                     case 'projects':
                         break;
                     case 'payments':
-                        this.loadPayments();
+                        await this.loadPayments();
                         break;
                     case 'settings':
                         await this.loadSettings();
@@ -928,11 +928,27 @@ class AdminPanel {
         }
     }
 
-    loadPayments() {
+    async loadPayments() {
         const table = document.getElementById('paymentsTable');
         if (!table) return;
-        // Return empty array - payments will be loaded from real data source
-        const payments = [];
+        
+        let payments = [];
+        
+        // Try to use Firestore if available, otherwise fallback to localStorage
+        try {
+            if (window.fetchPayments) {
+                payments = await window.fetchPayments();
+            } else {
+                // Fallback to localStorage
+                const membershipSubscriptions = JSON.parse(localStorage.getItem('membershipSubscriptions') || '[]');
+                payments = membershipSubscriptions;
+            }
+        } catch (error) {
+            console.error('Error loading payments from Firestore, using fallback:', error);
+            const membershipSubscriptions = JSON.parse(localStorage.getItem('membershipSubscriptions') || '[]');
+            payments = membershipSubscriptions;
+        }
+        
         if (payments.length === 0) {
             table.innerHTML = '<tr><td colspan="7" class="text-center">No payments found</td></tr>';
             return;
@@ -940,10 +956,10 @@ class AdminPanel {
         table.innerHTML = payments.map(payment => `
             <tr>
                 <td>${payment.id}</td>
-                <td>${payment.artist}</td>
-                <td>UGX ${this.formatNumber(payment.amount)}</td>
-                <td>${payment.service}</td>
-                <td>${payment.date}</td>
+                <td>${payment.fullName || payment.artist || 'Unknown'}</td>
+                <td>UGX ${this.formatNumber(payment.amount || 0)}</td>
+                <td>${payment.billingCycle || payment.service || 'Membership'}</td>
+                <td>${new Date(payment.timestamp).toLocaleDateString()}</td>
                 <td><span class="status-badge status-${payment.status}">${payment.status}</span></td>
                 <td>
                     <button class="btn btn-primary btn-sm" onclick="adminPanel.viewPayment('${payment.id}')">

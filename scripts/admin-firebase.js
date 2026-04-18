@@ -32,6 +32,12 @@ async function fetchTracks() {
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }))
 }
 
+async function fetchPayments() {
+  const paymentsRef = collection(db, 'payments')
+  const snap = await getDocs(paymentsRef)
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+}
+
 function formatNumber(num) {
   const n = Number(num || 0)
   return n.toLocaleString()
@@ -423,6 +429,7 @@ async function saveTrackToFirestore(trackData) {
 window.saveTrackToFirestore = saveTrackToFirestore;
 window.fetchArtists = fetchArtists;
 window.fetchTracks = fetchTracks;
+window.fetchPayments = fetchPayments;
 
 function initAdminFirebase() {
   console.log('[admin-firebase] init')

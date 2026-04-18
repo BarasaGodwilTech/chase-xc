@@ -146,6 +146,11 @@ async function initSettings() {
     window.updateBudgetTiersFromConfig(window.studioConfig)
   }
   
+  // Update billing cycle options if the global function exists
+  if (window.updateBillingCycleOptionsFromConfig && window.studioConfig) {
+    window.updateBillingCycleOptionsFromConfig(window.studioConfig)
+  }
+  
   // Set up real-time listener
   onSettingsUpdate((newConfig) => {
     studioConfig = newConfig
@@ -164,6 +169,11 @@ async function initSettings() {
     // Update budget tiers when settings change
     if (window.updateBudgetTiersFromConfig) {
       window.updateBudgetTiersFromConfig(newConfig)
+    }
+    
+    // Update billing cycle options when settings change
+    if (window.updateBillingCycleOptionsFromConfig) {
+      window.updateBillingCycleOptionsFromConfig(newConfig)
     }
     
     // Dispatch event for other scripts to listen

@@ -456,6 +456,37 @@ window.updateBudgetTiersFromConfig = function(config) {
     }
 }
 
+// Global function to update billing cycle options from config
+window.updateBillingCycleOptionsFromConfig = function(config) {
+    if (!config || !config.plans) return
+    
+    const plans = config.plans
+    
+    // Update weekly option
+    if (plans.weekly) {
+        const el = document.getElementById('billing-weekly')
+        if (el) {
+            el.textContent = `Weekly - UGX ${plans.weekly.price.toLocaleString()}`
+        }
+    }
+    
+    // Update monthly option
+    if (plans.monthly) {
+        const el = document.getElementById('billing-monthly')
+        if (el) {
+            el.textContent = `Monthly - UGX ${plans.monthly.price.toLocaleString()}`
+        }
+    }
+    
+    // Update yearly option
+    if (plans.yearly) {
+        const el = document.getElementById('billing-yearly')
+        if (el) {
+            el.textContent = `Yearly - UGX ${plans.yearly.price.toLocaleString()}`
+        }
+    }
+}
+
 function initMembership() {
     const membershipModal = document.getElementById('membershipModal')
     const planSelectButtons = document.querySelectorAll('.plan-select')
