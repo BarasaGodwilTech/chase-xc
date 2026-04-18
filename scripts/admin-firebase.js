@@ -540,6 +540,96 @@ async function getArtistById(artistId) {
   }
 }
 
+// Global function to edit artist
+window.editArtist = async function(artistId) {
+  try {
+    const artist = await getArtistById(artistId);
+    if (!artist) {
+      console.error('[admin-firebase] Artist not found:', artistId);
+      if (window.notifications) {
+        window.notifications.show('Artist not found', 'error');
+      }
+      return;
+    }
+
+    editingArtistId = artistId;
+    
+    // Populate form with artist data
+    const form = document.getElementById('addArtistForm');
+    if (form) {
+      document.getElementById('artistName').value = artist.name || '';
+      document.getElementById('artistGenre').value = artist.genre || '';
+      document.getElementById('artistBio').value = artist.bio || '';
+      
+      // Show existing image preview
+      if (artist.image) {
+        const preview = document.getElementById('artistImagePreview');
+        if (preview) {
+          preview.style.backgroundImage = `url('${artist.image}')`;
+          preview.classList.add('is-visible');
+          preview.setAttribute('aria-hidden', 'false');
+        }
+      }
+    }
+
+    // Update modal title
+    const modal = document.getElementById('addArtistModal');
+    const modalTitle = modal.querySelector('.modal-header h3');
+    if (modalTitle) {
+      modalTitle.textContent = 'Edit Artist';
+    }
+
+    // Open modal
+    modal.style.display = 'flex';
+    modal.setAttribute('aria-hidden', 'false');
+  } catch (error) {
+    console.error('[admin-firebase] Error opening edit artist:', error);
+    if (window.notifications) {
+      window.notifications.show('Failed to load artist data', 'error');
+    }
+  }
+};
+
+// Global function to delete artist
+window.deleteArtist = async function(artistId, artistName) {
+  const confirmMsg = `Are you sure you want to delete "${artistName}"? This action cannot be undone.`;
+  
+  let confirmed = false;
+  if (window.notifications && window.notifications.confirm) {
+    confirmed = await window.notifications.confirm(confirmMsg, 'Confirm Delete', 'warning');
+  } else {
+    confirmed = confirm(confirmMsg);
+  }
+  
+  if (!confirmed) return;
+
+  try {
+    await deleteArtistFromFirestore(artistId);
+    
+    // Refresh caches
+    artistCache = null;
+    
+    // Refresh artists table
+    await renderArtistsTable();
+    
+    // Refresh artist select dropdown
+    await populateArtistSelect();
+    
+    if (window.notifications) {
+      window.notifications.show('Artist deleted successfully!', 'success');
+    } else {
+      console.log('[admin-firebase] Artist deleted successfully');
+    }
+  } catch (error) {
+    console.error('[admin-firebase] Error deleting artist:', error);
+    if (window.notifications) {
+      window.notifications.show('Failed to delete artist. Check console for details.', 'error');
+    } else {
+      alert('Failed to delete artist. Check console for details.');
+    }
+  }
+};
+
 // Delete track from Firestore
 async function deleteTrackFromFirestore(trackId) {
   try {
