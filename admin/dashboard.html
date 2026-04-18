@@ -532,6 +532,35 @@
             </div>
         </section>
 
+        <!-- Team Section -->
+        <section class="admin-section" id="team">
+            <div class="section-header">
+                <h2>Team Management</h2>
+                <div class="section-actions">
+                    <button class="btn btn-primary" onclick="adminPanel.addNewTeamMember()" type="button">
+                        <i class="fas fa-plus"></i> Add Team Member
+                    </button>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Member</th>
+                            <th>Role</th>
+                            <th>Skills</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="teamTable">
+                        <!-- Team members will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
         <!-- Projects Section -->
         <section class="admin-section" id="projects">
             <div class="section-header">
@@ -878,6 +907,40 @@
                         </div>
                     </form>
                 </div>
+
+                <!-- Social Media Links -->
+                <div class="settings-card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-share-alt"></i> Social Media Links</h3>
+                        <p>Configure social media links for the website</p>
+                    </div>
+                    <form id="socialLinksForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="socialInstagram">Instagram</label>
+                                <input type="url" id="socialInstagram" name="socialInstagram" placeholder="https://www.instagram.com/chase_xc_/">
+                            </div>
+                            <div class="form-group">
+                                <label for="socialYouTube">YouTube</label>
+                                <input type="url" id="socialYouTube" name="socialYouTube" placeholder="https://www.youtube.com/@chasex1113">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="socialTikTok">TikTok</label>
+                                <input type="url" id="socialTikTok" name="socialTikTok" placeholder="https://tiktok.com">
+                            </div>
+                            <div class="form-group">
+                                <label for="socialTwitter">X (Twitter)</label>
+                                <input type="url" id="socialTwitter" name="socialTwitter" placeholder="https://x.com">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="socialSpotify">Spotify</label>
+                            <input type="url" id="socialSpotify" name="socialSpotify" placeholder="https://open.spotify.com/artist/...">
+                        </div>
+                    </form>
+                </div>
             </div>
         </section>
 
@@ -980,6 +1043,58 @@
                         <button type="button" class="btn btn-secondary" id="cancelAddArtist">Cancel</button>
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-save"></i> Save Artist
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Add Team Member Modal -->
+        <div class="modal" id="addTeamMemberModal" aria-hidden="true">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="teamModalTitle">Add New Team Member</h3>
+                    <button type="button" class="modal-close" id="closeTeamMemberModal">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <form id="addTeamMemberForm">
+                    <div class="form-group">
+                        <label for="teamMemberName">Name *</label>
+                        <input type="text" id="teamMemberName" name="teamMemberName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="teamMemberRole">Role *</label>
+                        <input type="text" id="teamMemberRole" name="teamMemberRole" required placeholder="e.g. Producer, Engineer">
+                    </div>
+                    <div class="form-group">
+                        <label for="teamMemberBadge">Badge</label>
+                        <input type="text" id="teamMemberBadge" name="teamMemberBadge" placeholder="e.g. Founder, Engineer">
+                    </div>
+                    <div class="form-group">
+                        <label for="teamMemberBio">Bio</label>
+                        <textarea id="teamMemberBio" name="teamMemberBio" rows="3" placeholder="Short bio..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="teamMemberSkills">Skills (comma-separated)</label>
+                        <input type="text" id="teamMemberSkills" name="teamMemberSkills" placeholder="e.g. Production, Mixing, Mastering">
+                    </div>
+                    <div class="form-group">
+                        <label for="teamMemberImage">Photo</label>
+                        <div class="artist-image-preview" id="teamMemberImagePreview" aria-hidden="true"></div>
+                        <input type="file" id="teamMemberImage" name="teamMemberImage" accept="image/*">
+                    </div>
+                    <div class="form-group">
+                        <label for="teamMemberStatus">Status</label>
+                        <select id="teamMemberStatus" name="teamMemberStatus">
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" id="cancelTeamMember">Cancel</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Save Team Member
                         </button>
                     </div>
                 </form>
