@@ -2461,11 +2461,24 @@ class AdminPanel {
                 platform,
                 artwork: artwork,
                 streams: 0,
-                status: 'published'
+                likes: 0,
+                downloads: 0,
+                status: 'published',
+                audioUrl: '', // External tracks don't have local audio
+                platformLinks: {
+                    [platform]: url
+                }
             };
 
-            this.dataManager.saveTrack(trackData);
-            this.showNotification('External track added successfully!', 'success');
+            // Save to Firestore
+            if (window.saveTrackToFirestore) {
+                await window.saveTrackToFirestore(trackData);
+                this.showNotification('External track added to Firestore successfully!', 'success');
+            } else {
+                // Fallback to local storage if Firestore not available
+                this.dataManager.saveTrack(trackData);
+                this.showNotification('External track added successfully! (Local storage)', 'warning');
+            }
 
             // Clear fetched metadata
             this.fetchedExternalMetadata = null;
@@ -2478,25 +2491,14 @@ class AdminPanel {
         }
     }
 
-    exportPayments() {
-        const payments = this.dataManager.getAllTracks();
-        if (!payments || payments.length === 0) {
-            this.showNotification('No data to export', 'warning');
-            return;
-        }
-
-        const csv = 'ID,Artist,Amount,Service,Date,Status\n' +
-            payments.map(p => `${p.id},${p.artistName || 'Unknown'},${p.streams || 0},Track,${new Date().toISOString()},published`).join('\n');
-
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'payments_export.csv';
-        a.click();
-        URL.revokeObjectURL(url);
-
-        this.showNotification('Payments exported successfully!', 'success');
+    getPlatformArtwork(platform) {
+        const artworkMap = {
+            'youtube': 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/YouTube_full-color_icon_%282017%29.svg/1024px-YouTube_full-color_icon_%282017%29.svg.png',
+            'apple-music': 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4a/Apple_Music_icon.svg/1024px-Apple_Music_icon.svg.png',
+            'soundcloud': 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/SoundCloud_logo.svg/1024px-SoundCloud_logo.svg.png',
+            'other': 'https://via.placeholder.com/300?text=External'
+        };
+        return artworkMap[platform] || artworkMap['other'];
     }
 
     applyPaymentFilters() {
