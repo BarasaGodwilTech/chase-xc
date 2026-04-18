@@ -20,8 +20,7 @@ class UserAuth {
         // Listen for auth state changes
         onAuthStateChanged(auth, (user) => {
             this.currentUser = user;
-            this.updateProfileIcon();
-
+            
             // If user is logged in and there's a redirect URL, redirect them
             if (user && this.redirectUrl) {
                 const redirectTarget = this.redirectUrl;
@@ -86,19 +85,6 @@ class UserAuth {
         if (logoutBtn) {
             logoutBtn.addEventListener('click', () => this.handleLogout());
         }
-
-        // Profile icon dropdown toggle
-        const profileIcon = document.getElementById('profileIcon');
-        if (profileIcon) {
-            profileIcon.addEventListener('click', () => this.toggleProfileDropdown());
-        }
-
-        // Close dropdown when clicking outside
-        document.addEventListener('click', (e) => {
-            if (profileIcon && !profileIcon.contains(e.target)) {
-                this.closeProfileDropdown();
-            }
-        });
 
         // Password visibility toggle
         const passwordToggles = document.querySelectorAll('.password-toggle');
@@ -355,44 +341,6 @@ class UserAuth {
         };
 
         return errorMessages[errorCode] || 'An error occurred. Please try again.';
-    }
-
-    updateProfileIcon() {
-        const profileIcon = document.getElementById('profileIcon');
-        const userName = document.getElementById('userName');
-        const userEmail = document.getElementById('userEmail');
-
-        if (!profileIcon) return;
-
-        if (this.currentUser) {
-            // Show profile icon
-            profileIcon.style.display = 'flex';
-
-            // Update user info
-            if (userName) {
-                userName.textContent = this.currentUser.displayName || 'User';
-            }
-            if (userEmail) {
-                userEmail.textContent = this.currentUser.email || '';
-            }
-        } else {
-            // Hide profile icon
-            profileIcon.style.display = 'none';
-        }
-    }
-
-    toggleProfileDropdown() {
-        const dropdown = document.getElementById('profileDropdown');
-        if (dropdown) {
-            dropdown.classList.toggle('active');
-        }
-    }
-
-    closeProfileDropdown() {
-        const dropdown = document.getElementById('profileDropdown');
-        if (dropdown) {
-            dropdown.classList.remove('active');
-        }
     }
 }
 
