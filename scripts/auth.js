@@ -20,10 +20,10 @@ class UserAuth {
         // Listen for auth state changes
         onAuthStateChanged(auth, (user) => {
             this.currentUser = user;
-            
+
             // Update profile UI based on auth state
             this.updateProfileUI();
-            
+
             // If user is logged in and there's a redirect URL, redirect them
             if (user && this.redirectUrl) {
                 const redirectTarget = this.redirectUrl;
@@ -37,6 +37,16 @@ class UserAuth {
         if (storedRedirect) {
             this.redirectUrl = storedRedirect;
         }
+
+        // Handle page unload to detect cancelled login
+        window.addEventListener('beforeunload', () => {
+            this.handlePageUnload();
+        });
+
+        // Handle navigation away from auth page
+        window.addEventListener('popstate', () => {
+            this.handleNavigationAway();
+        });
 
         this.setupEventListeners();
     }
@@ -118,7 +128,7 @@ class UserAuth {
 
     async handleLogin(e) {
         e.preventDefault();
-        
+
         const email = document.getElementById('loginEmail').value;
         const password = document.getElementById('loginPassword').value;
         const rememberMe = document.getElementById('rememberMe')?.checked || false;
@@ -127,23 +137,45 @@ class UserAuth {
 
         try {
             await signInWithEmailAndPassword(auth, email, password);
-            
+
             // Set persistence based on remember me
             if (rememberMe) {
                 // User will stay logged in
             }
 
             this.showNotification('Login successful!', 'success');
-            
+
             // Redirect after short delay
             setTimeout(() => {
                 this.handleRedirect();
             }, 1000);
-            
+
         } catch (error) {
             this.showNotification(this.getErrorMessage(error.code), 'error');
         } finally {
             this.hideLoading('login');
+        }
+    }
+
+    handlePageUnload() {
+        // Check if user is on auth page and not logged in
+        if (window.location.pathname.includes('auth.html') && !this.currentUser) {
+            // Check if there's a pending action
+            const pendingAction = sessionStorage.getItem('pendingAction');
+            if (pendingAction) {
+                // Mark that login was cancelled
+                sessionStorage.setItem('loginCancelled', 'true');
+            }
+        }
+    }
+
+    handleNavigationAway() {
+        // Check if user is navigating away from auth page without logging in
+        if (window.location.pathname.includes('auth.html') && !this.currentUser) {
+            const pendingAction = sessionStorage.getItem('pendingAction');
+            if (pendingAction) {
+                sessionStorage.setItem('loginCancelled', 'true');
+            }
         }
     }
 

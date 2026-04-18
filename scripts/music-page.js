@@ -467,7 +467,7 @@ function handleShareTrack(track) {
 
 function handleAddToPlaylist(track) {
   console.log('[MusicPage] Adding to playlist:', track.title)
-  
+
   // Check if user is authenticated
   if (!isUserAuthenticated()) {
     // Store pending action for after login
@@ -475,12 +475,13 @@ function handleAddToPlaylist(track) {
     redirectToAuth()
     return
   }
-  
+
   // User is authenticated, proceed with add to playlist action
   // This would typically make an API call to your backend
   // TODO: Call your backend API to add track to playlist
+  // Only show success message after API call succeeds
   console.log('[MusicPage] User authenticated, proceeding with add to playlist action')
-  alert('Added to playlist!')
+  // showNotification('Successfully added to playlist!', 'success') // Uncomment after implementing backend API
 }
 
 // Helper function to check if user is authenticated
@@ -530,17 +531,14 @@ function toggleLikeButton(btn) {
 
 // Function to execute pending action after login
 function executePendingAction() {
+  checkLoginCancelled()
+
   const pendingActionStr = sessionStorage.getItem('pendingAction')
   if (!pendingActionStr) return
-  
+
   try {
     const pendingAction = JSON.parse(pendingActionStr)
-    console.log('[MusicPage] Executing pending action:', pendingAction)
-    
-    // Clear pending action
-    sessionStorage.removeItem('pendingAction')
-    
-    // Execute based on action type
+
     switch (pendingAction.type) {
       case 'like':
         handleLikeAfterLogin(pendingAction.data.trackId)
@@ -551,8 +549,22 @@ function executePendingAction() {
       default:
         console.warn('[MusicPage] Unknown pending action type:', pendingAction.type)
     }
+
+    // Clear pending action after attempting to execute
+    sessionStorage.removeItem('pendingAction')
   } catch (e) {
     console.error('[MusicPage] Error executing pending action:', e)
+    sessionStorage.removeItem('pendingAction')
+  }
+}
+
+// Function to check if login was cancelled and notify user
+function checkLoginCancelled() {
+  const loginCancelled = sessionStorage.getItem('loginCancelled')
+  if (loginCancelled === 'true') {
+    sessionStorage.removeItem('loginCancelled')
+    sessionStorage.removeItem('pendingAction')
+    showNotification('Action cancelled. Please log in to like or add tracks to your playlist.', 'info')
   }
 }
 
@@ -563,13 +575,48 @@ function handleLikeAfterLogin(trackId) {
     toggleLikeButton(btn)
   }
   // TODO: Call your backend API to like the track
+  // Only show success message after API call succeeds
   console.log('[MusicPage] Liked track after login:', trackId)
+  // showNotification('Added to liked tracks!', 'success') // Uncomment after implementing backend API
 }
 
 function handleAddToPlaylistAfterLogin(trackData) {
   // TODO: Call your backend API to add track to playlist
+  // Only show success message after API call succeeds
   console.log('[MusicPage] Added to playlist after login:', trackData.title)
-  alert('Added to playlist!')
+  // showNotification('Successfully added to playlist!', 'success') // Uncomment after implementing backend API
+}
+
+// Helper function to show notifications
+function showNotification(message, type = 'info') {
+  // Create notification element
+  const notification = document.createElement('div')
+  notification.className = `notification notification-${type}`
+  notification.textContent = message
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 16px 24px;
+    background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
+    color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 10000;
+    animation: slideIn 0.3s ease-out;
+    font-weight: 500;
+    max-width: 300px;
+  `
+
+  document.body.appendChild(notification)
+
+  // Remove after 3 seconds
+  setTimeout(() => {
+    notification.style.animation = 'slideOut 0.3s ease-out'
+    setTimeout(() => {
+      document.body.removeChild(notification)
+    }, 300)
+  }, 3000)
 }
 
 function boot() {
