@@ -76,7 +76,7 @@ async function loadFeaturedArtists() {
 async function loadFeaturedTracks() {
   console.log('[HomePage] Loading featured tracks...')
   const container = document.querySelector('#music .music-grid')
-  
+
   if (!container) {
     console.log('[HomePage] Music grid container not found (might be commented out)')
     return
@@ -95,6 +95,12 @@ async function loadFeaturedTracks() {
     // Limit to 4 featured tracks for the homepage
     const featuredTracks = tracks.slice(0, 4)
 
+    // Populate window.__tracks for audio player compatibility (same as music-page.js)
+    window.__tracks = featuredTracks.map((track) => ({
+      ...track,
+      artistName: track.artistName || 'Unknown Artist'
+    }))
+
     container.innerHTML = featuredTracks.map((track, index) => {
       const categories = ['all']
       if (track.featured) categories.push('featured')
@@ -108,8 +114,8 @@ async function loadFeaturedTracks() {
         if (releaseDate > thirtyDaysAgo) categories.push('new')
       }
 
-      const badge = (track.streams || 0) > 100000 ? 'Trending' : 
-                   (track.streams || 0) > 50000 ? 'Popular' : 
+      const badge = (track.streams || 0) > 100000 ? 'Trending' :
+                   (track.streams || 0) > 50000 ? 'Popular' :
                    (releaseDate && releaseDate > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)) ? 'New' : ''
 
       const spotifyUrl = track.spotifyUrl || (track.platformLinks?.spotify) || ''
@@ -168,6 +174,9 @@ async function loadFeaturedTracks() {
     }).join('')
 
     console.log('[HomePage] Rendered', featuredTracks.length, 'tracks')
+
+    // Setup event listeners for the newly rendered track cards
+    setupTrackCardListeners()
   } catch (error) {
     console.error('[HomePage] Error loading tracks:', error)
     if (container) {
@@ -176,10 +185,292 @@ async function loadFeaturedTracks() {
   }
 }
 
+function setupTrackCardListeners() {
+  // Play button listeners
+  document.querySelectorAll('.play-btn-overlay').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation()
+      const card = btn.closest('.track-card')
+      const trackIndex = card.dataset.track
+      const track = window.__tracks[trackIndex]
+
+      if (track) {
+        handlePlayTrack(track)
+      }
+    })
+  })
+
+  // Like button listeners
+  document.querySelectorAll('.like-btn-mini[data-like-track-id]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation()
+      const trackId = btn.dataset.likeTrackId
+      handleLikeTrack(trackId, btn)
+    })
+  })
+
+  // Share button listeners
+  document.querySelectorAll('.overlay-btn[title="Share"]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation()
+      const card = btn.closest('.track-card')
+      const trackIndex = card.dataset.track
+      const track = window.__tracks[trackIndex]
+
+      if (track) {
+        handleShareTrack(track)
+      }
+    })
+  })
+
+  // Add to playlist listeners
+  document.querySelectorAll('.overlay-btn[title="Add to playlist"]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation()
+      const card = btn.closest('.track-card')
+      const trackIndex = card.dataset.track
+      const track = window.__tracks[trackIndex]
+
+      if (track) {
+        handleAddToPlaylist(track)
+      }
+    })
+  })
+
+  // Spotify indicator click
+  document.querySelectorAll('.spotify-indicator').forEach(indicator => {
+    indicator.addEventListener('click', (e) => {
+      e.stopPropagation()
+      const card = indicator.closest('.track-card')
+      const spotifyUrl = card.dataset.spotifyUrl
+
+      if (spotifyUrl) {
+        openExternalPlayer(spotifyUrl)
+      }
+    })
+  })
+}
+
+function handlePlayTrack(track) {
+  console.log('[HomePage] Playing track:', track.title)
+
+  // Check if track has audio URL
+  if (track.audioUrl && track.audioUrl.trim() !== '') {
+    // Play using audio player
+    if (window.audioPlayer) {
+      window.audioPlayer.loadTrackByData(track.id)
+    } else {
+      console.error('[HomePage] Audio player not available')
+    }
+  } else {
+    // Check for external links
+    const externalUrl = track.spotifyUrl || track.platformLinks?.spotify || track.platformLinks?.soundcloud || track.platformLinks?.youtube
+
+    if (externalUrl) {
+      openExternalPlayer(externalUrl, track)
+    } else {
+      alert('No audio available for this track')
+    }
+  }
+}
+
+function handleLikeTrack(trackId, btn) {
+  console.log('[HomePage] Liking track:', trackId)
+
+  // Check if user is authenticated
+  if (!isUserAuthenticated()) {
+    // Store pending action for after login
+    storePendingAction('like', { trackId })
+    redirectToAuth()
+    return
+  }
+
+  // User is authenticated, proceed with like action
+  toggleLikeButton(btn)
+  console.log('[HomePage] User authenticated, proceeding with like action')
+}
+
+function handleShareTrack(track) {
+  console.log('[HomePage] Sharing track:', track.title)
+
+  const shareData = {
+    title: track.title,
+    text: `Listen to ${track.title} by ${track.artistName}`,
+    url: window.location.href
+  }
+
+  if (navigator.share) {
+    navigator.share(shareData).catch(console.error)
+  } else {
+    // Fallback: copy to clipboard
+    const shareText = `${shareData.text} - ${shareData.url}`
+    navigator.clipboard.writeText(shareText).then(() => {
+      alert('Link copied to clipboard!')
+    }).catch(() => {
+      prompt('Copy this link:', shareText)
+    })
+  }
+}
+
+function handleAddToPlaylist(track) {
+  console.log('[HomePage] Adding to playlist:', track.title)
+
+  // Check if user is authenticated
+  if (!isUserAuthenticated()) {
+    // Store pending action for after login
+    storePendingAction('addToPlaylist', { trackId: track.id, trackData: track })
+    redirectToAuth()
+    return
+  }
+
+  // User is authenticated, proceed with add to playlist action
+  console.log('[HomePage] User authenticated, proceeding with add to playlist action')
+}
+
+function openExternalPlayer(url, track = null) {
+  const params = new URLSearchParams()
+  if (track) {
+    params.set('title', track.title)
+    params.set('artist', track.artistName)
+    params.set('artwork', track.artwork)
+  }
+  params.set('url', url)
+
+  const redirectUrl = `listen-external.html?${params.toString()}`
+  window.open(redirectUrl, '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes')
+}
+
+function isUserAuthenticated() {
+  if (typeof window.auth !== 'undefined' && window.auth.currentUser) {
+    return true
+  }
+  const user = JSON.parse(sessionStorage.getItem('currentUser') || 'null')
+  return user !== null
+}
+
+function storePendingAction(actionType, actionData) {
+  const pendingAction = {
+    type: actionType,
+    data: actionData,
+    timestamp: Date.now(),
+    returnUrl: window.location.pathname
+  }
+  sessionStorage.setItem('pendingAction', JSON.stringify(pendingAction))
+  console.log('[HomePage] Stored pending action:', pendingAction)
+}
+
+function redirectToAuth() {
+  const currentUrl = window.location.href
+  const authUrl = `auth.html?redirect=${encodeURIComponent(currentUrl)}`
+  window.location.href = authUrl
+}
+
+function toggleLikeButton(btn) {
+  const icon = btn.querySelector('i')
+  if (icon.classList.contains('far')) {
+    icon.classList.remove('far')
+    icon.classList.add('fas')
+    btn.classList.add('liked')
+  } else {
+    icon.classList.remove('fas')
+    icon.classList.add('far')
+    btn.classList.remove('liked')
+  }
+}
+
 function initHomePage() {
   console.log('[HomePage] Initializing homepage...')
   loadFeaturedArtists()
   loadFeaturedTracks()
+  setupTrackCardListeners()
+  // Execute any pending action after login
+  setTimeout(() => executePendingAction(), 500)
+}
+
+// Function to execute pending action after login
+function executePendingAction() {
+  checkLoginCancelled()
+
+  const pendingActionStr = sessionStorage.getItem('pendingAction')
+  if (!pendingActionStr) return
+
+  try {
+    const pendingAction = JSON.parse(pendingActionStr)
+
+    switch (pendingAction.type) {
+      case 'like':
+        handleLikeAfterLogin(pendingAction.data.trackId)
+        break
+      case 'addToPlaylist':
+        handleAddToPlaylistAfterLogin(pendingAction.data.trackData)
+        break
+      default:
+        console.warn('[HomePage] Unknown pending action type:', pendingAction.type)
+    }
+
+    // Clear pending action after attempting to execute
+    sessionStorage.removeItem('pendingAction')
+  } catch (e) {
+    console.error('[HomePage] Error executing pending action:', e)
+    sessionStorage.removeItem('pendingAction')
+  }
+}
+
+// Function to check if login was cancelled and notify user
+function checkLoginCancelled() {
+  const loginCancelled = sessionStorage.getItem('loginCancelled')
+  if (loginCancelled === 'true') {
+    sessionStorage.removeItem('loginCancelled')
+    sessionStorage.removeItem('pendingAction')
+    showNotification('Action cancelled. Please log in to like or add tracks to your playlist.', 'info')
+  }
+}
+
+function handleLikeAfterLogin(trackId) {
+  // Find the button for this track
+  const btn = document.querySelector(`.like-btn-mini[data-like-track-id="${trackId}"]`)
+  if (btn) {
+    toggleLikeButton(btn)
+  }
+  // TODO: Call your backend API to like the track
+  console.log('[HomePage] Liked track after login:', trackId)
+}
+
+function handleAddToPlaylistAfterLogin(trackData) {
+  // TODO: Call your backend API to add track to playlist
+  console.log('[HomePage] Added to playlist after login:', trackData.title)
+}
+
+// Helper function to show notifications
+function showNotification(message, type = 'info') {
+  // Create notification element
+  const notification = document.createElement('div')
+  notification.className = `notification notification-${type}`
+  notification.textContent = message
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 16px 24px;
+    background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
+    color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 10000;
+    animation: slideIn 0.3s ease-out;
+    font-weight: 500;
+    max-width: 300px;
+  `
+
+  document.body.appendChild(notification)
+
+  // Remove after 3 seconds
+  setTimeout(() => {
+    notification.style.animation = 'slideOut 0.3s ease-out'
+    setTimeout(() => {
+      document.body.removeChild(notification)
+    }, 300)
+  }, 3000)
 }
 
 async function boot() {

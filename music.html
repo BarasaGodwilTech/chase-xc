@@ -13,13 +13,12 @@
 </head>
 <body>
     <script src="scripts/includes.js"></script>
-    <script type="module" src="scripts/notifications.js"></script>
     <div data-include="partials/header.html"></div>
 
     <!-- Page Header -->
     <section class="music-hero" data-music-hero>
         <div class="music-hero-video-bg">
-            <video class="music-hero-video" autoplay muted playsinline loop preload="auto" aria-hidden="true" poster="studio.avif" loading="lazy">
+            <video class="music-hero-video" autoplay muted playsinline loop preload="auto" aria-hidden="true" poster="studio-poster.jpg" loading="lazy">
                 <source src="studio-video.mp4" type="video/mp4">
                 Your browser does not support the video tag.
             </video>
@@ -276,7 +275,7 @@
     <section class="music" style="background: var(--background-alt);">
         <div class="container">
             <h3 class="section-title">Latest Releases</h3>
-            <div class="releases-timeline" id="latestReleases">
+            <div class="music-grid" id="latestReleases">
                 <!-- Latest releases will be dynamically loaded here -->
             </div>
         </div>
