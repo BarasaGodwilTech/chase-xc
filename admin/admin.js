@@ -136,6 +136,20 @@ class AdminPanel {
             this.switchUploadMethod('upload');
         });
 
+        document.getElementById('searchExternal')?.addEventListener('click', () => {
+            this.searchExternalPlatform();
+        });
+
+        const externalSearchInput = document.getElementById('externalSearch');
+        if (externalSearchInput) {
+            externalSearchInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    this.searchExternalPlatform();
+                }
+            });
+        }
+
         // Payment section handlers
         document.getElementById('exportPayments')?.addEventListener('click', () => {
             this.exportPayments();
@@ -1794,19 +1808,223 @@ class AdminPanel {
             this.resetUploadForm();
             this.loadTracks();
         } catch (error) {
-            console.error('Error handling audio upload:', error);
-            this.showNotification('Error uploading track: ' + error.message, 'error');
+            console.error('Error adding external track:', error);
+            this.showNotification('Error adding track: ' + error.message, 'error');
         }
     }
 
     async handleAudioFileUpload(file) {
-        // For demo purposes, return a placeholder
-        // In production, upload to Firebase Storage
         return new Promise((resolve) => {
             setTimeout(() => {
-                resolve('/audio/' + file.name);
+                resolve('https://via.placeholder.com/audio');
             }, 500);
         });
+    }
+
+    async searchExternalPlatform() {
+        const platform = document.querySelector('input[name="platform"]:checked')?.value;
+        const searchInput = document.getElementById('externalSearch');
+        const resultsContainer = document.getElementById('externalResults');
+        const query = searchInput?.value?.trim();
+
+        if (!platform) {
+            this.showNotification('Please select a platform first', 'error');
+            return;
+        }
+
+        if (!query) {
+            this.showNotification('Please enter a search query', 'warning');
+            return;
+        }
+
+        if (resultsContainer) {
+            resultsContainer.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Searching web for track links...</div>';
+            resultsContainer.classList.add('show');
+        }
+
+        try {
+            await this.searchWebForExternalLinks(query, platform);
+        } catch (error) {
+            console.error('External platform search error:', error);
+            if (resultsContainer) {
+                resultsContainer.innerHTML = `
+                    <div class="spotify-error">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <p>Search failed. Please paste the track URL directly.</p>
+                    </div>
+                `;
+            }
+        }
+    }
+
+    async searchWebForExternalLinks(query, platform) {
+        const resultsContainer = document.getElementById('externalResults');
+
+        const platformDomains = {
+            'youtube': 'youtube.com',
+            'apple-music': 'music.apple.com',
+            'soundcloud': 'soundcloud.com',
+            'other': ''
+        };
+
+        const domain = platformDomains[platform] || '';
+        const platformName = platform === 'apple-music' ? 'Apple Music' :
+                            platform === 'soundcloud' ? 'SoundCloud' :
+                            platform === 'youtube' ? 'YouTube' : 'External Platform';
+
+        try {
+            const searchQueries = domain
+                ? [
+                    `${query} site:${domain}`,
+                    `"${query}" site:${domain}`,
+                    `${query.replace(/\s+/g, ' ')} ${platformName}`
+                ]
+                : [
+                    `${query} music`,
+                    `"${query}" song`,
+                    `${query} official`
+                ];
+
+            let allResults = [];
+
+            for (const searchQuery of searchQueries) {
+                const encodedQuery = encodeURIComponent(searchQuery);
+                const searchUrl = `https://api.duckduckgo.com/?q=${encodedQuery}&format=json&pretty=1`;
+
+                try {
+                    const response = await fetch(searchUrl);
+                    const data = await response.json();
+
+                    const results = this.extractExternalUrlsFromResults(data, query, platform);
+                    allResults = allResults.concat(results);
+                } catch (e) {
+                    console.log('Search query failed:', searchQuery, e);
+                }
+            }
+
+            const uniqueResults = [];
+            const seenUrls = new Set();
+            for (const result of allResults) {
+                if (!seenUrls.has(result.url)) {
+                    seenUrls.add(result.url);
+                    uniqueResults.push(result);
+                }
+            }
+
+            const searchResults = uniqueResults.slice(0, 8);
+
+            if (searchResults.length > 0) {
+                const platformIcon = platform === 'youtube' ? 'fab fa-youtube' :
+                                   platform === 'apple-music' ? 'fab fa-apple' :
+                                   platform === 'soundcloud' ? 'fab fa-soundcloud' :
+                                   'fas fa-globe';
+
+                resultsContainer.innerHTML = `
+                    <div class="spotify-search-info">
+                        <p><i class="fas fa-check-circle" style="color: #10b981;"></i> Found ${searchResults.length} result(s) on ${platformName} for "${query}":</p>
+                        <p class="text-muted">Click on a result to auto-fill the form</p>
+                    </div>
+                    ${searchResults.map(result => `
+                        <div class="spotify-track" onclick="adminPanel.selectExternalResult('${result.url}', '${result.title}', '${result.artist}')">
+                            <div class="spotify-track-info">
+                                <i class="${platformIcon}"></i>
+                                <div class="spotify-track-name">${result.title}</div>
+                                <div class="spotify-track-url">
+                                    <i class="fas fa-link"></i> Click to select
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                `;
+            } else {
+                resultsContainer.innerHTML = `
+                    <div class="spotify-search-info">
+                        <p><i class="fas fa-info-circle"></i> No results found for "${query}" on ${platformName}</p>
+                        <p>To add a track:</p>
+                        <ol>
+                            <li>Go to ${platformName === 'YouTube' ? 'YouTube' : platformName === 'Apple Music' ? 'Apple Music' : platformName === 'SoundCloud' ? 'SoundCloud' : 'the platform'} and search for your track</li>
+                            <li>Copy the track URL</li>
+                            <li>Paste it in the "Track URL" field below</li>
+                            <li>Fill in the title and artist</li>
+                        </ol>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            console.error('Web search error:', error);
+            resultsContainer.innerHTML = `
+                <div class="spotify-search-info">
+                    <p><i class="fas fa-info-circle"></i> Web search unavailable</p>
+                    <p>Please manually find the track on ${platformName} and paste the URL below.</p>
+                </div>
+            `;
+        }
+    }
+
+    extractExternalUrlsFromResults(data, query, platform) {
+        const results = [];
+
+        if (data.RelatedTopics) {
+            for (const topic of data.RelatedTopics) {
+                if (topic.FirstURL && this.isValidPlatformUrl(topic.FirstURL, platform)) {
+                    const url = topic.FirstURL;
+                    const title = topic.Text || topic.Result || `Track from ${platform}`;
+                    results.push({ url, title: this.cleanTitle(title, query), artist: this.extractArtist(title) });
+                }
+            }
+        }
+
+        if (data.AbstractURL && this.isValidPlatformUrl(data.AbstractURL, platform)) {
+            results.push({
+                url: data.AbstractURL,
+                title: data.Abstract || data.Heading || `Track from ${platform}`,
+                artist: this.extractArtist(data.Abstract || data.Heading || '')
+            });
+        }
+
+        const uniqueResults = [];
+        const seenUrls = new Set();
+        for (const result of results) {
+            if (!seenUrls.has(result.url)) {
+                seenUrls.add(result.url);
+                uniqueResults.push(result);
+            }
+        }
+
+        return uniqueResults.slice(0, 5);
+    }
+
+    isValidPlatformUrl(url, platform) {
+        const patterns = {
+            'youtube': /youtube\.com|youtu\.be/,
+            'apple-music': /music\.apple\.com/,
+            'soundcloud': /soundcloud\.com/,
+            'other': /.*/
+        };
+        return patterns[platform]?.test(url) || false;
+    }
+
+    extractArtist(title) {
+        if (!title) return 'Unknown Artist';
+        const match = title.match(/^by\s+(.+?)(?:\s+-\s+|$)/i);
+        if (match) return match[1].trim();
+        const dashMatch = title.match(/^(.+?)\s*-\s*.+$/);
+        if (dashMatch) return dashMatch[1].trim();
+        return 'Unknown Artist';
+    }
+
+    selectExternalResult(url, title, artist) {
+        document.getElementById('externalUrl').value = url;
+        document.getElementById('externalTitle').value = title;
+        document.getElementById('externalArtist').value = artist;
+
+        const resultsContainer = document.getElementById('externalResults');
+        if (resultsContainer) {
+            resultsContainer.innerHTML = '';
+            resultsContainer.classList.remove('show');
+        }
+
+        this.showNotification('Track details filled in. Please complete the form.', 'success');
     }
 
     async handleExternalTrack() {
@@ -1815,29 +2033,35 @@ class AdminPanel {
         const title = document.getElementById('externalTitle').value.trim();
         const artist = document.getElementById('externalArtist').value.trim();
         const genre = document.getElementById('externalGenre').value;
-        
+
+        if (!platform) {
+            this.showNotification('Please select a platform', 'error');
+            return;
+        }
+
         if (!url || !title || !artist) {
             this.showNotification('Please fill in all required fields', 'error');
             return;
         }
-        
+
         try {
+            const platformArtwork = this.getPlatformArtwork(platform);
+
             const trackData = {
                 title,
-                artist: 'external',
+                artist: artist,
                 artistName: artist,
                 genre: genre || 'Unknown',
                 externalUrl: url,
                 platform,
-                artwork: 'https://via.placeholder.com/300?text=External',
+                artwork: platformArtwork,
                 streams: 0,
                 status: 'published'
             };
-            
+
             this.dataManager.saveTrack(trackData);
             this.showNotification('External track added successfully!', 'success');
-            
-            // Reset form
+
             document.getElementById('externalTrackForm').reset();
             this.switchUploadMethod('upload');
             this.loadTracks();
@@ -1847,16 +2071,26 @@ class AdminPanel {
         }
     }
 
+    getPlatformArtwork(platform) {
+        const artworkMap = {
+            'youtube': 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/YouTube_full-color_icon_%282017%29.svg/1024px-YouTube_full-color_icon_%282017%29.svg.png',
+            'apple-music': 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4a/Apple_Music_icon.svg/1024px-Apple_Music_icon.svg.png',
+            'soundcloud': 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/SoundCloud_logo.svg/1024px-SoundCloud_logo.svg.png',
+            'other': 'https://via.placeholder.com/300?text=External'
+        };
+        return artworkMap[platform] || artworkMap['other'];
+    }
+
     exportPayments() {
-        const payments = this.dataManager.getAllTracks(); // This should be payments, but using tracks for now
+        const payments = this.dataManager.getAllTracks();
         if (!payments || payments.length === 0) {
             this.showNotification('No data to export', 'warning');
             return;
         }
-        
-        const csv = 'ID,Artist,Amount,Service,Date,Status\n' + 
+
+        const csv = 'ID,Artist,Amount,Service,Date,Status\n' +
             payments.map(p => `${p.id},${p.artistName || 'Unknown'},${p.streams || 0},Track,${new Date().toISOString()},published`).join('\n');
-        
+
         const blob = new Blob([csv], { type: 'text/csv' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -1864,7 +2098,7 @@ class AdminPanel {
         a.download = 'payments_export.csv';
         a.click();
         URL.revokeObjectURL(url);
-        
+
         this.showNotification('Payments exported successfully!', 'success');
     }
 
@@ -1872,6 +2106,7 @@ class AdminPanel {
         const status = document.getElementById('paymentStatusFilter').value;
         const dateFrom = document.getElementById('paymentDateFrom').value;
         const dateTo = document.getElementById('paymentDateTo').value;
+
         
         this.showNotification(`Filters applied: Status=${status}, From=${dateFrom}, To=${dateTo}`, 'info');
         // In production, this would filter the payments table

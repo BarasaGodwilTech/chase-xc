@@ -496,6 +496,18 @@
                             </div>
 
                             <div class="form-group">
+                                <label for="externalSearch">Search for Track</label>
+                                <div class="search-box">
+                                    <input type="text" id="externalSearch" placeholder="Search for track on the web...">
+                                    <button type="button" class="btn btn-secondary" id="searchExternal">
+                                        <i class="fas fa-search"></i> Search
+                                    </button>
+                                </div>
+                                <small>Or paste URL directly below</small>
+                                <div class="external-results" id="externalResults"></div>
+                            </div>
+
+                            <div class="form-group">
                                 <label for="externalUrl">Track URL *</label>
                                 <input type="url" id="externalUrl" name="externalUrl" required placeholder="Paste track URL from the selected platform">
                             </div>
