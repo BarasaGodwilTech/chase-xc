@@ -120,7 +120,7 @@ class AudioPlayer {
 
     // Track card click handlers - updated to use event delegation for dynamic content
     document.addEventListener('click', (e) => {
-      const playBtn = e.target.closest('.play-btn-card');
+      const playBtn = e.target.closest('.play-btn-overlay');
       const trackCard = e.target.closest('.track-card');
       
       if (playBtn) {
@@ -129,7 +129,7 @@ class AudioPlayer {
         this.currentTrackIndex = trackIndex;
         this.loadTrack(trackIndex);
         this.play();
-      } else if (trackCard && !e.target.closest('.play-btn-card') && !e.target.closest('.overlay-btn')) {
+      } else if (trackCard && !e.target.closest('.play-btn-overlay') && !e.target.closest('.overlay-btn') && !e.target.closest('.like-btn-mini')) {
         const trackIndex = parseInt(trackCard.getAttribute('data-track'));
         this.currentTrackIndex = trackIndex;
         this.loadTrack(trackIndex);

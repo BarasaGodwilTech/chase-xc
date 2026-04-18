@@ -118,9 +118,6 @@ async function loadFeaturedTracks() {
         <div class="track-card" data-track="${index}" data-category="${categories.join(' ')}" data-spotify-url="${spotifyUrl}" data-track-id="${track.id || ''}">
           <div class="track-artwork">
             <img src="${track.artwork || ''}" alt="${track.title || ''}">
-            <button class="play-btn-card" type="button">
-              <i class="fas fa-play"></i>
-            </button>
             ${badge ? `<div class="track-badge ${badge === 'Trending' ? 'trending' : badge === 'Popular' ? 'popular' : 'new-release'}">${badge}</div>` : ''}
             ${spotifyUrl ? '<div class="spotify-indicator" title="Listen on Spotify"><i class="fab fa-spotify"></i></div>' : ''}
             <div class="track-overlay">
@@ -128,8 +125,8 @@ async function loadFeaturedTracks() {
                 <button class="overlay-btn" title="Add to playlist" type="button">
                   <i class="fas fa-plus"></i>
                 </button>
-                <button class="overlay-btn" title="Like" type="button">
-                  <i class="far fa-heart"></i>
+                <button class="play-btn-overlay" title="Play" type="button">
+                  <i class="fas fa-play"></i>
                 </button>
                 <button class="overlay-btn" title="Share" type="button">
                   <i class="fas fa-share"></i>
@@ -138,8 +135,15 @@ async function loadFeaturedTracks() {
             </div>
           </div>
           <div class="track-content">
-            <h4 class="track-title">${track.title || ''}</h4>
-            <p class="track-artist">${track.artistName || 'Unknown Artist'}</p>
+            <div class="track-header">
+              <div class="track-info">
+                <h4 class="track-title">${track.title || ''}</h4>
+                <p class="track-artist">${track.artistName || 'Unknown Artist'}</p>
+              </div>
+              <button class="like-btn-mini" title="Like" data-like-track-id="${track.id}" type="button">
+                <i class="far fa-heart"></i>
+              </button>
+            </div>
             <div class="track-meta">
               <span class="track-genre">${track.genre || ''}</span>
               <span class="track-duration">${track.duration || ''}</span>

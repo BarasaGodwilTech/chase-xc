@@ -50,6 +50,11 @@ function getSampleTracks() {
       duration: '3:45',
       artwork: 'public/player-cover-1.jpg',
       audioUrl: '',
+      spotifyUrl: 'https://open.spotify.com/track/0BHDz4KmNBRE',
+      platformLinks: {
+        spotify: 'https://open.spotify.com/track/0BHDz4KmNBRE',
+        youtube: 'https://www.youtube.com/watch?v=BHDz4KmNBRE'
+      },
       streams: 125000,
       likes: 8500,
       downloads: 3200,
@@ -66,6 +71,10 @@ function getSampleTracks() {
       duration: '4:12',
       artwork: 'public/player-cover-2.jpg',
       audioUrl: '',
+      spotifyUrl: 'https://open.spotify.com/artist/1gxLasEE8iDV3Coz8NosqX',
+      platformLinks: {
+        spotify: 'https://open.spotify.com/artist/1gxLasEE8iDV3Coz8NosqX'
+      },
       streams: 89000,
       likes: 6200,
       downloads: 2100,
@@ -82,6 +91,10 @@ function getSampleTracks() {
       duration: '3:28',
       artwork: 'public/player-cover-3.jpg',
       audioUrl: '',
+      spotifyUrl: 'https://open.spotify.com/album/39fFMXy2GNHUhASF8qv9sf',
+      platformLinks: {
+        spotify: 'https://open.spotify.com/album/39fFMXy2GNHUhASF8qv9sf'
+      },
       streams: 67000,
       likes: 4100,
       downloads: 1800,
@@ -98,6 +111,10 @@ function getSampleTracks() {
       duration: '3:55',
       artwork: 'public/player-cover-4.jpg',
       audioUrl: '',
+      spotifyUrl: 'https://open.spotify.com/artist/1gxLasEE8iDV3Coz8NosqX',
+      platformLinks: {
+        spotify: 'https://open.spotify.com/artist/1gxLasEE8iDV3Coz8NosqX'
+      },
       streams: 45000,
       likes: 3200,
       downloads: 1200,
@@ -118,18 +135,16 @@ function renderTrackCard(track, index, artistName) {
     <div class="track-card" data-track="${index}" data-category="${categories.join(' ')}" data-spotify-url="${spotifyUrl}" data-track-id="${track.id || ''}">
       <div class="track-artwork">
         <img src="${track.artwork || ''}" alt="${track.title || ''}">
-        <button class="play-btn-card" type="button">
-          <i class="fas fa-play"></i>
-        </button>
         ${badge ? `<div class="track-badge ${badge.type}">${badge.text}</div>` : ''}
         ${spotifyUrl ? '<div class="spotify-indicator" title="Listen on Spotify"><i class="fab fa-spotify"></i></div>' : ''}
         <div class="track-overlay">
-          <div class="overlay-actions overlay-left">
+          <div class="overlay-actions">
             <button class="overlay-btn" title="Add to playlist" type="button">
               <i class="fas fa-plus"></i>
             </button>
-          </div>
-          <div class="overlay-actions overlay-right">
+            <button class="play-btn-overlay" title="Play" type="button">
+              <i class="fas fa-play"></i>
+            </button>
             <button class="overlay-btn" title="Share" type="button">
               <i class="fas fa-share"></i>
             </button>
@@ -325,7 +340,7 @@ async function initMusicPage() {
 
 function setupTrackCardListeners() {
   // Play button listeners
-  document.querySelectorAll('.play-btn-card').forEach(btn => {
+  document.querySelectorAll('.play-btn-overlay').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation()
       const card = btn.closest('.track-card')
@@ -481,7 +496,7 @@ function handleShareTrack(track) {
 
 function handleAddToPlaylist(track) {
   console.log('[MusicPage] Adding to playlist:', track.title)
-  
+
   // Check if user is authenticated
   if (!isUserAuthenticated()) {
     // Store pending action for after login
@@ -489,16 +504,21 @@ function handleAddToPlaylist(track) {
     redirectToAuth()
     return
   }
-  
+
   // User is authenticated, proceed with add to playlist action
   // This would typically make an API call to your backend
   // TODO: Call your backend API to add track to playlist
+  // Only show success message after API call succeeds
   console.log('[MusicPage] User authenticated, proceeding with add to playlist action')
+<<<<<<< HEAD
   if (window.notifications) {
     window.notifications.show('Added to playlist!', 'success')
   } else {
     console.log('Added to playlist!')
   }
+=======
+  // showNotification('Successfully added to playlist!', 'success') // Uncomment after implementing backend API
+>>>>>>> c4af57666498e4e0bae1183515381c356dda0569
 }
 
 // Helper function to check if user is authenticated
@@ -548,17 +568,14 @@ function toggleLikeButton(btn) {
 
 // Function to execute pending action after login
 function executePendingAction() {
+  checkLoginCancelled()
+
   const pendingActionStr = sessionStorage.getItem('pendingAction')
   if (!pendingActionStr) return
-  
+
   try {
     const pendingAction = JSON.parse(pendingActionStr)
-    console.log('[MusicPage] Executing pending action:', pendingAction)
-    
-    // Clear pending action
-    sessionStorage.removeItem('pendingAction')
-    
-    // Execute based on action type
+
     switch (pendingAction.type) {
       case 'like':
         handleLikeAfterLogin(pendingAction.data.trackId)
@@ -569,8 +586,22 @@ function executePendingAction() {
       default:
         console.warn('[MusicPage] Unknown pending action type:', pendingAction.type)
     }
+
+    // Clear pending action after attempting to execute
+    sessionStorage.removeItem('pendingAction')
   } catch (e) {
     console.error('[MusicPage] Error executing pending action:', e)
+    sessionStorage.removeItem('pendingAction')
+  }
+}
+
+// Function to check if login was cancelled and notify user
+function checkLoginCancelled() {
+  const loginCancelled = sessionStorage.getItem('loginCancelled')
+  if (loginCancelled === 'true') {
+    sessionStorage.removeItem('loginCancelled')
+    sessionStorage.removeItem('pendingAction')
+    showNotification('Action cancelled. Please log in to like or add tracks to your playlist.', 'info')
   }
 }
 
@@ -581,17 +612,56 @@ function handleLikeAfterLogin(trackId) {
     toggleLikeButton(btn)
   }
   // TODO: Call your backend API to like the track
+  // Only show success message after API call succeeds
   console.log('[MusicPage] Liked track after login:', trackId)
+  // showNotification('Added to liked tracks!', 'success') // Uncomment after implementing backend API
 }
 
 function handleAddToPlaylistAfterLogin(trackData) {
   // TODO: Call your backend API to add track to playlist
+  // Only show success message after API call succeeds
   console.log('[MusicPage] Added to playlist after login:', trackData.title)
+<<<<<<< HEAD
   if (window.notifications) {
     window.notifications.show('Added to playlist!', 'success')
   } else {
     console.log('Added to playlist!')
   }
+=======
+  // showNotification('Successfully added to playlist!', 'success') // Uncomment after implementing backend API
+}
+
+// Helper function to show notifications
+function showNotification(message, type = 'info') {
+  // Create notification element
+  const notification = document.createElement('div')
+  notification.className = `notification notification-${type}`
+  notification.textContent = message
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 16px 24px;
+    background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
+    color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 10000;
+    animation: slideIn 0.3s ease-out;
+    font-weight: 500;
+    max-width: 300px;
+  `
+
+  document.body.appendChild(notification)
+
+  // Remove after 3 seconds
+  setTimeout(() => {
+    notification.style.animation = 'slideOut 0.3s ease-out'
+    setTimeout(() => {
+      document.body.removeChild(notification)
+    }, 300)
+  }, 3000)
+>>>>>>> c4af57666498e4e0bae1183515381c356dda0569
 }
 
 function boot() {
