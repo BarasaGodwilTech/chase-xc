@@ -90,23 +90,15 @@ class MembershipPaymentManager {
     setupPaymentMethodSelection() {
         // FIXED: Direct event listeners on each payment option
         document.addEventListener('click', (e) => {
-            console.log('🖱️ Click event detected on:', e.target);
-            
             // Check if click is on payment option or its children
             let paymentOption = e.target.closest('.payment-option');
             
             if (paymentOption) {
-                console.log('🎯 Payment option clicked:', paymentOption);
-                
                 // Get the data-method attribute
                 const method = paymentOption.getAttribute('data-method');
-                console.log('📝 Data method attribute:', method);
                 
                 if (method) {
                     this.selectPaymentMethod(method);
-                } else {
-                    console.error('❌ No data-method attribute found on payment option');
-                    console.log('🔍 Payment option attributes:', paymentOption.attributes);
                 }
             }
         });
