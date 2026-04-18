@@ -62,10 +62,16 @@ class UserAuth {
             showLoginBtn.addEventListener('click', () => this.toggleAuthMode('login'));
         }
 
-        // Google sign-in
+        // Google sign-in (login form)
         const googleSignInBtn = document.getElementById('googleSignIn');
         if (googleSignInBtn) {
             googleSignInBtn.addEventListener('click', () => this.handleGoogleSignIn());
+        }
+
+        // Google sign-up (signup form)
+        const googleSignUpBtn = document.getElementById('googleSignUp');
+        if (googleSignUpBtn) {
+            googleSignUpBtn.addEventListener('click', () => this.handleGoogleSignIn());
         }
 
         // Password reset
