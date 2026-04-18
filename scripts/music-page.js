@@ -118,18 +118,16 @@ function renderTrackCard(track, index, artistName) {
     <div class="track-card" data-track="${index}" data-category="${categories.join(' ')}" data-spotify-url="${spotifyUrl}" data-track-id="${track.id || ''}">
       <div class="track-artwork">
         <img src="${track.artwork || ''}" alt="${track.title || ''}">
-        <button class="play-btn-card" type="button">
-          <i class="fas fa-play"></i>
-        </button>
         ${badge ? `<div class="track-badge ${badge.type}">${badge.text}</div>` : ''}
         ${spotifyUrl ? '<div class="spotify-indicator" title="Listen on Spotify"><i class="fab fa-spotify"></i></div>' : ''}
         <div class="track-overlay">
-          <div class="overlay-actions overlay-left">
+          <div class="overlay-actions">
             <button class="overlay-btn" title="Add to playlist" type="button">
               <i class="fas fa-plus"></i>
             </button>
-          </div>
-          <div class="overlay-actions overlay-right">
+            <button class="play-btn-overlay" title="Play" type="button">
+              <i class="fas fa-play"></i>
+            </button>
             <button class="overlay-btn" title="Share" type="button">
               <i class="fas fa-share"></i>
             </button>
@@ -325,7 +323,7 @@ async function initMusicPage() {
 
 function setupTrackCardListeners() {
   // Play button listeners
-  document.querySelectorAll('.play-btn-card').forEach(btn => {
+  document.querySelectorAll('.play-btn-overlay').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation()
       const card = btn.closest('.track-card')
