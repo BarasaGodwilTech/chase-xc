@@ -573,6 +573,19 @@ class AdminPanel {
             titleInput.value = this.selectedSpotifyTrack.title;
         }
 
+        // Auto-detect and fill genre
+        const detectedGenre = this.detectGenre(this.selectedSpotifyTrack.title, this.selectedSpotifyTrack.artist);
+        if (genreSelect && detectedGenre) {
+            // Try to find matching genre option
+            for (let i = 0; i < genreSelect.options.length; i++) {
+                if (genreSelect.options[i].value.toLowerCase() === detectedGenre.toLowerCase() ||
+                    genreSelect.options[i].text.toLowerCase().includes(detectedGenre.toLowerCase())) {
+                    genreSelect.value = genreSelect.options[i].value;
+                    break;
+                }
+            }
+        }
+
         if (descriptionInput) {
             descriptionInput.value = `Imported from Spotify: ${this.selectedSpotifyTrack.url}`;
         }
@@ -582,7 +595,35 @@ class AdminPanel {
             artworkPreview.style.backgroundImage = `url('${this.selectedSpotifyTrack.artwork}')`;
         }
 
-        this.showNotification('Track information loaded. Please select an artist and genre, then upload.', 'success');
+        this.showNotification('Track information loaded from Spotify! Genre auto-detected. Please select an artist if needed, then import.', 'success');
+    }
+
+    detectGenre(title, artist) {
+        const text = `${title} ${artist}`.toLowerCase();
+        
+        const genreKeywords = {
+            'afrobeat': ['afrobeat', 'burna', 'wizkid', 'davido', 'tiwa'],
+            'afro-pop': ['afro-pop', 'afropop', 'sauti', 'diamond', 'rayvanny'],
+            'afro-house': ['afro-house', 'afrohouse', 'black coffee', 'master kg'],
+            'dancehall': ['dancehall', 'shaggy', 'sean paul', 'burna', 'koffee'],
+            'r&b': ['r&b', 'rnb', 'soul', 'neo-soul', 'sza', 'weeknd'],
+            'electronic': ['electronic', 'edm', 'dance', 'dj', 'calvin', 'marshmello'],
+            'hip-hop': ['hip-hop', 'hip hop', 'rap', 'drake', 'kendrick', 'cardi'],
+            'pop': ['pop', 'taylor', 'justin', 'ariana', 'ed sheeran'],
+            'reggae': ['reggae', 'bob marley', 'damian', 'ziggy'],
+            'gospel': ['gospel', 'worship', 'praise', 'kirk', 'cece']
+        };
+
+        for (const [genre, keywords] of Object.entries(genreKeywords)) {
+            for (const keyword of keywords) {
+                if (text.includes(keyword)) {
+                    return genre;
+                }
+            }
+        }
+
+        // Default genre for African music
+        return 'Afro-Pop';
     }
 
     async importSpotifyTrack() {
