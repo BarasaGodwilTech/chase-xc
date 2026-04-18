@@ -50,11 +50,6 @@ function getSampleTracks() {
       duration: '3:45',
       artwork: 'public/player-cover-1.jpg',
       audioUrl: '',
-      spotifyUrl: 'https://open.spotify.com/track/0BHDz4KmNBRE',
-      platformLinks: {
-        spotify: 'https://open.spotify.com/track/0BHDz4KmNBRE',
-        youtube: 'https://www.youtube.com/watch?v=BHDz4KmNBRE'
-      },
       streams: 125000,
       likes: 8500,
       downloads: 3200,
@@ -71,10 +66,6 @@ function getSampleTracks() {
       duration: '4:12',
       artwork: 'public/player-cover-2.jpg',
       audioUrl: '',
-      spotifyUrl: 'https://open.spotify.com/artist/1gxLasEE8iDV3Coz8NosqX',
-      platformLinks: {
-        spotify: 'https://open.spotify.com/artist/1gxLasEE8iDV3Coz8NosqX'
-      },
       streams: 89000,
       likes: 6200,
       downloads: 2100,
@@ -91,10 +82,6 @@ function getSampleTracks() {
       duration: '3:28',
       artwork: 'public/player-cover-3.jpg',
       audioUrl: '',
-      spotifyUrl: 'https://open.spotify.com/album/39fFMXy2GNHUhASF8qv9sf',
-      platformLinks: {
-        spotify: 'https://open.spotify.com/album/39fFMXy2GNHUhASF8qv9sf'
-      },
       streams: 67000,
       likes: 4100,
       downloads: 1800,
@@ -111,10 +98,6 @@ function getSampleTracks() {
       duration: '3:55',
       artwork: 'public/player-cover-4.jpg',
       audioUrl: '',
-      spotifyUrl: 'https://open.spotify.com/artist/1gxLasEE8iDV3Coz8NosqX',
-      platformLinks: {
-        spotify: 'https://open.spotify.com/artist/1gxLasEE8iDV3Coz8NosqX'
-      },
       streams: 45000,
       likes: 3200,
       downloads: 1200,
@@ -199,34 +182,9 @@ async function renderLatestReleases(tracks) {
     return
   }
 
-  container.innerHTML = latestTracks.map(track => {
-    const releaseDate = track.releaseDate ? new Date(track.releaseDate) : new Date()
-    const month = releaseDate.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()
-    const day = releaseDate.getDate()
-
-    return `
-      <div class="release-item">
-        <div class="release-date-circle">
-          <span>${month}</span>
-          <strong>${day}</strong>
-        </div>
-        <div class="release-content">
-          <div class="release-artwork">
-            <img src="${track.artwork || ''}" alt="${track.title || ''}">
-          </div>
-          <div class="release-info">
-            <h4>${track.title || ''} - Single</h4>
-            <p>${track.artistName || 'Unknown Artist'} • ${track.genre || ''} • ${track.duration || ''}</p>
-            <div class="release-stats">
-              <span>${formatNumber(track.streams || 0)} plays</span>
-              <span>${formatNumber(track.likes || 0)} likes</span>
-            </div>
-          </div>
-          <button class="btn btn-outline btn-sm" onclick="window.audioPlayer?.loadTrackByData('${track.id}')">Listen</button>
-        </div>
-      </div>
-    `
-  }).join('')
+  // Render using full track card functionality
+  const cards = latestTracks.map((track, index) => renderTrackCard(track, index, track.artistName))
+  container.innerHTML = cards.join('')
 }
 
 async function renderGenreCards(tracks) {
@@ -422,11 +380,7 @@ function handlePlayTrack(track) {
     if (externalUrl) {
       openExternalPlayer(externalUrl, track)
     } else {
-      if (window.notifications) {
-        window.notifications.show('No audio available for this track', 'warning')
-      } else {
-        console.warn('No audio available for this track')
-      }
+      alert('No audio available for this track')
     }
   }
 }
@@ -479,17 +433,9 @@ function handleShareTrack(track) {
     // Fallback: copy to clipboard
     const shareText = `${shareData.text} - ${shareData.url}`
     navigator.clipboard.writeText(shareText).then(() => {
-      if (window.notifications) {
-        window.notifications.show('Link copied to clipboard!', 'success')
-      } else {
-        console.log('Link copied to clipboard!')
-      }
+      alert('Link copied to clipboard!')
     }).catch(() => {
-      if (window.notifications && window.notifications.prompt) {
-        window.notifications.prompt('Copy this link:', shareText)
-      } else {
-        console.log('Copy this link:', shareText)
-      }
+      prompt('Copy this link:', shareText)
     })
   }
 }
@@ -510,15 +456,7 @@ function handleAddToPlaylist(track) {
   // TODO: Call your backend API to add track to playlist
   // Only show success message after API call succeeds
   console.log('[MusicPage] User authenticated, proceeding with add to playlist action')
-<<<<<<< HEAD
-  if (window.notifications) {
-    window.notifications.show('Added to playlist!', 'success')
-  } else {
-    console.log('Added to playlist!')
-  }
-=======
   // showNotification('Successfully added to playlist!', 'success') // Uncomment after implementing backend API
->>>>>>> c4af57666498e4e0bae1183515381c356dda0569
 }
 
 // Helper function to check if user is authenticated
@@ -621,13 +559,6 @@ function handleAddToPlaylistAfterLogin(trackData) {
   // TODO: Call your backend API to add track to playlist
   // Only show success message after API call succeeds
   console.log('[MusicPage] Added to playlist after login:', trackData.title)
-<<<<<<< HEAD
-  if (window.notifications) {
-    window.notifications.show('Added to playlist!', 'success')
-  } else {
-    console.log('Added to playlist!')
-  }
-=======
   // showNotification('Successfully added to playlist!', 'success') // Uncomment after implementing backend API
 }
 
@@ -661,7 +592,6 @@ function showNotification(message, type = 'info') {
       document.body.removeChild(notification)
     }, 300)
   }, 3000)
->>>>>>> c4af57666498e4e0bae1183515381c356dda0569
 }
 
 function boot() {
