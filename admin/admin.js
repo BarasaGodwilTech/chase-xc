@@ -706,7 +706,9 @@ class AdminPanel {
             tracks: 'Track Management',
             'music-management': 'Music Management',
             projects: 'Projects',
-            settings: 'Studio Settings'
+            settings: 'Studio Settings',
+            savings: 'Savings Goals',
+            reports: 'Reports'
         };
 
         const subtitles = {
@@ -716,7 +718,9 @@ class AdminPanel {
             tracks: 'Manage music tracks and releases',
             'music-management': 'Upload and manage music tracks',
             projects: 'Manage studio projects and deliverables',
-            settings: 'Configure studio settings and pricing'
+            settings: 'Configure studio settings and pricing',
+            savings: 'Track and manage your savings goals',
+            reports: 'Generate and view financial reports'
         };
 
         const pageTitle = document.getElementById('pageTitle');
@@ -752,6 +756,10 @@ class AdminPanel {
                         break;
                     case 'settings':
                         await this.loadSettings();
+                        break;
+                    case 'savings':
+                        break;
+                    case 'reports':
                         break;
                 }
             } catch (error) {

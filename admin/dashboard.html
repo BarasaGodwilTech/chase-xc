@@ -9,7 +9,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="admin.css">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎵</text></svg>">
 </head>
 <body class="admin-page">
     <!-- Admin Navigation -->
@@ -58,6 +57,14 @@
                 <a href="#" class="nav-item" data-target="payments">
                     <i class="fas fa-money-bill-wave"></i>
                     <span>Payments</span>
+                </a>
+                <a href="#" class="nav-item" data-target="savings">
+                    <i class="fas fa-piggy-bank"></i>
+                    <span>Savings Goals</span>
+                </a>
+                <a href="#" class="nav-item" data-target="reports">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Reports</span>
                 </a>
             </div>
 
@@ -806,6 +813,74 @@
                             </div>
                         </div>
                     </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- Savings Section -->
+        <section class="admin-section" id="savings">
+            <div class="section-header">
+                <h2>Savings Goals</h2>
+                <div class="section-actions">
+                    <button class="btn btn-primary" type="button">
+                        <i class="fas fa-plus"></i> Add Goal
+                    </button>
+                </div>
+            </div>
+
+            <div class="savings-container">
+                <div class="savings-summary">
+                    <div class="summary-card">
+                        <h3>Total Saved</h3>
+                        <p class="summary-value">UGX 0</p>
+                    </div>
+                    <div class="summary-card">
+                        <h3>Active Goals</h3>
+                        <p class="summary-value">0</p>
+                    </div>
+                </div>
+
+                <div class="savings-list">
+                    <p class="text-center">No savings goals yet. Click "Add Goal" to create one.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Reports Section -->
+        <section class="admin-section" id="reports">
+            <div class="section-header">
+                <h2>Reports</h2>
+                <div class="section-actions">
+                    <button class="btn btn-secondary" type="button">
+                        <i class="fas fa-download"></i> Export Report
+                    </button>
+                </div>
+            </div>
+
+            <div class="reports-container">
+                <div class="report-filters">
+                    <div class="filter-group">
+                        <label>Report Type:</label>
+                        <select>
+                            <option>Revenue Report</option>
+                            <option>Artist Performance</option>
+                            <option>Track Analytics</option>
+                            <option>Payment History</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Date Range:</label>
+                        <input type="date">
+                        <span>to</span>
+                        <input type="date">
+                    </div>
+                    <button class="btn btn-primary">
+                        <i class="fas fa-filter"></i> Generate Report
+                    </button>
+                </div>
+
+                <div class="report-preview">
+                    <p class="text-center">Select report type and date range to generate a report.</p>
                 </div>
             </div>
         </section>
