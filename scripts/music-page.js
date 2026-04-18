@@ -312,6 +312,185 @@ async function initMusicPage() {
 
   // Render Genre cards section
   await renderGenreCards(normalizedTracks)
+
+  // Setup button event listeners
+  setupTrackCardListeners()
+}
+
+function setupTrackCardListeners() {
+  // Play button listeners
+  document.querySelectorAll('.play-btn-card').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation()
+      const card = btn.closest('.track-card')
+      const trackIndex = card.dataset.track
+      const track = window.__tracks[trackIndex]
+      
+      if (track) {
+        handlePlayTrack(track)
+      }
+    })
+  })
+
+  // Like button listeners
+  document.querySelectorAll('.overlay-btn[data-like-track-id]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation()
+      const trackId = btn.dataset.likeTrackId
+      handleLikeTrack(trackId, btn)
+    })
+  })
+
+  // Share button listeners
+  document.querySelectorAll('.overlay-btn[title="Share"]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation()
+      const card = btn.closest('.track-card')
+      const trackIndex = card.dataset.track
+      const track = window.__tracks[trackIndex]
+      
+      if (track) {
+        handleShareTrack(track)
+      }
+    })
+  })
+
+  // Add to playlist listeners
+  document.querySelectorAll('.overlay-btn[title="Add to playlist"]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation()
+      const card = btn.closest('.track-card')
+      const trackIndex = card.dataset.track
+      const track = window.__tracks[trackIndex]
+      
+      if (track) {
+        handleAddToPlaylist(track)
+      }
+    })
+  })
+
+  // Spotify indicator click
+  document.querySelectorAll('.spotify-indicator').forEach(indicator => {
+    indicator.addEventListener('click', (e) => {
+      e.stopPropagation()
+      const card = indicator.closest('.track-card')
+      const spotifyUrl = card.dataset.spotifyUrl
+      
+      if (spotifyUrl) {
+        openExternalPlayer(spotifyUrl)
+      }
+    })
+  })
+}
+
+function handlePlayTrack(track) {
+  console.log('[MusicPage] Playing track:', track.title)
+  
+  // Check if track has audio URL
+  if (track.audioUrl && track.audioUrl.trim() !== '') {
+    // Play using audio player
+    if (window.audioPlayer) {
+      window.audioPlayer.loadTrackByData(track.id)
+    } else {
+      console.error('[MusicPage] Audio player not available')
+    }
+  } else {
+    // Check for external links (Spotify, SoundCloud, etc.)
+    const externalUrl = track.spotifyUrl || track.platformLinks?.spotify || track.platformLinks?.soundcloud || track.platformLinks?.youtube
+    
+    if (externalUrl) {
+      openExternalPlayer(externalUrl, track)
+    } else {
+      alert('No audio available for this track')
+    }
+  }
+}
+
+function openExternalPlayer(url, track = null) {
+  // Create a URL with track info for the redirect page
+  const params = new URLSearchParams()
+  if (track) {
+    params.set('title', track.title)
+    params.set('artist', track.artistName)
+    params.set('artwork', track.artwork)
+  }
+  params.set('url', url)
+  
+  // Open in a new tab/window with the redirect page
+  const redirectUrl = `listen-external.html?${params.toString()}`
+  window.open(redirectUrl, '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes')
+}
+
+function handleLikeTrack(trackId, btn) {
+  console.log('[MusicPage] Liking track:', trackId)
+  
+  // Get liked tracks from localStorage
+  const likedTracks = JSON.parse(localStorage.getItem('likedTracks') || '[]')
+  
+  if (likedTracks.includes(trackId)) {
+    // Unlike
+    const index = likedTracks.indexOf(trackId)
+    likedTracks.splice(index, 1)
+    btn.querySelector('i').classList.remove('fas')
+    btn.querySelector('i').classList.add('far')
+    btn.style.color = ''
+  } else {
+    // Like
+    likedTracks.push(trackId)
+    btn.querySelector('i').classList.remove('far')
+    btn.querySelector('i').classList.add('fas')
+    btn.style.color = '#ef4444'
+  }
+  
+  localStorage.setItem('likedTracks', JSON.stringify(likedTracks))
+}
+
+function handleShareTrack(track) {
+  console.log('[MusicPage] Sharing track:', track.title)
+  
+  const shareData = {
+    title: track.title,
+    text: `Listen to ${track.title} by ${track.artistName}`,
+    url: window.location.href
+  }
+  
+  if (navigator.share) {
+    navigator.share(shareData).catch(console.error)
+  } else {
+    // Fallback: copy to clipboard
+    const shareText = `${shareData.text} - ${shareData.url}`
+    navigator.clipboard.writeText(shareText).then(() => {
+      alert('Link copied to clipboard!')
+    }).catch(() => {
+      prompt('Copy this link:', shareText)
+    })
+  }
+}
+
+function handleAddToPlaylist(track) {
+  console.log('[MusicPage] Adding to playlist:', track.title)
+  
+  // Get playlist from localStorage
+  const playlist = JSON.parse(localStorage.getItem('userPlaylist') || '[]')
+  
+  // Check if already in playlist
+  if (playlist.some(t => t.id === track.id)) {
+    alert('This track is already in your playlist')
+    return
+  }
+  
+  // Add to playlist
+  playlist.push({
+    id: track.id,
+    title: track.title,
+    artist: track.artistName,
+    artwork: track.artwork,
+    audioUrl: track.audioUrl,
+    spotifyUrl: track.spotifyUrl || track.platformLinks?.spotify
+  })
+  
+  localStorage.setItem('userPlaylist', JSON.stringify(playlist))
+  alert('Added to playlist!')
 }
 
 function boot() {

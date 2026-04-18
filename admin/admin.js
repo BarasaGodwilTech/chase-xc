@@ -1573,13 +1573,19 @@ class AdminPanel {
         }
     }
 
-    editTrack(trackId) {
-        const track = this.dataManager.getTrack(trackId);
-        if (!track) {
-            this.showNotification('Track not found', 'error');
-            return;
+    async editTrack(trackId) {
+        try {
+            const tracks = await window.fetchTracks();
+            const track = tracks.find(t => t.id === trackId);
+            if (!track) {
+                this.showNotification('Track not found', 'error');
+                return;
+            }
+            this.openTrackEditModal(track);
+        } catch (error) {
+            console.error('Error fetching track:', error);
+            this.showNotification('Error loading track: ' + error.message, 'error');
         }
-        this.openTrackEditModal(track);
     }
 
     openTrackEditModal(track) {
@@ -1620,14 +1626,21 @@ class AdminPanel {
         }, 300);
     }
 
-    viewTrack(trackId) {
-        const track = this.dataManager.getTrack(trackId);
-        if (!track) {
-            this.showNotification('Track not found', 'error');
-            return;
+    async viewTrack(trackId) {
+        try {
+            const tracks = await window.fetchTracks();
+            const track = tracks.find(t => t.id === trackId);
+            if (!track) {
+                this.showNotification('Track not found', 'error');
+                return;
+            }
+            const artists = await window.fetchArtists();
+            const artist = artists.find(a => a.id === track.artist);
+            alert(`Track: ${track.title}\nArtist: ${artist?.name || 'Unknown'}\nStreams: ${this.formatNumber(track.streams)}`);
+        } catch (error) {
+            console.error('Error fetching track:', error);
+            this.showNotification('Error loading track: ' + error.message, 'error');
         }
-        const artist = this.dataManager.getArtist(track.artist);
-        alert(`Track: ${track.title}\nArtist: ${artist?.name || 'Unknown'}\nStreams: ${this.formatNumber(track.streams)}`);
     }
 
     async deleteTrack(trackId) {
