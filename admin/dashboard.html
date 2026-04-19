@@ -1143,11 +1143,119 @@
         </div>
     </div>
 
-    <script src="data-manager.js"></script>
-    <script src="admin.js"></script>
+    <!-- View Artist Detail Modal -->
+    <div class="modal" id="viewArtistModal" aria-hidden="true">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Artist Details</h3>
+                <button class="btn btn-icon" id="closeViewArtistModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="artist-detail-header">
+                    <img id="viewArtistImage" src="" alt="" class="artist-detail-avatar">
+                    <div class="artist-detail-info">
+                        <h2 id="viewArtistName"></h2>
+                        <p id="viewArtistGenre" class="artist-detail-genre"></p>
+                    </div>
+                </div>
+                <div class="artist-detail-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">Tracks</span>
+                        <span class="stat-value" id="viewArtistTracks">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Streams</span>
+                        <span class="stat-value" id="viewArtistStreams">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Status</span>
+                        <span class="stat-value" id="viewArtistStatus"></span>
+                    </div>
+                </div>
+                <div class="artist-detail-bio">
+                    <h4>Bio</h4>
+                    <p id="viewArtistBio"></p>
+                </div>
+                <div class="artist-detail-tracks">
+                    <h4>Tracks</h4>
+                    <div id="viewArtistTracksList" class="tracks-list">
+                        <!-- Tracks will be loaded here -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="closeViewArtistModalBtn">Close</button>
+                <button class="btn btn-secondary" id="cancelEditFromViewArtist" style="display:none">Cancel</button>
+                <button class="btn btn-primary" id="editFromViewArtist">Edit Artist</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Track Detail Modal -->
+    <div class="modal" id="viewTrackModal" aria-hidden="true">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Track Details</h3>
+                <button class="btn btn-icon" id="closeViewTrackModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="track-detail-header">
+                    <img id="viewTrackArtwork" src="" alt="" class="track-detail-artwork">
+                    <div class="track-detail-info">
+                        <h2 id="viewTrackTitle"></h2>
+                        <p id="viewTrackArtist" class="track-detail-artist"></p>
+                        <p id="viewTrackGenre" class="track-detail-genre"></p>
+                    </div>
+                </div>
+                <div class="track-detail-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">Streams</span>
+                        <span class="stat-value" id="viewTrackStreams">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Duration</span>
+                        <span class="stat-value" id="viewTrackDuration"></span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Status</span>
+                        <span class="stat-value" id="viewTrackStatus"></span>
+                    </div>
+                </div>
+                <div class="track-detail-meta">
+                    <div class="meta-item">
+                        <span class="meta-label">Release Date:</span>
+                        <span class="meta-value" id="viewTrackReleaseDate"></span>
+                    </div>
+                </div>
+                <div class="track-detail-description">
+                    <h4>Description</h4>
+                    <p id="viewTrackDescription"></p>
+                </div>
+                <div class="track-detail-links">
+                    <h4>Platform Links</h4>
+                    <div id="viewTrackPlatformLinks" class="platform-links">
+                        <!-- Platform links will be loaded here -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="closeViewTrackModalBtn">Close</button>
+                <button class="btn btn-primary" id="editFromViewTrack">Edit Track</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="auth.js"></script>
     <script type="module" src="../scripts/firebase-init.js"></script>
     <script type="module" src="../scripts/admin-firebase.js"></script>
     <script type="module" src="../scripts/config-loader.js"></script>
     <script type="module" src="../scripts/notifications.js"></script>
+    <script src="admin.js"></script>
 </body>
 </html>

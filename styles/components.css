@@ -4,7 +4,7 @@
   border: 1px solid rgba(0, 212, 255, 0.2);
   border-radius: 1rem;
   padding: 1.5rem;
-  margin-top: 3rem;
+  margin-top: 2rem;
   display: flex;
   align-items: center;
   gap: 1.5rem;
@@ -384,6 +384,7 @@
   letter-spacing: 0.5px;
   z-index: 5;
   backdrop-filter: blur(10px);
+  pointer-events: none;
 }
 
 .track-badge.trending {
@@ -420,6 +421,7 @@
   z-index: 5;
   backdrop-filter: blur(10px);
   transition: all 0.3s ease;
+  cursor: pointer;
 }
 
 .track-card:hover .spotify-indicator {
@@ -723,6 +725,12 @@
     font-size: 0.8rem;
   }
 
+  .play-btn-card {
+    width: 50px;
+    height: 50px;
+    font-size: 1.1rem;
+  }
+
   .play-btn-overlay {
     width: 48px;
     height: 48px;
@@ -738,12 +746,20 @@
   .track-badge {
     padding: 3px 10px;
     font-size: 0.65rem;
+    top: 8px;
+    left: 8px;
   }
 
   .spotify-indicator {
     width: 28px;
     height: 28px;
     font-size: 0.9rem;
+    top: 8px;
+    right: 8px;
+  }
+
+  .overlay-actions {
+    gap: 10px;
   }
 }
 
@@ -779,6 +795,8 @@
     width: 26px;
     height: 26px;
     font-size: 0.8rem;
+    min-width: 26px;
+    min-height: 26px;
   }
 
   .track-meta {
@@ -818,29 +836,49 @@
     width: 24px;
     height: 24px;
     font-size: 0.75rem;
+    min-width: 24px;
+    min-height: 24px;
+  }
+
+  .play-btn-card {
+    width: 46px;
+    height: 46px;
+    font-size: 1rem;
   }
 
   .play-btn-overlay {
     width: 44px;
     height: 44px;
     font-size: 1rem;
+    min-width: 44px;
+    min-height: 44px;
   }
 
   .overlay-btn {
     width: 32px;
     height: 32px;
     font-size: 0.8rem;
+    min-width: 32px;
+    min-height: 32px;
   }
 
   .track-badge {
     padding: 2px 8px;
-    font-size: 0.6rem;
+    font-size: 0.65rem;
+    top: 6px;
+    left: 6px;
   }
 
   .spotify-indicator {
     width: 26px;
     height: 26px;
     font-size: 0.85rem;
+    top: 6px;
+    right: 6px;
+  }
+
+  .overlay-actions {
+    gap: 8px;
   }
 
   .track-overlay {
@@ -891,14 +929,22 @@
   .audio-player {
     padding: 1rem;
     gap: 1rem;
+    margin-top: 1.5rem;
   }
 
   .player-progress {
     font-size: 0.8rem;
+    min-width: auto;
+    flex: 1;
   }
 
   .player-progress span {
     min-width: 35px;
+  }
+
+  .player-volume {
+    min-width: auto;
+    flex: 1;
   }
 
   .contact-form {
@@ -915,6 +961,7 @@
 @media (max-width: 480px) {
   .audio-player {
     flex-direction: column;
+    padding: 0.75rem;
   }
 
   .player-controls {
@@ -925,10 +972,17 @@
     width: 100%;
     flex-direction: column;
     gap: 0.5rem;
+    min-width: auto;
   }
 
   .player-volume {
     width: 100%;
+    min-width: auto;
+  }
+
+  .player-track-info {
+    min-width: auto;
+    flex: 1;
   }
 }
 
@@ -2121,9 +2175,26 @@
 /* Grid Layout Updates */
 .music-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 2rem;
     margin-top: 2rem;
+    margin-bottom: 2rem;
+}
+
+@media (max-width: 768px) {
+    .music-grid {
+        gap: 1.5rem;
+        margin-top: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .music-grid {
+        gap: 1rem;
+        margin-top: 1rem;
+        margin-bottom: 1rem;
+    }
 }
 
 .artists-grid {
@@ -2135,11 +2206,6 @@
 
 /* Responsive Design */
 @media (max-width: 768px) {
-    .music-grid {
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 1.5rem;
-    }
-    
     .artists-grid {
         grid-template-columns: 1fr;
         gap: 1.5rem;
@@ -3687,13 +3753,7 @@ border: none;
         transform: translateX(100%);
     }
 }
-/* Enhanced Music Grid */
-.music-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 2rem;
-    margin-top: 2rem;
-}
+/* Enhanced Music Grid - layout handled by responsive media queries below */
 
 /* Enhanced Track Cards */
 .track-card {
@@ -3931,33 +3991,33 @@ border-radius: 12px;
 /* Responsive Grid Layout */
 @media (min-width: 1400px) {
     .music-grid {
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(5, 1fr);
     }
 }
 
 @media (min-width: 1200px) and (max-width: 1399px) {
     .music-grid {
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(4, 1fr);
     }
 }
 
 @media (min-width: 992px) and (max-width: 1199px) {
     .music-grid {
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(4, 1fr);
         gap: 1.5rem;
     }
 }
 
 @media (min-width: 768px) and (max-width: 991px) {
     .music-grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(3, 1fr);
         gap: 1.5rem;
     }
 }
 
 @media (min-width: 576px) and (max-width: 767px) {
     .music-grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(3, 1fr);
         gap: 1rem;
     }
     
@@ -3968,12 +4028,13 @@ border-radius: 12px;
 
 @media (max-width: 575px) {
     .music-grid {
-        grid-template-columns: 1fr;
-        gap: 1rem;
+        grid-template-columns: repeat(2, minmax(140px, 1fr));
+        gap: 0.5rem;
+        padding: 0;
     }
     
     .track-card {
-        padding: 1rem;
+        padding: 0.75rem;
     }
     
     .track-stats {
@@ -4276,26 +4337,29 @@ border-radius: 12px;
 @media (max-width: 768px) {
     .section-controls {
         gap: 0.5rem;
+        width: 100%;
     }
-    
+
     .filter-btn {
         padding: 0.6rem 1rem;
         font-size: 0.85rem;
     }
-    
+
     .filter-btn span {
         display: none;
     }
-    
+
     .filter-btn i {
         margin-right: 0;
         font-size: 1rem;
     }
-    
+
     .section-header {
         flex-direction: column;
         align-items: flex-start;
         gap: 1rem;
+        width: 100%;
+        max-width: 100%;
     }
     
     .section-controls {
@@ -4402,7 +4466,7 @@ border-radius: 12px;
 
 /* === SEARCH SECTION STYLES === */
 .search-section {
-    margin: 2rem 0 3rem;
+    margin: 1.5rem 0 2rem;
     padding: 0;
 }
 
@@ -4605,7 +4669,7 @@ border-radius: 12px;
 /* Responsive search */
 @media (max-width: 768px) {
     .search-container {
-        padding: 1rem;
+        padding: 1rem 0.75rem;
     }
     
     .search-filters {
@@ -4627,7 +4691,11 @@ border-radius: 12px;
 
 @media (max-width: 480px) {
     .search-section {
-        margin: 1.5rem 0 2rem;
+        margin: 1rem 0 1.5rem;
+    }
+
+    .search-container {
+        padding: 0.75rem 0.5rem;
     }
     
     .no-search-results {
@@ -8732,7 +8800,7 @@ border-radius: 12px;
     }
 
     .music-hero-container {
-        padding: 0 1rem;
+        padding: 0 0.5rem;
     }
 
     .music-hero-title {
@@ -8765,6 +8833,10 @@ border-radius: 12px;
 }
 
 @media (max-width: 480px) {
+    .music-hero {
+        padding: 3rem 0;
+    }
+
     .music-hero-title {
         font-size: 1.75rem;
     }

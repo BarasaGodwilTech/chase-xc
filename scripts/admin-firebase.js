@@ -36,6 +36,24 @@ async function fetchTracks() {
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }))
 }
 
+async function getTrackById(trackId) {
+  if (!trackId) return null
+  const trackRef = doc(db, 'tracks', trackId)
+  const trackSnap = await getDoc(trackRef)
+  if (!trackSnap.exists()) return null
+  return { id: trackSnap.id, ...trackSnap.data() }
+}
+
+async function updateTrackInFirestore(trackId, trackData) {
+  if (!trackId) throw new Error('Missing trackId')
+  const trackRef = doc(db, 'tracks', trackId)
+  await updateDoc(trackRef, {
+    ...trackData,
+    updatedAt: serverTimestamp(),
+  })
+  return true
+}
+
 async function fetchPayments() {
   const paymentsRef = collection(db, 'payments')
   const snap = await getDocs(paymentsRef)
@@ -106,31 +124,37 @@ async function renderArtistsTable() {
       })
       .join('')
 
-    // Add event delegation for edit and delete buttons
-    tbody.off?.('click')
-    tbody.addEventListener('click', async (e) => {
-      const editBtn = e.target.closest('.edit-artist-btn')
-      const deleteBtn = e.target.closest('.delete-artist-btn')
-      
-      if (editBtn) {
-        const row = editBtn.closest('tr')
-        const artistId = row?.dataset?.artistId
-        if (artistId) {
-          console.log('[admin-firebase] Edit button clicked for artist ID:', artistId)
-          await window.editArtist(artistId)
+    // Add event delegation for edit and delete buttons (bind once)
+    if (!tbody.dataset.clickBound) {
+      tbody.dataset.clickBound = 'true'
+      tbody.addEventListener('click', async (e) => {
+        const editBtn = e.target.closest('.edit-artist-btn')
+        const deleteBtn = e.target.closest('.delete-artist-btn')
+
+        if (editBtn) {
+          const row = editBtn.closest('tr')
+          const artistId = row?.dataset?.artistId
+          if (artistId) {
+            console.log('[admin-firebase] Edit button clicked for artist ID:', artistId)
+            if (window.adminPanel && typeof window.adminPanel.editArtist === 'function') {
+              await window.adminPanel.editArtist(artistId)
+            } else {
+              await window.editArtist(artistId)
+            }
+          }
         }
-      }
-      
-      if (deleteBtn) {
-        const row = deleteBtn.closest('tr')
-        const artistId = row?.dataset?.artistId
-        const artistName = row?.dataset?.artistName || 'Unknown'
-        if (artistId) {
-          console.log('[admin-firebase] Delete button clicked for artist ID:', artistId, 'name:', artistName)
-          await window.deleteArtist(artistId, artistName)
+
+        if (deleteBtn) {
+          const row = deleteBtn.closest('tr')
+          const artistId = row?.dataset?.artistId
+          const artistName = row?.dataset?.artistName || 'Unknown'
+          if (artistId) {
+            console.log('[admin-firebase] Delete button clicked for artist ID:', artistId, 'name:', artistName)
+            await window.deleteArtist(artistId, artistName)
+          }
         }
-      }
-    })
+      })
+    }
   } catch (e) {
     console.error(e)
     tbody.innerHTML = '<tr><td colspan="7" class="text-center">Failed to load artists</td></tr>'
@@ -420,6 +444,10 @@ async function handleAudioUploadSubmit(e) {
 
   const spotifyArtworkUrl = document.getElementById('spotifyArtworkUrl')?.value || ''
 
+  const editingItem = window.adminPanel && window.adminPanel.editingItem
+  const isEdit = Boolean(editingItem && editingItem.type === 'track' && editingItem.id)
+  const existingTrack = isEdit ? (editingItem.data || null) : null
+
   if (!title || !artistId || artistId === '__add_new__' || !genre) {
     if (window.notifications) {
       window.notifications.show('Please fill in Track Title, Artist and Genre.', 'error')
@@ -429,13 +457,15 @@ async function handleAudioUploadSubmit(e) {
     return
   }
 
-  if (!audioFile || !(audioFile instanceof File) || audioFile.size === 0) {
-    if (window.notifications) {
-      window.notifications.show('Please choose an audio file.', 'error')
-    } else {
-      console.error('Please choose an audio file.')
+  if (!isEdit) {
+    if (!audioFile || !(audioFile instanceof File) || audioFile.size === 0) {
+      if (window.notifications) {
+        window.notifications.show('Please choose an audio file.', 'error')
+      } else {
+        console.error('Please choose an audio file.')
+      }
+      return
     }
-    return
   }
 
   const now = Date.now()
@@ -445,12 +475,15 @@ async function handleAudioUploadSubmit(e) {
   try {
     const artistName = await resolveArtistName(artistId)
 
-    // Upload audio
-    const audioPath = `audio/${artistId}/${now}.${audioExt}`
-    const audioUrl = await uploadFileToStorage(audioPath, audioFile)
+    // Upload audio (only if a new file is chosen)
+    let audioUrl = existingTrack?.audioUrl || ''
+    if (audioFile && audioFile instanceof File && audioFile.size > 0) {
+      const audioPath = `audio/${artistId}/${now}.${audioExt}`
+      audioUrl = await uploadFileToStorage(audioPath, audioFile)
+    }
 
     // Handle artwork - either upload file or use Spotify URL
-    let artworkUrl = ''
+    let artworkUrl = existingTrack?.artwork || ''
     if (spotifyArtworkUrl && spotifyArtworkUrl.startsWith('http')) {
       // Use the Spotify artwork URL
       artworkUrl = spotifyArtworkUrl
@@ -460,32 +493,43 @@ async function handleAudioUploadSubmit(e) {
       artworkUrl = await uploadFileToStorage(artPath, artworkFile)
     }
 
-    // Create Firestore doc (this automatically creates the collection if missing)
-    await addDoc(collection(db, 'tracks'), {
+    const payload = {
       title,
       artist: artistId,
       artistName,
       genre,
       duration,
-      streams: 0,
-      likes: 0,
-      downloads: 0,
-      status: 'published',
       artwork: artworkUrl,
       audioUrl,
       releaseDate: releaseDate || '',
       description,
-      platformLinks: {},
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    })
+      status: existingTrack?.status || 'published',
+      platformLinks: existingTrack?.platformLinks || {},
+    }
+
+    if (isEdit) {
+      await updateTrackInFirestore(editingItem.id, payload)
+    } else {
+      await addDoc(collection(db, 'tracks'), {
+        ...payload,
+        streams: 0,
+        likes: 0,
+        downloads: 0,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      })
+    }
 
     if (window.notifications) {
-      window.notifications.show('Track uploaded successfully', 'success')
+      window.notifications.show(isEdit ? 'Track updated successfully' : 'Track uploaded successfully', 'success')
     } else {
-      console.log('Track uploaded successfully')
+      console.log(isEdit ? 'Track updated successfully' : 'Track uploaded successfully')
     }
     form.reset()
+
+    if (isEdit && window.adminPanel) {
+      window.adminPanel.editingItem = null
+    }
 
     // Clear Spotify artwork URL
     const spotifyArtworkInput = document.getElementById('spotifyArtworkUrl')
@@ -673,11 +717,16 @@ async function deleteTrackFromFirestore(trackId) {
 
 // Make the function available globally for admin.js
 window.saveTrackToFirestore = saveTrackToFirestore;
+window.updateTrackInFirestore = updateTrackInFirestore;
+window.getTrackById = getTrackById;
 window.fetchArtists = fetchArtists;
 window.fetchTracks = fetchTracks;
 window.fetchPayments = fetchPayments;
 window.deleteArtistFromFirestore = deleteArtistFromFirestore;
 window.deleteTrackFromFirestore = deleteTrackFromFirestore;
+window.updateArtistInFirestore = updateArtistInFirestore;
+window.getArtistById = getArtistById;
+window.renderArtistsTable = renderArtistsTable;
 
 function initAdminFirebase() {
   console.log('[admin-firebase] init')
@@ -775,6 +824,8 @@ function initAdminFirebase() {
   } else {
     console.error('[admin-firebase] addArtistForm not found; Save Artist will not work')
   }
+
+  window.dispatchEvent(new Event('adminFirebaseReady'))
 }
 
 document.addEventListener('DOMContentLoaded', () => {

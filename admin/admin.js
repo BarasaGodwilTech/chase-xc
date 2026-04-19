@@ -4,24 +4,36 @@ class AdminPanel {
         this.currentSection = 'dashboard';
         this.dataManager = window.dataManager;
         this.editingItem = null;
-
-        if (!this.dataManager) {
-            console.error('DataManager not found!');
-            this.showError('Data Manager not initialized. Please refresh the page.');
-            return;
-        }
+        this.settingsDirty = false;
+        this.settingsDirtyBound = false;
+        this.searchBound = false;
+        this.artistModalMode = 'view';
+        this.artistModalSnapshot = null;
 
         this.init();
     }
 
     init() {
         console.log('AdminPanel initializing...');
-        this.setupEventListeners();
-        this.showSection('dashboard');
 
-        window.addEventListener('dataUpdated', () => {
-            this.loadSectionData(this.currentSection);
-        });
+        // Ensure we have a reliable focus target outside modals (prevents aria-hidden focus warnings)
+        const adminNav = document.getElementById('adminNav');
+        if (adminNav && !adminNav.hasAttribute('tabindex')) {
+            adminNav.setAttribute('tabindex', '-1');
+        }
+
+        this.setupEventListeners();
+
+        const storedSection = localStorage.getItem('admin:lastSection');
+        const initialSection = storedSection && document.getElementById(storedSection) ? storedSection : 'dashboard';
+        this.showSection(initialSection);
+
+        // Only listen for local DataManager updates when running in local-storage mode.
+        if (this.dataManager) {
+            window.addEventListener('dataUpdated', () => {
+                this.loadSectionData(this.currentSection);
+            });
+        }
 
         console.log('AdminPanel initialized successfully');
     }
@@ -35,6 +47,11 @@ class AdminPanel {
                 const target = item.getAttribute('data-target');
                 console.log('Navigation clicked:', target);
                 this.showSection(target);
+
+                const navContent = document.querySelector('.nav-content');
+                if (navContent && navContent.classList.contains('active')) {
+                    navContent.classList.remove('active');
+                }
             });
         });
 
@@ -44,6 +61,19 @@ class AdminPanel {
                 document.querySelector('.nav-content')?.classList.toggle('active');
             });
         }
+
+        // Close mobile nav when clicking outside
+        document.addEventListener('click', (e) => {
+            const navContent = document.querySelector('.nav-content');
+            const navToggle = document.getElementById('navToggle');
+            const adminNav = document.getElementById('adminNav');
+            
+            if (navContent && navContent.classList.contains('active')) {
+                if (!adminNav.contains(e.target)) {
+                    navContent.classList.remove('active');
+                }
+            }
+        });
 
         document.getElementById('logoutBtn')?.addEventListener('click', (e) => {
             e.preventDefault();
@@ -62,33 +92,53 @@ class AdminPanel {
             this.toggleFullscreen();
         });
 
+        // Global search (filters the active table)
+        if (!this.searchBound) {
+            this.searchBound = true;
+            const searchInput = document.querySelector('.search-box input');
+            if (searchInput) {
+                searchInput.addEventListener('input', () => {
+                    this.applyTableSearch(searchInput.value);
+                });
+            }
+        }
+
+        // Keyboard shortcuts
+        if (!this.shortcutsBound) {
+            this.shortcutsBound = true;
+            document.addEventListener('keydown', (e) => {
+                const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+                const isTyping = tag === 'input' || tag === 'textarea' || e.target?.isContentEditable;
+
+                if (e.key === '/' && !isTyping) {
+                    const searchInput = document.querySelector('.search-box input');
+                    if (searchInput) {
+                        e.preventDefault();
+                        searchInput.focus();
+                    }
+                }
+
+                if (!(e.ctrlKey || e.metaKey)) return;
+                if (isTyping) return;
+
+                const map = {
+                    '1': 'dashboard',
+                    '2': 'artists',
+                    '3': 'tracks',
+                    '4': 'team',
+                    '5': 'settings'
+                };
+                const target = map[e.key];
+                if (target) {
+                    e.preventDefault();
+                    this.showSection(target);
+                }
+            });
+        }
+
         document.getElementById('addTrackBtn')?.addEventListener('click', () => {
             this.addNewTrack();
         });
-
-        document.getElementById('addArtistBtn')?.addEventListener('click', () => {
-            this.openArtistModal();
-        });
-
-        // Add artist modal event listeners
-        const addArtistModal = document.getElementById('addArtistModal');
-        const closeAddArtistModal = document.getElementById('closeAddArtistModal');
-        const cancelAddArtist = document.getElementById('cancelAddArtist');
-        const addArtistForm = document.getElementById('addArtistForm');
-
-        if (closeAddArtistModal) {
-            closeAddArtistModal.addEventListener('click', () => this.closeArtistModal());
-        }
-        if (cancelAddArtist) {
-            cancelAddArtist.addEventListener('click', () => this.closeArtistModal());
-        }
-        // addArtistForm is handled by admin-firebase.js
-        // if (addArtistForm) {
-        //     addArtistForm.addEventListener('submit', (e) => {
-        //         e.preventDefault();
-        //         this.saveArtist();
-        //     });
-        // }
 
         // Add team member modal event listeners
         const closeTeamMemberModal = document.getElementById('closeTeamMemberModal');
@@ -108,16 +158,87 @@ class AdminPanel {
             });
         }
 
-        // Artist image preview
-        const artistImageInput = document.getElementById('artistImage');
-        if (artistImageInput) {
-            artistImageInput.addEventListener('change', () => {
-                const file = artistImageInput.files && artistImageInput.files[0];
-                const preview = document.getElementById('artistImagePreview');
-                if (file && preview) {
-                    const url = URL.createObjectURL(file);
-                    preview.classList.add('is-visible');
-                    preview.style.backgroundImage = `url('${url}')`;
+        // Artist modal + image preview are handled by admin-firebase.js
+
+        // View artist modal event listeners
+        const closeViewArtistModal = document.getElementById('closeViewArtistModal');
+        const closeViewArtistModalBtn = document.getElementById('closeViewArtistModalBtn');
+        const editFromViewArtist = document.getElementById('editFromViewArtist');
+        const viewArtistModalCancelEdit = document.getElementById('cancelEditFromViewArtist');
+        const viewArtistModal = document.getElementById('viewArtistModal');
+
+        const closeViewModalSafe = (modalEl) => {
+            if (!modalEl) return;
+            let focusSink = document.getElementById('modalFocusSink');
+            if (!focusSink) {
+                focusSink = document.createElement('div');
+                focusSink.id = 'modalFocusSink';
+                focusSink.tabIndex = -1;
+                focusSink.style.position = 'fixed';
+                focusSink.style.width = '1px';
+                focusSink.style.height = '1px';
+                focusSink.style.left = '-9999px';
+                focusSink.style.top = '0';
+                document.body.appendChild(focusSink);
+            }
+            if (modalEl.contains(document.activeElement)) {
+                document.getElementById('adminNav')?.focus?.();
+                focusSink.focus();
+            }
+            modalEl.classList.remove('active');
+            modalEl.setAttribute('aria-hidden', 'true');
+        };
+
+        if (closeViewArtistModal) {
+            closeViewArtistModal.addEventListener('click', () => {
+                closeViewModalSafe(viewArtistModal);
+            });
+        }
+        if (closeViewArtistModalBtn) {
+            closeViewArtistModalBtn.addEventListener('click', () => {
+                closeViewModalSafe(viewArtistModal);
+            });
+        }
+        if (editFromViewArtist) {
+            editFromViewArtist.addEventListener('click', () => {
+                const artistId = viewArtistModal.dataset.artistId;
+                if (!artistId) return;
+                if (this.artistModalMode === 'view') {
+                    this.enterArtistEditMode();
+                } else {
+                    this.saveArtistFromViewModal();
+                }
+            });
+        }
+
+        if (viewArtistModalCancelEdit) {
+            viewArtistModalCancelEdit.addEventListener('click', () => {
+                this.exitArtistEditMode();
+            });
+        }
+
+        // View track modal event listeners
+        const closeViewTrackModal = document.getElementById('closeViewTrackModal');
+        const closeViewTrackModalBtn = document.getElementById('closeViewTrackModalBtn');
+        const editFromViewTrack = document.getElementById('editFromViewTrack');
+        const viewTrackModal = document.getElementById('viewTrackModal');
+
+        if (closeViewTrackModal) {
+            closeViewTrackModal.addEventListener('click', () => {
+                closeViewModalSafe(viewTrackModal);
+            });
+        }
+        if (closeViewTrackModalBtn) {
+            closeViewTrackModalBtn.addEventListener('click', () => {
+                closeViewModalSafe(viewTrackModal);
+            });
+        }
+        if (editFromViewTrack) {
+            editFromViewTrack.addEventListener('click', () => {
+                const trackId = viewTrackModal.dataset.trackId;
+                closeViewModalSafe(viewTrackModal);
+                if (trackId) {
+                    this.editTrack(trackId);
                 }
             });
         }
@@ -181,9 +302,11 @@ class AdminPanel {
             // Handle input event with debounce
             externalUrlInput.addEventListener('input', (e) => {
                 const url = externalUrlInput.value.trim();
-                if (url && this.isValidPlatformUrl(url, 'youtube') || 
-                    this.isValidPlatformUrl(url, 'apple-music') || 
-                    this.isValidPlatformUrl(url, 'soundcloud')) {
+                if (url && (
+                    this.isValidPlatformUrl(url, 'youtube') ||
+                    this.isValidPlatformUrl(url, 'apple-music') ||
+                    this.isValidPlatformUrl(url, 'soundcloud')
+                )) {
                     clearTimeout(this.externalUrlDebounce);
                     this.externalUrlDebounce = setTimeout(async () => {
                         await this.fetchExternalTrackMetadata(url);
@@ -209,6 +332,55 @@ class AdminPanel {
         this.setupSpotifyImport();
 
         console.log('Event listeners setup complete');
+    }
+
+    applyTableSearch(rawQuery) {
+        const query = String(rawQuery || '').trim().toLowerCase();
+
+        const sectionToTableId = {
+            artists: 'artistsTable',
+            tracks: 'tracksTable',
+            team: 'teamTable',
+            payments: 'paymentsTable'
+        };
+
+        const tableId = sectionToTableId[this.currentSection];
+        if (!tableId) return;
+
+        const tbody = document.getElementById(tableId);
+        if (!tbody) return;
+
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        let visible = 0;
+
+        const ensureNoResultsRow = () => {
+            let row = tbody.querySelector('tr[data-search-no-results="true"]');
+            if (!row) {
+                row = document.createElement('tr');
+                row.dataset.searchNoResults = 'true';
+                row.innerHTML = '<td colspan="20" class="text-center">No matching results</td>';
+                tbody.appendChild(row);
+            }
+            return row;
+        };
+
+        const removeNoResultsRow = () => {
+            tbody.querySelector('tr[data-search-no-results="true"]')?.remove();
+        };
+
+        for (const row of rows) {
+            if (row.dataset && row.dataset.searchNoResults === 'true') continue;
+            const txt = (row.textContent || '').toLowerCase();
+            const show = !query || txt.includes(query);
+            row.style.display = show ? '' : 'none';
+            if (show) visible += 1;
+        }
+
+        if (query && rows.length > 0 && visible === 0) {
+            ensureNoResultsRow().style.display = '';
+        } else {
+            removeNoResultsRow();
+        }
     }
 
     switchUploadMethod(method) {
@@ -871,13 +1043,12 @@ class AdminPanel {
         
         // Try to find matching artist or set to add new
         if (artistInput) {
-            const artists = this.dataManager.getAllArtists();
-            const matchingArtist = artists.find(a => 
-                a.name.toLowerCase() === this.selectedSpotifyTrack.artist.toLowerCase()
-            );
-            if (matchingArtist) {
-                artistInput.value = matchingArtist.id;
-            } else {
+            try {
+                const artists = await window.fetchArtists();
+                const spotifyArtist = String(this.selectedSpotifyTrack.artist || '').toLowerCase();
+                const matchingArtist = (artists || []).find(a => String(a.name || '').toLowerCase() === spotifyArtist);
+                artistInput.value = matchingArtist ? matchingArtist.id : '__add_new__';
+            } catch (_) {
                 artistInput.value = '__add_new__';
             }
         }
@@ -937,7 +1108,15 @@ class AdminPanel {
 
         this.updatePageTitle(sectionId);
         this.currentSection = sectionId;
+        localStorage.setItem('admin:lastSection', sectionId);
         this.loadSectionData(sectionId);
+
+        const searchInput = document.querySelector('.search-box input');
+        if (searchInput && !searchInput.value) {
+            this.applyTableSearch('');
+        } else if (searchInput) {
+            this.applyTableSearch(searchInput.value);
+        }
     }
 
     updatePageTitle(sectionId) {
@@ -1168,7 +1347,10 @@ class AdminPanel {
         if (!artistSelect) return;
         
         const artists = await window.fetchArtists();
-        artistSelect.innerHTML = '<option value="">Select Artist</option>' + 
+        // Preserve the Firestore-powered artist select behavior, including "+ Add new artist..."
+        // (admin-firebase.js relies on the special __add_new__ option).
+        artistSelect.innerHTML = '<option value="">Select Artist</option>' +
+            '<option value="__add_new__">+ Add new artist...</option>' +
             artists.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
     }
 
@@ -1209,7 +1391,7 @@ class AdminPanel {
 
         try {
             const { db } = await import('../scripts/firebase-init.js');
-            const { collection, getDocs, query, orderBy } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+            const { collection, getDocs, query, orderBy } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
             
             const teamQuery = query(collection(db, 'team'), orderBy('name'));
             const querySnapshot = await getDocs(teamQuery);
@@ -1268,7 +1450,7 @@ class AdminPanel {
     async loadTeamMemberForEdit(memberId) {
         try {
             const { db } = await import('../scripts/firebase-init.js');
-            const { doc, getDoc } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+            const { doc, getDoc } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
             
             const docRef = doc(db, 'team', memberId);
             const docSnap = await getDoc(docRef);
@@ -1370,7 +1552,7 @@ class AdminPanel {
             };
 
             const { db } = await import('../scripts/firebase-init.js');
-            const { collection, addDoc, doc, updateDoc } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+            const { collection, addDoc, doc, updateDoc } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
 
             if (this.editingItem && this.editingItem.id) {
                 // Update existing team member
@@ -1403,7 +1585,7 @@ class AdminPanel {
         if (ok) {
             try {
                 const { db } = await import('../scripts/firebase-init.js');
-                const { doc, deleteDoc } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+                const { doc, deleteDoc } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
                 
                 await deleteDoc(doc(db, 'team', memberId));
                 this.showNotification('Team member deleted successfully!', 'success');
@@ -1490,6 +1672,10 @@ class AdminPanel {
             
             // Setup save button handler
             this.setupSettingsSaveHandler();
+
+            // Dirty state tracking for settings
+            this.setupSettingsDirtyTracking();
+            this.setSettingsDirty(false);
             
         } catch (error) {
             console.error('Error loading settings:', error);
@@ -1497,11 +1683,33 @@ class AdminPanel {
         }
     }
 
+    setupSettingsDirtyTracking() {
+        if (this.settingsDirtyBound) return;
+        const section = document.getElementById('settings');
+        if (!section) return;
+
+        this.settingsDirtyBound = true;
+        const markDirty = () => this.setSettingsDirty(true);
+        section.querySelectorAll('input, textarea, select').forEach((el) => {
+            el.addEventListener('input', markDirty);
+            el.addEventListener('change', markDirty);
+        });
+    }
+
+    setSettingsDirty(isDirty) {
+        this.settingsDirty = Boolean(isDirty);
+        const saveBtn = document.getElementById('saveSettings');
+        if (saveBtn) {
+            saveBtn.disabled = !this.settingsDirty;
+            saveBtn.classList.toggle('btn-disabled', !this.settingsDirty);
+        }
+    }
+
     setupSettingsSaveHandler() {
         const saveBtn = document.getElementById('saveSettings');
         if (saveBtn) {
             saveBtn.onclick = async () => {
-                this.saveSettings();
+                await this.saveSettings();
             };
         }
     }
@@ -1509,6 +1717,11 @@ class AdminPanel {
     async saveSettings() {
         try {
             const { saveSettings: saveToFirebase } = await import('../scripts/config-loader.js');
+
+            const saveBtn = document.getElementById('saveSettings');
+            if (saveBtn) {
+                saveBtn.disabled = true;
+            }
             
             const config = {
                 payment: {
@@ -1577,116 +1790,29 @@ class AdminPanel {
             
             await saveToFirebase(config);
             this.showNotification('Settings saved successfully!', 'success');
+            this.setSettingsDirty(false);
         } catch (error) {
             console.error('Error saving settings:', error);
             this.showNotification('Error saving settings: ' + error.message, 'error');
-        }
-    }
-
-    editArtist(artistId) {
-        const artist = this.dataManager.getArtist(artistId);
-        if (artist) {
-            this.openArtistModal(artist);
-        }
-    }
-
-    openArtistModal(artist = null) {
-        const modal = document.getElementById('addArtistModal');
-        const form = document.getElementById('addArtistForm');
-        const modalTitle = modal.querySelector('.modal-header h3');
-        
-        if (!modal || !form) return;
-
-        // Reset form
-        form.reset();
-        document.getElementById('artistImagePreview').classList.remove('is-visible');
-        document.getElementById('artistImagePreview').style.backgroundImage = '';
-
-        if (artist) {
-            // Edit mode
-            modalTitle.textContent = 'Edit Artist';
-            document.getElementById('artistName').value = artist.name || '';
-            document.getElementById('artistGenre').value = artist.genre || '';
-            document.getElementById('artistBio').value = artist.bio || '';
-            
-            if (artist.image) {
-                const preview = document.getElementById('artistImagePreview');
-                preview.classList.add('is-visible');
-                preview.style.backgroundImage = `url('${artist.image}')`;
+        } finally {
+            const saveBtn = document.getElementById('saveSettings');
+            if (saveBtn) {
+                saveBtn.disabled = !this.settingsDirty;
             }
-            
-            this.editingItem = { type: 'artist', id: artist.id, data: artist };
-        } else {
-            // Add mode
-            modalTitle.textContent = 'Add New Artist';
-            this.editingItem = null;
         }
-
-        modal.classList.add('active');
-        modal.setAttribute('aria-hidden', 'false');
     }
 
-    closeArtistModal() {
-        const modal = document.getElementById('addArtistModal');
-        if (modal) {
-            modal.classList.remove('active');
-            modal.setAttribute('aria-hidden', 'true');
-        }
-        this.editingItem = null;
-    }
-
-    async saveArtist() {
-        const form = document.getElementById('addArtistForm');
-        const name = document.getElementById('artistName').value.trim();
-        const genre = document.getElementById('artistGenre').value.trim();
-        const bio = document.getElementById('artistBio').value.trim();
-        const imageInput = document.getElementById('artistImage');
-
-        if (!name) {
-            this.showNotification('Artist name is required', 'error');
-            return;
-        }
-
+    async editArtist(artistId) {
+        // Always use the View Artist modal for editing (single-modal UX)
         try {
-            let imageUrl = '';
-            
-            // Handle image upload if file selected
-            if (imageInput.files && imageInput.files[0]) {
-                // For now, use a placeholder or data URL
-                // In production, this should upload to Firebase Storage
-                imageUrl = await this.handleImageUpload(imageInput.files[0]);
-            } else if (this.editingItem && this.editingItem.data.image) {
-                imageUrl = this.editingItem.data.image;
-            }
-
-            const artistData = {
-                name,
-                genre: genre || 'Unknown',
-                bio,
-                image: imageUrl || 'https://via.placeholder.com/150?text=Artist',
-                status: 'active',
-                tracks: 0
-            };
-
-            if (this.editingItem && this.editingItem.id) {
-                // Update existing artist
-                artistData.id = this.editingItem.id;
-                artistData.tracks = this.editingItem.data.tracks;
-                this.dataManager.saveArtist(artistData);
-                this.showNotification('Artist updated successfully!', 'success');
-            } else {
-                // Add new artist
-                artistData.id = 'A' + String(this.dataManager.getAllArtists().length + 1).padStart(3, '0');
-                artistData.createdAt = new Date().toISOString();
-                this.dataManager.saveArtist(artistData);
-                this.showNotification('Artist added successfully!', 'success');
-            }
-
-            this.closeArtistModal();
-            this.loadArtists();
+            await this.viewArtist(artistId);
+            // Wait a tick to ensure the modal has rendered its DOM content
+            setTimeout(() => {
+                this.enterArtistEditMode();
+            }, 0);
         } catch (error) {
-            console.error('Error saving artist:', error);
-            this.showNotification('Error saving artist: ' + error.message, 'error');
+            console.error('Error opening artist editor:', error);
+            this.showNotification('Failed to open artist editor: ' + error.message, 'error');
         }
     }
 
@@ -1701,37 +1827,248 @@ class AdminPanel {
         });
     }
 
-    viewArtist(artistId) {
-        const artist = this.dataManager.getArtist(artistId);
-        if (!artist) {
-            this.showNotification('Artist not found', 'error');
-            return;
-        }
-        const tracks = this.dataManager.getTracksByArtist(artistId) || [];
-        const message = `Artist: ${artist.name}\nGenre: ${artist.genre}\nTracks: ${tracks.length}\nStatus: ${artist.status}`;
-        if (window.notifications) {
-            window.notifications.show(message, 'info');
-        } else {
-            console.log(message);
+    async viewArtist(artistId) {
+        try {
+            const artists = await window.fetchArtists();
+            const tracks = await window.fetchTracks();
+            const artist = (artists || []).find(a => a.id === artistId);
+            if (!artist) {
+                this.showNotification('Artist not found', 'error');
+                return;
+            }
+
+            const artistTracks = (tracks || []).filter(t => String(t.artist || '') === String(artistId));
+            const totalStreams = artistTracks.reduce((sum, t) => sum + (t.streams || 0), 0);
+
+            // Populate artist detail modal
+            const modal = document.getElementById('viewArtistModal');
+            const image = document.getElementById('viewArtistImage');
+            const name = document.getElementById('viewArtistName');
+            const genre = document.getElementById('viewArtistGenre');
+            const tracksCount = document.getElementById('viewArtistTracks');
+            const streams = document.getElementById('viewArtistStreams');
+            const status = document.getElementById('viewArtistStatus');
+            const bio = document.getElementById('viewArtistBio');
+            const tracksList = document.getElementById('viewArtistTracksList');
+
+            image.src = artist.image || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="150" height="150" viewBox="0 0 150 150"%3E%3Crect width="150" height="150" fill="%23667eea"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="Arial" font-size="60" fill="white"%3E%3F%3C/text%3E%3C/svg%3E';
+            image.alt = artist.name || 'Artist';
+            name.textContent = artist.name || 'Unnamed';
+            genre.textContent = artist.genre || 'No genre';
+            tracksCount.textContent = artistTracks.length;
+            streams.textContent = totalStreams.toLocaleString();
+            status.textContent = artist.status || 'active';
+            bio.textContent = artist.bio || 'No bio available';
+
+            // Populate tracks list
+            if (artistTracks.length > 0) {
+                const maxItems = 4;
+                const visibleTracks = artistTracks.slice(0, maxItems);
+                const remaining = Math.max(artistTracks.length - visibleTracks.length, 0);
+
+                tracksList.innerHTML = visibleTracks.map(track => `
+                    <div class="track-list-item">
+                        <div class="track-list-item-image" style="${track.artwork ? `background-image: url('${track.artwork}')` : 'background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%)'}"></div>
+                        <div class="track-list-item-info">
+                            <div class="track-list-item-title">${track.title || 'Untitled'}</div>
+                            <div class="track-list-item-meta">${track.genre || 'No genre'} • ${track.duration || '0:00'}</div>
+                        </div>
+                    </div>
+                `).join('') + (remaining > 0 ? `<div class="track-list-item-meta" style="padding-top: 0.5rem;">And ${remaining} more...</div>` : '');
+            } else {
+                tracksList.innerHTML = '<p style="color: var(--text-secondary);">No tracks yet</p>';
+            }
+
+            // Show modal
+            modal.classList.add('active');
+            modal.setAttribute('aria-hidden', 'false');
+
+            // Store artist ID for edit button
+            modal.dataset.artistId = artistId;
+
+            // Ensure view mode each time we open
+            this.artistModalSnapshot = {
+                name: artist.name || '',
+                genre: artist.genre || '',
+                bio: artist.bio || '',
+                status: artist.status || 'active'
+            };
+            this.artistModalMode = 'view';
+            this.applyArtistModalMode();
+        } catch (error) {
+            console.error('Error viewing artist:', error);
+            this.showNotification('Error loading artist: ' + error.message, 'error');
         }
     }
 
+    applyArtistModalMode() {
+        const modal = document.getElementById('viewArtistModal');
+        if (!modal) return;
+
+        const editBtn = document.getElementById('editFromViewArtist');
+        const cancelBtn = document.getElementById('cancelEditFromViewArtist');
+
+        const isEdit = this.artistModalMode === 'edit';
+        modal.classList.toggle('is-editing', isEdit);
+
+        if (editBtn) {
+            editBtn.innerHTML = isEdit ? '<i class="fas fa-save"></i> Save Changes' : 'Edit Artist';
+        }
+        if (cancelBtn) {
+            cancelBtn.style.display = isEdit ? '' : 'none';
+        }
+    }
+
+    enterArtistEditMode() {
+        if (this.artistModalMode === 'edit') return;
+
+        const modal = document.getElementById('viewArtistModal');
+        if (!modal) return;
+
+        const nameEl = document.getElementById('viewArtistName');
+        const genreEl = document.getElementById('viewArtistGenre');
+        const bioEl = document.getElementById('viewArtistBio');
+        const statusEl = document.getElementById('viewArtistStatus');
+
+        const snap = this.artistModalSnapshot || {
+            name: nameEl?.textContent || '',
+            genre: genreEl?.textContent || '',
+            bio: bioEl?.textContent || '',
+            status: statusEl?.textContent || 'active'
+        };
+        this.artistModalSnapshot = snap;
+
+        if (nameEl) {
+            nameEl.innerHTML = `<input id="viewArtistNameInput" type="text" value="${this.escapeHtml(snap.name)}" class="modal-inline-input" />`;
+        }
+        if (genreEl) {
+            genreEl.innerHTML = `<input id="viewArtistGenreInput" type="text" value="${this.escapeHtml(snap.genre)}" class="modal-inline-input" placeholder="Genre" />`;
+        }
+        if (bioEl) {
+            bioEl.innerHTML = `<textarea id="viewArtistBioInput" class="modal-inline-textarea" rows="4" placeholder="Bio">${this.escapeHtml(snap.bio)}</textarea>`;
+        }
+        if (statusEl) {
+            const cur = String(snap.status || 'active');
+            statusEl.innerHTML = `
+                <select id="viewArtistStatusInput" class="modal-inline-select">
+                    <option value="active" ${cur === 'active' ? 'selected' : ''}>active</option>
+                    <option value="inactive" ${cur === 'inactive' ? 'selected' : ''}>inactive</option>
+                </select>
+            `;
+        }
+
+        this.artistModalMode = 'edit';
+        this.applyArtistModalMode();
+    }
+
+    exitArtistEditMode() {
+        if (this.artistModalMode !== 'edit') return;
+
+        const snap = this.artistModalSnapshot;
+        if (!snap) {
+            this.artistModalMode = 'view';
+            this.applyArtistModalMode();
+            return;
+        }
+
+        const nameEl = document.getElementById('viewArtistName');
+        const genreEl = document.getElementById('viewArtistGenre');
+        const bioEl = document.getElementById('viewArtistBio');
+        const statusEl = document.getElementById('viewArtistStatus');
+
+        if (nameEl) nameEl.textContent = snap.name;
+        if (genreEl) genreEl.textContent = snap.genre;
+        if (bioEl) bioEl.textContent = snap.bio || 'No bio available';
+        if (statusEl) statusEl.textContent = snap.status;
+
+        this.artistModalMode = 'view';
+        this.applyArtistModalMode();
+    }
+
+    async saveArtistFromViewModal() {
+        const modal = document.getElementById('viewArtistModal');
+        const artistId = modal?.dataset?.artistId;
+        if (!artistId) return;
+
+        const name = document.getElementById('viewArtistNameInput')?.value?.trim() || '';
+        const genre = document.getElementById('viewArtistGenreInput')?.value?.trim() || '';
+        const bio = document.getElementById('viewArtistBioInput')?.value?.trim() || '';
+        const status = document.getElementById('viewArtistStatusInput')?.value || 'active';
+
+        if (!name) {
+            this.showNotification('Artist name is required', 'error');
+            return;
+        }
+
+        try {
+            if (typeof window.updateArtistInFirestore !== 'function') {
+                throw new Error('updateArtistInFirestore is not available');
+            }
+
+            await window.updateArtistInFirestore(artistId, {
+                name,
+                genre,
+                bio,
+                status
+            });
+
+            this.artistModalSnapshot = { name, genre, bio, status };
+            this.showNotification('Artist updated successfully', 'success');
+
+            if (typeof window.renderArtistsTable === 'function') {
+                await window.renderArtistsTable();
+            }
+            await this.loadArtists();
+            await this.viewArtist(artistId);
+        } catch (error) {
+            console.error('Error saving artist:', error);
+            this.showNotification('Failed to save artist: ' + error.message, 'error');
+        }
+    }
+
+    escapeHtml(input) {
+        const str = String(input ?? '');
+        return str
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
     async deleteArtist(artistId) {
+        // Use the richer delete flow from admin-firebase.js (includes refresh + name in prompt)
+        if (typeof window.deleteArtist === 'function') {
+            try {
+                const artists = await window.fetchArtists();
+                const artist = (artists || []).find(a => a.id === artistId);
+                const name = artist?.name || 'Unknown';
+                await window.deleteArtist(artistId, name);
+                // Ensure the table in this script refreshes too
+                await this.loadArtists();
+            } catch (error) {
+                console.error('Error deleting artist:', error);
+                this.showNotification('Failed to delete artist: ' + error.message, 'error');
+            }
+            return;
+        }
+
+        // Fallback: direct Firestore delete if available
         let ok = false;
         if (window.notifications && window.notifications.confirm) {
             ok = await window.notifications.confirm('Are you sure you want to delete this artist?', 'Delete Artist', 'warning');
         } else {
             ok = confirm('Are you sure you want to delete this artist?');
         }
-        if (ok) {
-            try {
-                await window.deleteArtistFromFirestore(artistId);
-                this.showNotification('Artist deleted successfully!', 'success');
-                this.loadArtists();
-            } catch (error) {
-                console.error('Error deleting artist:', error);
-                this.showNotification('Failed to delete artist: ' + error.message, 'error');
-            }
+        if (!ok) return;
+
+        try {
+            await window.deleteArtistFromFirestore?.(artistId);
+            this.showNotification('Artist deleted successfully!', 'success');
+            this.loadArtists();
+        } catch (error) {
+            console.error('Error deleting artist:', error);
+            this.showNotification('Failed to delete artist: ' + error.message, 'error');
         }
     }
 
@@ -1796,14 +2133,62 @@ class AdminPanel {
                 this.showNotification('Track not found', 'error');
                 return;
             }
+
             const artists = await window.fetchArtists();
             const artist = artists.find(a => a.id === track.artist);
-            const message = `Track: ${track.title}\nArtist: ${artist?.name || 'Unknown'}\nStreams: ${this.formatNumber(track.streams)}`;
-            if (window.notifications) {
-                window.notifications.show(message, 'info');
-            } else {
-                console.log(message);
-            }
+
+            // Populate track detail modal
+            const modal = document.getElementById('viewTrackModal');
+            const artwork = document.getElementById('viewTrackArtwork');
+            const title = document.getElementById('viewTrackTitle');
+            const artistName = document.getElementById('viewTrackArtist');
+            const genre = document.getElementById('viewTrackGenre');
+            const streams = document.getElementById('viewTrackStreams');
+            const duration = document.getElementById('viewTrackDuration');
+            const status = document.getElementById('viewTrackStatus');
+            const releaseDate = document.getElementById('viewTrackReleaseDate');
+            const description = document.getElementById('viewTrackDescription');
+            const platformLinks = document.getElementById('viewTrackPlatformLinks');
+
+            artwork.src = track.artwork || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="180" height="180" viewBox="0 0 180 180"%3E%3Crect width="180" height="180" fill="%23f093fb"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="Arial" font-size="60" fill="white"%3E%26%239835%3B%3C/text%3E%3C/svg%3E';
+            artwork.alt = track.title || 'Track';
+            title.textContent = track.title || 'Untitled';
+            artistName.textContent = artist?.name || 'Unknown Artist';
+            genre.textContent = track.genre || 'No genre';
+            streams.textContent = (track.streams || 0).toLocaleString();
+            duration.textContent = track.duration || '0:00';
+            status.textContent = track.status || 'published';
+            releaseDate.textContent = track.releaseDate || 'Not set';
+            description.textContent = track.description || 'No description available';
+
+            // Populate platform links
+            const links = track.platformLinks || {};
+            const platforms = [
+                { key: 'spotify', name: 'Spotify', icon: 'fa-spotify' },
+                { key: 'appleMusic', name: 'Apple Music', icon: 'fa-apple' },
+                { key: 'youtube', name: 'YouTube', icon: 'fa-youtube' },
+                { key: 'soundcloud', name: 'SoundCloud', icon: 'fa-soundcloud' },
+                { key: 'tidal', name: 'Tidal', icon: 'fa-music' },
+                { key: 'amazon', name: 'Amazon Music', icon: 'fa-amazon' },
+            ];
+
+            const validLinks = platforms
+                .filter(p => links[p.key])
+                .map(p => `
+                    <a href="${links[p.key]}" target="_blank" rel="noopener noreferrer" class="platform-link">
+                        <i class="fab ${p.icon}"></i>
+                        ${p.name}
+                    </a>
+                `).join('');
+
+            platformLinks.innerHTML = validLinks || '<p style="color: var(--text-secondary);">No platform links available</p>';
+
+            // Show modal
+            modal.classList.add('active');
+            modal.setAttribute('aria-hidden', 'false');
+
+            // Store track ID for edit button
+            modal.dataset.trackId = trackId;
         } catch (error) {
             console.error('Error fetching track:', error);
             this.showNotification('Error loading track: ' + error.message, 'error');
@@ -1839,7 +2224,8 @@ class AdminPanel {
     }
 
     addNewArtist() {
-        this.openArtistModal();
+        // Add artist modal is managed by admin-firebase.js
+        document.getElementById('addArtistBtn')?.click();
     }
 
     addNewTrack() {
@@ -1932,12 +2318,22 @@ class AdminPanel {
                 // Update existing track
                 trackData.id = this.editingItem.id;
                 trackData.streams = this.editingItem.data.streams;
-                this.dataManager.saveTrack(trackData);
-                this.showNotification('Track updated successfully!', 'success');
+                if (window.updateTrackInFirestore) {
+                    await window.updateTrackInFirestore(this.editingItem.id, trackData);
+                    this.showNotification('Track updated successfully!', 'success');
+                } else {
+                    this.showNotification('Firestore integration is not available. Please refresh the page.', 'error');
+                    return;
+                }
             } else {
                 // Add new track
-                this.dataManager.saveTrack(trackData);
-                this.showNotification('Track uploaded successfully!', 'success');
+                if (window.saveTrackToFirestore) {
+                    await window.saveTrackToFirestore(trackData);
+                    this.showNotification('Track uploaded successfully!', 'success');
+                } else {
+                    this.showNotification('Firestore integration is not available. Please refresh the page.', 'error');
+                    return;
+                }
             }
             
             this.resetUploadForm();
@@ -2466,25 +2862,19 @@ class AdminPanel {
                 downloads: 0,
                 status: 'published',
                 audioUrl: '', // External tracks don't have local audio
-                platformLinks: {
-                    [platform]: url
-                }
             };
 
-            // Save to Firestore
+            // Save to Firestore if available
             if (window.saveTrackToFirestore) {
                 await window.saveTrackToFirestore(trackData);
                 this.showNotification('External track added to Firestore successfully!', 'success');
             } else {
-                // Fallback to local storage if Firestore not available
-                this.dataManager.saveTrack(trackData);
-                this.showNotification('External track added successfully! (Local storage)', 'warning');
+                this.showNotification('Firestore integration is not available. Please refresh the page.', 'error');
+                return;
             }
 
-            // Clear fetched metadata
-            this.fetchedExternalMetadata = null;
-            document.getElementById('externalTrackForm').reset();
-            this.switchUploadMethod('upload');
+            // Reset form and refresh table
+            this.resetExternalForm();
             this.loadTracks();
         } catch (error) {
             console.error('Error adding external track:', error);
@@ -2514,34 +2904,36 @@ class AdminPanel {
     }
 
     // Utility methods
-    showNotification(message, type = 'info') {
-        console.log(`[Notification] ${type}: ${message}`);
-        const notification = document.createElement('div');
-        notification.className = `notification notification-${type}`;
-        notification.style.zIndex = '99999';
-        notification.innerHTML = `
-            <div class="notification-content">
-                <i class="fas fa-${this.getNotificationIcon(type)}"></i>
-                <span>${message}</span>
-            </div>
-            <button class="notification-close">
-                <i class="fas fa-times"></i>
-            </button>
-        `;
+    async showNotification(message, type = 'info') {
+        const msg = String(message || '');
 
-        document.body.appendChild(notification);
+        // Wait briefly for notifications to be available (modules load asynchronously)
+        if (!window.notifications || typeof window.notifications.show !== 'function') {
+            // Wait up to 500ms for notifications to initialize
+            await new Promise(resolve => {
+                let attempts = 0;
+                const check = setInterval(() => {
+                    attempts++;
+                    if (window.notifications && typeof window.notifications.show === 'function') {
+                        clearInterval(check);
+                        resolve();
+                    } else if (attempts >= 10) { // 500ms max
+                        clearInterval(check);
+                        resolve();
+                    }
+                }, 50);
+            });
+        }
 
-        setTimeout(() => notification.classList.add('show'), 100);
+        // Try to use the global notification system
+        if (window.notifications && typeof window.notifications.show === 'function') {
+            window.notifications.show(msg, type);
+            return;
+        }
 
-        setTimeout(() => {
-            notification.classList.remove('show');
-            setTimeout(() => notification.remove(), 300);
-        }, 5000);
-
-        notification.querySelector('.notification-close').addEventListener('click', () => {
-            notification.classList.remove('show');
-            setTimeout(() => notification.remove(), 300);
-        });
+        // Fallback to alert if notifications system isn't available
+        console.log(`[Notification] ${type}: ${msg}`);
+        alert(msg);
     }
 
     getNotificationIcon(type) {
@@ -2617,6 +3009,20 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, initializing AdminPanel...');
     // Check if we're on an admin page
     if (document.querySelector('.admin-page')) {
-        window.adminPanel = new AdminPanel();
+        if (window.adminPanel) return;
+
+        const init = () => {
+            if (window.adminPanel) return;
+            window.adminPanel = new AdminPanel();
+        };
+
+        // If Firestore helpers already exist, init immediately; otherwise wait.
+        if (window.fetchArtists && window.fetchTracks) {
+            init();
+        } else {
+            window.addEventListener('adminFirebaseReady', init, { once: true });
+            // Fallback in case the event fired before we attached (or script order differs)
+            setTimeout(init, 0);
+        }
     }
 });

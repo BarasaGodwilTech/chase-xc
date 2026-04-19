@@ -40,8 +40,8 @@ class AdminAuth {
     }
 
     checkAuthentication() {
-        const token = localStorage.getItem('adminToken');
-        const user = localStorage.getItem('adminUser');
+        const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
+        const user = localStorage.getItem('adminUser') || sessionStorage.getItem('adminUser');
         
         if (token && user) {
             this.isAuthenticated = true;
@@ -65,14 +65,11 @@ class AdminAuth {
 
     async handleLogin(e) {
         e.preventDefault();
-        console.log('Login form submitted'); // Debug log
+        console.log('Login form submitted');
         
         const username = document.getElementById('username').value;
         const password = document.getElementById('password').value;
         const rememberMe = document.getElementById('rememberMe').checked;
-
-        console.log('Username:', username); // Debug log
-        console.log('Password:', password); // Debug log
 
         // Show loading state
         this.showLoading();

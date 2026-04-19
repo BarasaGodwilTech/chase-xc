@@ -120,6 +120,11 @@ function getConfig() {
   return studioConfig
 }
 
+// Get payment details
+function getPaymentDetails() {
+  return studioConfig.payment || {}
+}
+
 // Get budget tiers
 function getBudgetTiers() {
   return studioConfig.budgetTiers || {}
