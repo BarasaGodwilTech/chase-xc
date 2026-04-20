@@ -496,67 +496,6 @@ class AdminPanel {
             }
         });
 
-        const audioUploadArea = document.getElementById('audioUploadArea');
-        const audioFileInput = document.getElementById('audioFile');
-        const fileInfo = document.getElementById('fileInfo');
-
-        if (audioUploadArea && audioFileInput) {
-            audioUploadArea.addEventListener('click', () => {
-                audioFileInput.click();
-            });
-
-            audioFileInput.addEventListener('change', () => {
-                if (!fileInfo) return;
-                const f = audioFileInput.files && audioFileInput.files[0];
-                const titleInput = document.getElementById('trackTitle');
-                const releaseDateInput = document.getElementById('releaseDate');
-                const durationInput = document.getElementById('trackDuration');
-
-                if (!f) {
-                    fileInfo.classList.remove('show');
-                    fileInfo.textContent = '';
-                    if (durationInput) durationInput.value = '';
-                    return;
-                }
-
-                fileInfo.classList.add('show');
-                fileInfo.textContent = `${f.name} (${Math.round(f.size / 1024 / 1024 * 10) / 10} MB)`;
-
-                if (titleInput && !titleInput.value) {
-                    const base = f.name.replace(/\.[^/.]+$/, '');
-                    const cleaned = base.replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim();
-                    titleInput.value = cleaned;
-                }
-
-                if (releaseDateInput && !releaseDateInput.value) {
-                    releaseDateInput.value = new Date().toISOString().split('T')[0];
-                }
-
-                if (durationInput) {
-                    durationInput.value = '';
-                    try {
-                        const objectUrl = URL.createObjectURL(f);
-                        const audioProbe = new Audio();
-                        audioProbe.preload = 'metadata';
-                        audioProbe.src = objectUrl;
-                        audioProbe.addEventListener('loadedmetadata', () => {
-                            URL.revokeObjectURL(objectUrl);
-                            const seconds = audioProbe.duration;
-                            if (!seconds || !isFinite(seconds)) return;
-                            const mins = Math.floor(seconds / 60);
-                            const secs = Math.floor(seconds % 60);
-                            durationInput.value = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
-                        }, { once: true });
-                        audioProbe.addEventListener('error', () => {
-                            URL.revokeObjectURL(objectUrl);
-                        }, { once: true });
-                    } catch (_) {
-                        // ignore
-                    }
-                }
-            });
-        }
-
         const uploadArtworkBtn = document.getElementById('uploadArtworkBtn');
         const artworkInput = document.getElementById('trackArtwork');
         const artworkPreview = document.getElementById('artworkPreview');
@@ -1639,211 +1578,6 @@ class AdminPanel {
         }
     }
 
-    async loadSettings() {
-        // Load settings from Firebase config
-        try {
-            const { getConfig } = await import('../scripts/config-loader.js');
-            const config = getConfig();
-            
-            // Populate payment settings form
-            if (config.payment) {
-                document.getElementById('mtnNumber').value = config.payment.mtn || '';
-                document.getElementById('airtelNumber').value = config.payment.airtel || '';
-                document.getElementById('bankName').value = config.payment.bank?.name || '';
-                document.getElementById('bankAccount').value = config.payment.bank?.account || '';
-                document.getElementById('bankAccountName').value = config.payment.bank?.accountName || '';
-                document.getElementById('supportPhone').value = config.payment.supportPhone || '';
-            }
-            
-            // Populate plans settings form
-            if (config.plans) {
-                document.getElementById('weeklyPrice').value = config.plans.weekly?.price || '';
-                document.getElementById('weeklyDescription').value = config.plans.weekly?.description || '';
-                document.getElementById('monthlyPrice').value = config.plans.monthly?.price || '';
-                document.getElementById('monthlyDescription').value = config.plans.monthly?.description || '';
-                document.getElementById('yearlyPrice').value = config.plans.yearly?.price || '';
-                document.getElementById('yearlyDescription').value = config.plans.yearly?.description || '';
-                document.getElementById('monthlySavings').value = config.plans.monthly?.savings || '';
-                document.getElementById('yearlySavings').value = config.plans.yearly?.savings || '';
-            }
-            
-            // Populate service pricing form
-            if (config.services) {
-                document.getElementById('productionPrice').value = config.services.production || '';
-                document.getElementById('mixingPrice').value = config.services.mixing || '';
-                document.getElementById('masteringPrice').value = config.services.mastering || '';
-                document.getElementById('vocalPrice').value = config.services.vocal || '';
-                document.getElementById('hourlyRate').value = config.services.hourlyRate || '';
-                document.getElementById('packagePrice').value = config.services.packagePrice || '';
-                document.getElementById('songwritingPrice').value = config.services.songwriting || '';
-                document.getElementById('restorationPrice').value = config.services.restoration || '';
-                document.getElementById('sessionMusicianMin').value = config.services.sessionMusicianMin || '';
-                document.getElementById('sessionMusicianMax').value = config.services.sessionMusicianMax || '';
-            }
-            
-            // Populate budget tiers form
-            if (config.budgetTiers) {
-                document.getElementById('budgetStandard').value = config.budgetTiers.standard || '';
-                document.getElementById('budgetClassic').value = config.budgetTiers.classic || '';
-                document.getElementById('budgetPremium').value = config.budgetTiers.premium || '';
-                document.getElementById('budgetDeluxe').value = config.budgetTiers.deluxe || '';
-            }
-            
-            // Populate contact information form
-            if (config.contact) {
-                document.getElementById('contactPhone').value = config.contact.phone || '';
-                document.getElementById('contactEmail').value = config.contact.email || '';
-                document.getElementById('contactLocation').value = config.contact.location || '';
-            }
-            
-            // Populate about page stats form
-            if (config.about) {
-                document.getElementById('statProjects').value = config.about.projects || '';
-                document.getElementById('statArtists').value = config.about.artists || '';
-                document.getElementById('statStreams').value = config.about.streams || '';
-            }
-            
-            // Populate social media links form
-            if (config.social) {
-                document.getElementById('socialInstagram').value = config.social.instagram || '';
-                document.getElementById('socialYouTube').value = config.social.youtube || '';
-                document.getElementById('socialTikTok').value = config.social.tiktok || '';
-                document.getElementById('socialTwitter').value = config.social.twitter || '';
-                document.getElementById('socialSpotify').value = config.social.spotify || '';
-            }
-            
-            // Setup save button handler
-            this.setupSettingsSaveHandler();
-
-            // Dirty state tracking for settings
-            this.setupSettingsDirtyTracking();
-            this.setSettingsDirty(false);
-            
-        } catch (error) {
-            console.error('Error loading settings:', error);
-            this.showNotification('Error loading settings. Config loader may not be available yet.', 'error');
-        }
-    }
-
-    setupSettingsDirtyTracking() {
-        if (this.settingsDirtyBound) return;
-        const section = document.getElementById('settings');
-        if (!section) return;
-
-        this.settingsDirtyBound = true;
-        const markDirty = () => this.setSettingsDirty(true);
-        section.querySelectorAll('input, textarea, select').forEach((el) => {
-            el.addEventListener('input', markDirty);
-            el.addEventListener('change', markDirty);
-        });
-    }
-
-    setSettingsDirty(isDirty) {
-        this.settingsDirty = Boolean(isDirty);
-        const saveBtn = document.getElementById('saveSettings');
-        if (saveBtn) {
-            saveBtn.disabled = !this.settingsDirty;
-            saveBtn.classList.toggle('btn-disabled', !this.settingsDirty);
-        }
-    }
-
-    setupSettingsSaveHandler() {
-        const saveBtn = document.getElementById('saveSettings');
-        if (saveBtn) {
-            saveBtn.onclick = async () => {
-                await this.saveSettings();
-            };
-        }
-    }
-
-    async saveSettings() {
-        try {
-            const { saveSettings: saveToFirebase } = await import('../scripts/config-loader.js');
-
-            const saveBtn = document.getElementById('saveSettings');
-            if (saveBtn) {
-                saveBtn.disabled = true;
-            }
-            
-            const config = {
-                payment: {
-                    mtn: document.getElementById('mtnNumber').value,
-                    airtel: document.getElementById('airtelNumber').value,
-                    bank: {
-                        name: document.getElementById('bankName').value,
-                        account: document.getElementById('bankAccount').value,
-                        accountName: document.getElementById('bankAccountName').value
-                    },
-                    supportPhone: document.getElementById('supportPhone').value
-                },
-                plans: {
-                    weekly: {
-                        price: parseInt(document.getElementById('weeklyPrice').value) || 0,
-                        description: document.getElementById('weeklyDescription').value
-                    },
-                    monthly: {
-                        price: parseInt(document.getElementById('monthlyPrice').value) || 0,
-                        description: document.getElementById('monthlyDescription').value,
-                        savings: document.getElementById('monthlySavings').value
-                    },
-                    yearly: {
-                        price: parseInt(document.getElementById('yearlyPrice').value) || 0,
-                        description: document.getElementById('yearlyDescription').value,
-                        savings: document.getElementById('yearlySavings').value
-                    }
-                },
-                services: {
-                    production: parseInt(document.getElementById('productionPrice').value) || 0,
-                    mixing: parseInt(document.getElementById('mixingPrice').value) || 0,
-                    mastering: parseInt(document.getElementById('masteringPrice').value) || 0,
-                    vocal: parseInt(document.getElementById('vocalPrice').value) || 0,
-                    hourlyRate: parseInt(document.getElementById('hourlyRate').value) || 0,
-                    packagePrice: parseInt(document.getElementById('packagePrice').value) || 0,
-                    songwriting: parseInt(document.getElementById('songwritingPrice').value) || 0,
-                    restoration: parseInt(document.getElementById('restorationPrice').value) || 0,
-                    sessionMusicianMin: parseInt(document.getElementById('sessionMusicianMin').value) || 0,
-                    sessionMusicianMax: parseInt(document.getElementById('sessionMusicianMax').value) || 0
-                },
-                budgetTiers: {
-                    standard: parseInt(document.getElementById('budgetStandard').value) || 0,
-                    classic: parseInt(document.getElementById('budgetClassic').value) || 0,
-                    premium: parseInt(document.getElementById('budgetPremium').value) || 0,
-                    deluxe: parseInt(document.getElementById('budgetDeluxe').value) || 0
-                },
-                contact: {
-                    phone: document.getElementById('contactPhone').value,
-                    email: document.getElementById('contactEmail').value,
-                    location: document.getElementById('contactLocation').value,
-                    whatsapp: document.getElementById('whatsappNumber').value
-                },
-                about: {
-                    projects: document.getElementById('statProjects').value,
-                    artists: document.getElementById('statArtists').value,
-                    streams: document.getElementById('statStreams').value
-                },
-                social: {
-                    instagram: document.getElementById('socialInstagram').value,
-                    youtube: document.getElementById('socialYouTube').value,
-                    tiktok: document.getElementById('socialTikTok').value,
-                    twitter: document.getElementById('socialTwitter').value,
-                    spotify: document.getElementById('socialSpotify').value
-                }
-            };
-            
-            await saveToFirebase(config);
-            this.showNotification('Settings saved successfully!', 'success');
-            this.setSettingsDirty(false);
-        } catch (error) {
-            console.error('Error saving settings:', error);
-            this.showNotification('Error saving settings: ' + error.message, 'error');
-        } finally {
-            const saveBtn = document.getElementById('saveSettings');
-            if (saveBtn) {
-                saveBtn.disabled = !this.settingsDirty;
-            }
-        }
-    }
-
     async editArtist(artistId) {
         // Always use the View Artist modal for editing (single-modal UX)
         try {
@@ -2079,8 +1813,13 @@ class AdminPanel {
     }
 
     async deleteArtist(artistId) {
-        // Use the richer delete flow from admin-firebase.js (includes refresh + name in prompt)
-        if (typeof window.deleteArtist === 'function') {
+        let ok = false;
+        if (window.notifications && window.notifications.confirm) {
+            ok = await window.notifications.confirm('Are you sure you want to delete this artist?', 'Delete Artist', 'warning');
+        } else {
+            ok = confirm('Are you sure you want to delete this artist?');
+        }
+        if (ok) {
             try {
                 const artists = await window.fetchArtists();
                 const artist = (artists || []).find(a => a.id === artistId);
@@ -2096,14 +1835,6 @@ class AdminPanel {
         }
 
         // Fallback: direct Firestore delete if available
-        let ok = false;
-        if (window.notifications && window.notifications.confirm) {
-            ok = await window.notifications.confirm('Are you sure you want to delete this artist?', 'Delete Artist', 'warning');
-        } else {
-            ok = confirm('Are you sure you want to delete this artist?');
-        }
-        if (!ok) return;
-
         try {
             await window.deleteArtistFromFirestore?.(artistId);
             this.showNotification('Artist deleted successfully!', 'success');
@@ -2315,7 +2046,7 @@ class AdminPanel {
         const duration = document.getElementById('trackDuration').value;
         const releaseDate = document.getElementById('releaseDate').value;
         const description = document.getElementById('trackDescription').value;
-        const audioFile = document.getElementById('audioFile').files[0];
+        const audioUrlInput = document.getElementById('audioUrl')?.value?.trim() || '';
         const artworkFile = document.getElementById('trackArtwork').files[0];
         const spotifyArtworkUrl = document.getElementById('spotifyArtworkUrl')?.value;
         
@@ -2329,6 +2060,12 @@ class AdminPanel {
             return;
         }
         
+        const isEdit = Boolean(this.editingItem && this.editingItem.id);
+        if (!isEdit && !audioUrlInput) {
+            this.showNotification('Please provide an audio link (URL).', 'error');
+            return;
+        }
+        
         try {
             let artworkUrl = spotifyArtworkUrl || 'https://via.placeholder.com/300?text=Track';
             
@@ -2336,12 +2073,9 @@ class AdminPanel {
             if (artworkFile) {
                 artworkUrl = await this.handleImageUpload(artworkFile);
             }
-            
-            // Handle audio file (in production, upload to Firebase Storage)
-            let audioUrl = '';
-            if (audioFile) {
-                audioUrl = await this.handleAudioFileUpload(audioFile);
-            }
+
+            const existingAudioUrl = this.editingItem?.data?.audioUrl || '';
+            const audioUrl = audioUrlInput || existingAudioUrl;
             
             const trackData = {
                 title,
@@ -2371,27 +2105,19 @@ class AdminPanel {
                 // Add new track
                 if (window.saveTrackToFirestore) {
                     await window.saveTrackToFirestore(trackData);
-                    this.showNotification('Track uploaded successfully!', 'success');
+                    this.showNotification('Track saved successfully!', 'success');
                 } else {
                     this.showNotification('Firestore integration is not available. Please refresh the page.', 'error');
                     return;
                 }
             }
-            
+
             this.resetUploadForm();
             this.loadTracks();
         } catch (error) {
             console.error('Error adding external track:', error);
             this.showNotification('Error adding track: ' + error.message, 'error');
         }
-    }
-
-    async handleAudioFileUpload(file) {
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                resolve('https://via.placeholder.com/audio');
-            }, 500);
-        });
     }
 
     async searchExternalPlatform() {
