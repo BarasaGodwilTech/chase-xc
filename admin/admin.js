@@ -1271,13 +1271,13 @@ class AdminPanel {
                     <td><span class="status-badge status-${artist.status}">${artist.status}</span></td>
                     <td>
                         <div class="action-buttons">
-                            <button class="btn btn-primary btn-sm" onclick="adminPanel.editArtist('${artist.id}')">
+                            <button class="btn btn-primary btn-sm js-edit-artist" type="button" data-artist-id="${artist.id}">
                                 <i class="fas fa-edit"></i>
                             </button>
-                            <button class="btn btn-secondary btn-sm" onclick="adminPanel.viewArtist('${artist.id}')">
+                            <button class="btn btn-secondary btn-sm js-view-artist" type="button" data-artist-id="${artist.id}">
                                 <i class="fas fa-eye"></i>
                             </button>
-                            <button class="btn btn-danger btn-sm" onclick="adminPanel.deleteArtist('${artist.id}')">
+                            <button class="btn btn-danger btn-sm js-delete-artist" type="button" data-artist-id="${artist.id}">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </div>
@@ -1285,6 +1285,27 @@ class AdminPanel {
                 </tr>
             `;
         }).join('');
+
+        if (!container.dataset.actionsBound) {
+            container.dataset.actionsBound = 'true';
+            container.addEventListener('click', async (e) => {
+                const editBtn = e.target.closest('.js-edit-artist');
+                const viewBtn = e.target.closest('.js-view-artist');
+                const delBtn = e.target.closest('.js-delete-artist');
+
+                const artistId = editBtn?.dataset?.artistId || viewBtn?.dataset?.artistId || delBtn?.dataset?.artistId;
+                if (!artistId) return;
+
+                try {
+                    if (editBtn) await this.editArtist(artistId);
+                    if (viewBtn) await this.viewArtist(artistId);
+                    if (delBtn) await this.deleteArtist(artistId);
+                } catch (error) {
+                    console.error('Artist action failed:', error);
+                    this.showNotification('Action failed: ' + (error?.message || String(error)), 'error');
+                }
+            });
+        }
     }
 
     async loadTracks() {
@@ -1326,13 +1347,13 @@ class AdminPanel {
                     <td><span class="status-badge status-${track.status}">${track.status}</span></td>
                     <td>
                         <div class="action-buttons">
-                            <button class="btn btn-primary btn-sm" onclick="adminPanel.editTrack('${track.id}')">
+                            <button class="btn btn-primary btn-sm js-edit-track" type="button" data-track-id="${track.id}">
                                 <i class="fas fa-edit"></i>
                             </button>
-                            <button class="btn btn-secondary btn-sm" onclick="adminPanel.viewTrack('${track.id}')">
+                            <button class="btn btn-secondary btn-sm js-view-track" type="button" data-track-id="${track.id}">
                                 <i class="fas fa-eye"></i>
                             </button>
-                            <button class="btn btn-danger btn-sm" onclick="adminPanel.deleteTrack('${track.id}')">
+                            <button class="btn btn-danger btn-sm js-delete-track" type="button" data-track-id="${track.id}">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </div>
@@ -1340,6 +1361,27 @@ class AdminPanel {
                 </tr>
             `;
         }).join('');
+
+        if (!container.dataset.actionsBound) {
+            container.dataset.actionsBound = 'true';
+            container.addEventListener('click', async (e) => {
+                const editBtn = e.target.closest('.js-edit-track');
+                const viewBtn = e.target.closest('.js-view-track');
+                const delBtn = e.target.closest('.js-delete-track');
+
+                const trackId = editBtn?.dataset?.trackId || viewBtn?.dataset?.trackId || delBtn?.dataset?.trackId;
+                if (!trackId) return;
+
+                try {
+                    if (editBtn) await this.editTrack(trackId);
+                    if (viewBtn) await this.viewTrack(trackId);
+                    if (delBtn) await this.deleteTrack(trackId);
+                } catch (error) {
+                    console.error('Track action failed:', error);
+                    this.showNotification('Action failed: ' + (error?.message || String(error)), 'error');
+                }
+            });
+        }
     }
 
     async loadArtistsForSelect() {

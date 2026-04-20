@@ -278,7 +278,6 @@ function captureAudioUploadDraft() {
   if (!form) return null
   const fd = new FormData(form)
 
-  const audioFile = /** @type {File|null} */ (fd.get('audioFile'))
   const artworkFile = /** @type {File|null} */ (fd.get('trackArtwork'))
 
   return {
@@ -287,7 +286,7 @@ function captureAudioUploadDraft() {
     releaseDate: String(fd.get('releaseDate') || ''),
     trackDuration: String(fd.get('trackDuration') || ''),
     trackDescription: String(fd.get('trackDescription') || ''),
-    audioFile: audioFile instanceof File && audioFile.size > 0 ? audioFile : null,
+    audioUrl: String(fd.get('audioUrl') || ''),
     artworkFile: artworkFile instanceof File && artworkFile.size > 0 ? artworkFile : null,
   }
 }
@@ -307,6 +306,7 @@ function restoreAudioUploadDraft(draft) {
   setValue('releaseDate', draft.releaseDate)
   setValue('trackDuration', draft.trackDuration)
   setValue('trackDescription', draft.trackDescription)
+  setValue('audioUrl', draft.audioUrl)
 
   // File inputs cannot be programmatically set for security reasons.
   // We keep draft.audioFile/artworkFile only as a hint for future enhancement.
@@ -438,8 +438,8 @@ async function handleAudioUploadSubmit(e) {
   const releaseDate = String(fd.get('releaseDate') || '').trim()
   const duration = String(fd.get('trackDuration') || '').trim()
   const description = String(fd.get('trackDescription') || '').trim()
+  const audioUrlInput = String(fd.get('audioUrl') || '').trim()
 
-  const audioFile = /** @type {File|null} */ (fd.get('audioFile'))
   const artworkFile = /** @type {File|null} */ (fd.get('trackArtwork'))
 
   const spotifyArtworkUrl = document.getElementById('spotifyArtworkUrl')?.value || ''
@@ -457,30 +457,24 @@ async function handleAudioUploadSubmit(e) {
     return
   }
 
-  if (!isEdit) {
-    if (!audioFile || !(audioFile instanceof File) || audioFile.size === 0) {
-      if (window.notifications) {
-        window.notifications.show('Please choose an audio file.', 'error')
-      } else {
-        console.error('Please choose an audio file.')
-      }
-      return
+  // Links-only workflow: require an audio link on create; allow keeping existing link on edit.
+  if (!isEdit && !audioUrlInput) {
+    if (window.notifications) {
+      window.notifications.show('Please provide an audio link (URL).', 'error')
+    } else {
+      console.error('Please provide an audio link (URL).')
     }
+    return
   }
 
   const now = Date.now()
-  const audioExt = safeFileExt(audioFile.name) || 'mp3'
   const artworkExt = artworkFile && artworkFile instanceof File ? safeFileExt(artworkFile.name) : ''
 
   try {
     const artistName = await resolveArtistName(artistId)
 
-    // Upload audio (only if a new file is chosen)
-    let audioUrl = existingTrack?.audioUrl || ''
-    if (audioFile && audioFile instanceof File && audioFile.size > 0) {
-      const audioPath = `audio/${artistId}/${now}.${audioExt}`
-      audioUrl = await uploadFileToStorage(audioPath, audioFile)
-    }
+    // Links-only: use input if provided, otherwise keep existing.
+    const audioUrl = audioUrlInput || existingTrack?.audioUrl || ''
 
     // Handle artwork - either upload file or use Spotify URL
     let artworkUrl = existingTrack?.artwork || ''
@@ -784,18 +778,15 @@ function initAdminFirebase() {
       if (select.value === '__add_new__') {
         // Save current form draft so user can continue after adding the artist
         window.__audioUploadDraft = captureAudioUploadDraft()
-
-        const audioInput = document.getElementById('audioFile')
         const artworkInput = document.getElementById('trackArtwork')
-        const hasAudio = audioInput && audioInput.files && audioInput.files.length > 0
         const hasArtwork = artworkInput && artworkInput.files && artworkInput.files.length > 0
 
-        if (hasAudio || hasArtwork) {
+        if (hasArtwork) {
           let ok = false
           if (window.notifications && window.notifications.confirm) {
-            ok = await window.notifications.confirm('You have selected audio/artwork files. If you add a new artist now, you may need to re-select those files afterwards. Continue?', 'Confirm Action', 'warning')
+            ok = await window.notifications.confirm('You have selected an artwork file. If you add a new artist now, you may need to re-select that file afterwards. Continue?', 'Confirm Action', 'warning')
           } else {
-            ok = confirm('You have selected audio/artwork files. If you add a new artist now, you may need to re-select those files afterwards. Continue?')
+            ok = confirm('You have selected an artwork file. If you add a new artist now, you may need to re-select that file afterwards. Continue?')
           }
           if (!ok) {
             select.value = ''
