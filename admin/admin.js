@@ -1090,7 +1090,7 @@ class AdminPanel {
         // Switch to upload method to complete the import
         this.switchUploadMethod('upload');
 
-        this.showNotification('Track data imported from Spotify. Please upload audio file to complete.', 'success');
+        this.showNotification('Track data imported from Spotify. Please add an audio link (URL) to complete.', 'success');
     }
 
     showSection(sectionId) {
@@ -2160,7 +2160,7 @@ class AdminPanel {
             // Change button text to indicate edit mode
             const submitBtn = document.querySelector('#audioUploadForm button[type="submit"]');
             if (submitBtn) {
-                submitBtn.innerHTML = '<i class="fas fa-save"></i> Update Track';
+                submitBtn.innerHTML = '<i class="fas fa-save"></i> Save Track';
             }
             
             this.showNotification('Editing track: ' + track.title, 'info');
@@ -2301,7 +2301,7 @@ class AdminPanel {
         // Reset button text
         const submitBtn = document.querySelector('#audioUploadForm button[type="submit"]');
         if (submitBtn) {
-            submitBtn.innerHTML = '<i class="fas fa-upload"></i> Upload Track';
+            submitBtn.innerHTML = '<i class="fas fa-save"></i> Save Track';
         }
         
         // Reload artists select
