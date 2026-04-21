@@ -376,18 +376,12 @@ function handlePlayTrack(track) {
 }
 
 function openExternalPlayer(url, track = null) {
-  // Create a URL with track info for the redirect page
-  const params = new URLSearchParams()
-  if (track) {
-    params.set('title', track.title)
-    params.set('artist', track.artistName)
-    params.set('artwork', track.artwork)
+  // Show notification if persistent player available
+  if (window.persistentPlayer) {
+    window.persistentPlayer.showNotification(`Opening "${track?.title || 'track'}" in external player`, 'info')
   }
-  params.set('url', url)
-  
-  // Open in a new tab/window with the redirect page
-  const redirectUrl = `listen-external.html?${params.toString()}`
-  window.open(redirectUrl, '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes')
+  // Open in new tab instead of popup
+  window.open(url, '_blank')
 }
 
 function handleLikeTrack(trackId, btn) {

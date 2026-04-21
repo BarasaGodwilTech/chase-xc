@@ -376,6 +376,9 @@ class AudioPlayer {
     if (trackCards[index]) {
       trackCards[index].classList.add('active');
     }
+    
+    // Sync with persistent floating player
+    this.syncWithPersistentPlayer();
   }
 
   togglePlay() {
@@ -414,6 +417,9 @@ class AudioPlayer {
       if (floatingPlayBtn) {
         floatingPlayBtn.innerHTML = '<i class="fas fa-pause"></i>';
       }
+      
+      // Sync with persistent floating player
+      this.syncWithPersistentPlayer();
     }).catch(error => {
       console.error("Error playing audio:", error);
       // Fallback: try to load the track again
@@ -449,6 +455,9 @@ class AudioPlayer {
     if (floatingPlayBtn) {
       floatingPlayBtn.innerHTML = '<i class="fas fa-play"></i>';
     }
+    
+    // Sync with persistent floating player
+    this.syncWithPersistentPlayer();
   }
 
   nextTrack() {
@@ -794,6 +803,45 @@ class AudioPlayer {
     setTimeout(() => {
       message.remove();
     }, 4000);
+  }
+
+  // Sync with persistent floating player
+  syncWithPersistentPlayer() {
+    if (!window.persistentPlayer) return;
+    
+    const track = this.tracks[this.currentTrackIndex];
+    if (!track) return;
+    
+    const trackData = {
+      id: track.id,
+      title: track.title,
+      artistName: track.artist,
+      artwork: track.cover,
+      audioUrl: track.src,
+      originalData: track.originalData
+    };
+    
+    // Dispatch event for persistent player
+    document.dispatchEvent(new CustomEvent('trackChanged', {
+      detail: {
+        track: trackData,
+        isPlaying: this.isPlaying,
+        currentTime: this.audio?.currentTime || 0
+      }
+    }));
+    
+    // Also set playlist in persistent player
+    if (this.tracks.length > 0 && window.persistentPlayer.playlist?.length !== this.tracks.length) {
+      const playlist = this.tracks.map(t => ({
+        id: t.id,
+        title: t.title,
+        artistName: t.artist,
+        artwork: t.cover,
+        audioUrl: t.src,
+        originalData: t.originalData
+      }));
+      window.persistentPlayer.setPlaylist(playlist, this.currentTrackIndex);
+    }
   }
 }
 

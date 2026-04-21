@@ -328,16 +328,12 @@ function handleAddToPlaylist(track) {
 }
 
 function openExternalPlayer(url, track = null) {
-  const params = new URLSearchParams()
-  if (track) {
-    params.set('title', track.title)
-    params.set('artist', track.artistName)
-    params.set('artwork', track.artwork)
+  // Show notification if persistent player available
+  if (window.persistentPlayer) {
+    window.persistentPlayer.showNotification(`Opening "${track?.title || 'track'}" in external player`, 'info')
   }
-  params.set('url', url)
-
-  const redirectUrl = `listen-external.html?${params.toString()}`
-  window.open(redirectUrl, '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes')
+  // Open in new tab instead of popup
+  window.open(url, '_blank')
 }
 
 function isUserAuthenticated() {

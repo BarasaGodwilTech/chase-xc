@@ -152,6 +152,7 @@ function setupEventListeners() {
   const likeBtn = document.getElementById('likeBtn')
   const playlistBtn = document.getElementById('playlistBtn')
   const shareBtn = document.getElementById('shareBtn')
+  const backBtn = document.querySelector('.back-btn')
   
   // Play button
   if (playBtn) {
@@ -172,6 +173,22 @@ function setupEventListeners() {
   if (shareBtn) {
     shareBtn.addEventListener('click', () => handleShareTrack())
   }
+  
+  // Back button - ensure it works
+  if (backBtn) {
+    backBtn.addEventListener('click', (e) => {
+      e.preventDefault()
+      // Check if there's history to go back to
+      if (window.history.length > 1 && document.referrer.includes(window.location.hostname)) {
+        window.history.back()
+      } else {
+        window.location.href = 'music.html'
+      }
+    })
+  }
+  
+  // Setup track card listeners for "More from Artist" section
+  setupTrackCardListeners()
 }
 
 // Handle play track
@@ -283,16 +300,12 @@ function handleShareTrack() {
   }
 }
 
-// Open external player
+// Open external player - just open in new tab
 function openExternalPlayer(url) {
-  const params = new URLSearchParams()
-  params.set('title', currentTrack.title)
-  params.set('artist', currentTrack.artistName || 'Unknown Artist')
-  params.set('artwork', currentTrack.artwork || '')
-  params.set('url', url)
-  
-  const redirectUrl = `listen-external.html?${params.toString()}`
-  window.open(redirectUrl, '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes')
+  if (window.persistentPlayer) {
+    window.persistentPlayer.showNotification(`Opening "${currentTrack.title}" in external player`, 'info')
+  }
+  window.open(url, '_blank')
 }
 
 // Load more from artist
@@ -334,7 +347,7 @@ async function loadMoreFromArtist() {
             <img src="${track.artwork || ''}" alt="${track.title || ''}">
             ${badge ? `<div class="track-badge ${badge.type}">${badge.text}</div>` : ''}
             ${spotifyUrl ? '<div class="spotify-indicator" title="Listen on Spotify"><i class="fab fa-spotify"></i></div>' : ''}
-            <button class="track-play-btn" title="Play" type="button">
+            <button class="track-play-btn" aria-label="Play ${track.title || ''}" type="button">
               <i class="fas fa-play"></i>
             </button>
           </div>
@@ -347,10 +360,6 @@ async function loadMoreFromArtist() {
               <button class="like-btn-mini" title="Like" data-like-track-id="${track.id}" type="button">
                 <i class="far fa-heart"></i>
               </button>
-            </div>
-            <div class="track-meta">
-              <span class="track-genre">${track.genre || ''}</span>
-              <span class="track-duration">${track.duration || ''}</span>
             </div>
           </div>
         </div>
@@ -384,6 +393,22 @@ function setupMoreTracksListeners() {
     })
   })
   
+  // Card click listeners - navigate to detail page
+  document.querySelectorAll('#moreTracksGrid .track-card').forEach(card => {
+    card.addEventListener('click', (e) => {
+      // Don't navigate if clicking on play button, like button, or spotify indicator
+      if (e.target.closest('.track-play-btn') || 
+          e.target.closest('.like-btn-mini') || 
+          e.target.closest('.spotify-indicator')) {
+        return
+      }
+      const trackId = card.dataset.trackId
+      if (trackId) {
+        window.location.href = `track-detail.html?id=${trackId}`
+      }
+    })
+  })
+  
   // Like button listeners
   document.querySelectorAll('#moreTracksGrid .like-btn-mini').forEach(btn => {
     btn.addEventListener('click', (e) => {
@@ -409,6 +434,12 @@ function setupMoreTracksListeners() {
       }
     })
   })
+}
+
+// Setup track card listeners (called from setupEventListeners)
+function setupTrackCardListeners() {
+  // This is called after loadMoreFromArtist, so we set up listeners there
+  // This function exists for compatibility
 }
 
 // Helper functions for auth
