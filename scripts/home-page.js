@@ -185,15 +185,12 @@ async function loadFeaturedTracks() {
 }
 
 function setupTrackCardListeners() {
-  // Detect if device supports hover (desktop) or not (mobile/touch)
-  const hasHover = window.matchMedia('(hover: hover)').matches
-
-  // Play button listeners - only on desktop (hover devices)
+  // Play button listeners - plays track on all devices
   document.querySelectorAll('.track-play-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation()
       const card = btn.closest('.track-card')
-      const trackIndex = card.dataset.track
+      const trackIndex = parseInt(card.dataset.track)
       const track = window.__tracks[trackIndex]
 
       if (track) {
@@ -202,45 +199,26 @@ function setupTrackCardListeners() {
     })
   })
 
-  // Card click listeners - navigate to detail page on mobile/touch devices
-  if (!hasHover) {
-    document.querySelectorAll('.track-card').forEach(card => {
-      if (card._clickHandler) {
-        card.removeEventListener('click', card._clickHandler)
+  // Card click listeners - navigate to detail page on all devices
+  document.querySelectorAll('.track-card').forEach(card => {
+    if (card._clickHandler) {
+      card.removeEventListener('click', card._clickHandler)
+    }
+    
+    card._clickHandler = (e) => {
+      // Don't navigate if clicking on play button, like button, or spotify indicator
+      if (e.target.closest('.track-play-btn') || 
+          e.target.closest('.like-btn-mini') || 
+          e.target.closest('.spotify-indicator')) {
+        return
       }
-      
-      card._clickHandler = (e) => {
-        if (e.target.closest('.like-btn-mini') || e.target.closest('.spotify-indicator')) {
-          return
-        }
-        
-        const trackId = card.dataset.trackId
-        if (trackId) {
-          window.location.href = `track-detail.html?id=${trackId}`
-        }
+      const trackId = card.dataset.trackId
+      if (trackId) {
+        window.location.href = `track-detail.html?id=${trackId}`
       }
-      card.addEventListener('click', card._clickHandler)
-    })
-  } else {
-    // Desktop: whole card click plays track
-    document.querySelectorAll('.track-card').forEach(card => {
-      if (card._clickHandler) {
-        card.removeEventListener('click', card._clickHandler)
-      }
-      
-      card._clickHandler = (e) => {
-        if (e.target.closest('.like-btn-mini') || e.target.closest('.spotify-indicator')) {
-          return
-        }
-        const trackIndex = parseInt(card.dataset.track)
-        const track = window.__tracks[trackIndex]
-        if (track) {
-          handlePlayTrack(track)
-        }
-      }
-      card.addEventListener('click', card._clickHandler)
-    })
-  }
+    }
+    card.addEventListener('click', card._clickHandler)
+  })
 
   // Like button listeners
   document.querySelectorAll('.like-btn-mini[data-like-track-id]').forEach(btn => {
