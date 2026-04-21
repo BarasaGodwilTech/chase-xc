@@ -16,6 +16,80 @@
     user-select: none;
 }
 
+/* Header with drag, collapse, and close */
+.flp-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.flp-drag-handle {
+    display: flex;
+    align-items: center;
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 14px;
+    cursor: grab;
+    flex: 1;
+}
+
+.flp-drag-handle:active {
+    cursor: grabbing;
+}
+
+.flp-drag-handle i {
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+
+.persistent-floating-player:hover .flp-drag-handle i {
+    opacity: 1;
+}
+
+/* Collapse button */
+.flp-collapse {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    font-size: 12px;
+    transition: color 0.2s, transform 0.2s;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+}
+
+.flp-collapse:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Close button */
+.flp-close {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    font-size: 14px;
+    transition: color 0.2s, transform 0.2s;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.flp-close:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+    transform: scale(1.1);
+}
+
 /* Collapsed/Mini Mode */
 .persistent-floating-player.collapsed {
     width: auto;
@@ -25,9 +99,7 @@
 }
 
 .persistent-floating-player.collapsed .flp-content,
-.persistent-floating-player.collapsed .flp-controls,
-.persistent-floating-player.collapsed .flp-progress-container,
-.persistent-floating-player.collapsed .flp-drag-handle {
+.persistent-floating-player.collapsed .flp-header {
     display: none;
 }
 
@@ -36,9 +108,13 @@
     width: 48px;
     height: 48px;
     border-radius: 8px;
-    cursor: pointer;
+    cursor: grab;
     position: relative;
     overflow: hidden;
+}
+
+.persistent-floating-player.collapsed .flp-mini-thumb:active {
+    cursor: grabbing;
 }
 
 .persistent-floating-player.collapsed .flp-mini-thumb img {
@@ -166,28 +242,38 @@
 }
 
 
-/* Video Toggle Button */
+/* Video Toggle Button - at bottom of player */
 .flp-video-toggle {
-    position: absolute;
-    bottom: 8px;
-    right: 8px;
-    background: rgba(0, 0, 0, 0.6);
-    border: none;
-    color: #fff;
-    cursor: pointer;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    display: flex;
+    display: none;
     align-items: center;
     justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px;
+    margin-top: 8px;
+    background: rgba(255, 0, 0, 0.2);
+    border: 1px solid rgba(255, 0, 0, 0.3);
+    border-radius: 8px;
+    color: #ff6b6b;
+    cursor: pointer;
     transition: all 0.2s;
     font-size: 12px;
+    font-weight: 500;
+}
+
+.flp-video-toggle i {
+    font-size: 14px;
 }
 
 .flp-video-toggle:hover {
-    background: rgba(29, 185, 84, 0.8);
-    transform: scale(1.1);
+    background: rgba(255, 0, 0, 0.3);
+    border-color: rgba(255, 0, 0, 0.5);
+}
+
+.flp-video-toggle.active {
+    background: rgba(29, 185, 84, 0.2);
+    border-color: rgba(29, 185, 84, 0.3);
+    color: #1ed760;
 }
 
 /* Platform Badge */
@@ -306,46 +392,45 @@
 }
 
 .flp-content {
-    padding: 12px;
-    padding-top: 28px;
+    padding: 8px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 6px;
 }
 
 .flp-artwork {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
 }
 
 .flp-artwork img {
-    width: 56px;
-    height: 56px;
-    border-radius: 8px;
+    width: 40px;
+    height: 40px;
+    border-radius: 6px;
     object-fit: cover;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .flp-waveform {
     flex: 1;
-    height: 40px;
+    height: 28px;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 3px;
+    gap: 2px;
 }
 
 .flp-waveform .waveform-bar {
-    width: 3px;
+    width: 2px;
     background: linear-gradient(180deg, #1db954 0%, #1ed760 100%);
     border-radius: 2px;
     animation: waveform 0.5s ease-in-out infinite alternate;
 }
 
 @keyframes waveform {
-    from { height: 8px; }
-    to { height: 32px; }
+    from { height: 5px; }
+    to { height: 20px; }
 }
 
 .flp-waveform .waveform-bar:nth-child(odd) {
@@ -361,7 +446,7 @@
 }
 
 .flp-info h4 {
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 600;
     margin: 0;
     color: #fff;
@@ -371,9 +456,9 @@
 }
 
 .flp-info p {
-    font-size: 12px;
+    font-size: 11px;
     color: rgba(255, 255, 255, 0.7);
-    margin: 4px 0 0;
+    margin: 2px 0 0;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -383,23 +468,23 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 16px;
-    padding: 4px 0;
+    gap: 8px;
+    padding: 2px 0;
 }
 
 .flp-btn {
     background: none;
     border: none;
-    color: rgba(255, 255, 255, 0.8);
+    color: rgba(255, 255, 255, 0.7);
     cursor: pointer;
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.2s;
-    font-size: 14px;
+    font-size: 12px;
 }
 
 .flp-btn:hover {
@@ -411,11 +496,29 @@
     transform: scale(0.95);
 }
 
+.flp-btn.active {
+    color: #1db954;
+}
+
+.flp-btn-small {
+    width: 28px;
+    height: 28px;
+    font-size: 10px;
+}
+
+.flp-repeat-one {
+    position: absolute;
+    font-size: 8px;
+    font-weight: bold;
+    bottom: 4px;
+    right: 4px;
+}
+
 .flp-play-btn {
     background: #1db954;
     color: #fff;
-    width: 48px;
-    height: 48px;
+    width: 40px;
+    height: 40px;
     font-size: 16px;
 }
 
@@ -516,7 +619,7 @@ a[href*="whatsapp"] {
         border-radius: 12px;
     }
     
-    /* Video window closed by default on mobile */
+    /* Video window closed by default on mobile - only shows with .visible class */
     .flp-video-window {
         display: none !important;
     }
@@ -529,23 +632,21 @@ a[href*="whatsapp"] {
         bottom: auto !important;
     }
     
+    .flp-header {
+        padding: 6px 10px;
+    }
+    
     .flp-drag-handle {
         display: none;
     }
     
     .flp-content {
-        padding: 10px;
-        padding-top: 10px;
-    }
-    
-    .flp-close {
-        top: 6px;
-        right: 10px;
+        padding: 8px;
     }
     
     .flp-artwork img {
-        width: 48px;
-        height: 48px;
+        width: 40px;
+        height: 40px;
     }
     
     .flp-info h4 {
@@ -557,13 +658,20 @@ a[href*="whatsapp"] {
     }
     
     .flp-play-btn {
-        width: 44px;
-        height: 44px;
+        width: 40px;
+        height: 40px;
     }
     
     .flp-btn {
         width: 32px;
         height: 32px;
+    }
+    
+    /* Video toggle button visible on mobile for YouTube tracks */
+    .flp-video-toggle {
+        display: flex !important;
+        padding: 8px;
+        font-size: 11px;
     }
     
     /* Collapsed mode on mobile */

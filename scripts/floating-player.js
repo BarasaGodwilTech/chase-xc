@@ -18,6 +18,8 @@ class PersistentFloatingPlayer {
         this.videoVisible = true;
         this.isCollapsed = false;
         this.isMobile = window.innerWidth <= 480;
+        this.isShuffled = false;
+        this.repeatMode = 'none'; // 'none', 'one', 'all'
         
         this.init();
     }
@@ -42,15 +44,17 @@ class PersistentFloatingPlayer {
         
         const playerHTML = `
             <div id="persistentFloatingPlayer" class="persistent-floating-player" style="display: none;">
-                <div class="flp-drag-handle">
-                    <i class="fas fa-grip-vertical"></i>
+                <div class="flp-header">
+                    <div class="flp-drag-handle">
+                        <i class="fas fa-grip-vertical"></i>
+                    </div>
+                    <button class="flp-collapse" id="flpCollapseBtn" aria-label="Collapse player">
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <button class="flp-close" id="flpCloseBtn" aria-label="Close player">
+                        <i class="fas fa-times"></i>
+                    </button>
                 </div>
-                <button class="flp-close" id="flpCloseBtn" aria-label="Close player">
-                    <i class="fas fa-times"></i>
-                </button>
-                <button class="flp-collapse" id="flpCollapseBtn" aria-label="Collapse player">
-                    <i class="fas fa-chevron-down"></i>
-                </button>
                 <!-- Mini thumbnail for collapsed mode -->
                 <div class="flp-mini-thumb" id="flpMiniThumb" title="Expand player">
                     <img id="flpMiniArtwork" src="" alt="Now Playing">
@@ -60,9 +64,6 @@ class PersistentFloatingPlayer {
                     <div class="flp-artwork">
                         <img id="flpArtwork" src="" alt="Now Playing">
                         <div class="flp-waveform" id="flpWaveform"></div>
-                        <button class="flp-video-toggle" id="flpVideoToggle" style="display: none;" title="Toggle Video">
-                            <i class="fas fa-video"></i>
-                        </button>
                     </div>
                     <div class="flp-info">
                         <h4 id="flpTitle">Select a track</h4>
@@ -70,6 +71,9 @@ class PersistentFloatingPlayer {
                         <span class="flp-platform-badge" id="flpPlatformBadge" style="display: none;"></span>
                     </div>
                     <div class="flp-controls">
+                        <button class="flp-btn flp-btn-small" id="flpShuffleBtn" aria-label="Shuffle">
+                            <i class="fas fa-random"></i>
+                        </button>
                         <button class="flp-btn" id="flpPrevBtn" aria-label="Previous">
                             <i class="fas fa-step-backward"></i>
                         </button>
@@ -78,6 +82,9 @@ class PersistentFloatingPlayer {
                         </button>
                         <button class="flp-btn" id="flpNextBtn" aria-label="Next">
                             <i class="fas fa-step-forward"></i>
+                        </button>
+                        <button class="flp-btn flp-btn-small" id="flpRepeatBtn" aria-label="Repeat">
+                            <i class="fas fa-redo"></i>
                         </button>
                     </div>
                     <div class="flp-progress-container">
@@ -88,6 +95,11 @@ class PersistentFloatingPlayer {
                         </div>
                         <span id="flpDuration" class="flp-time">0:00</span>
                     </div>
+                    <!-- Video toggle at bottom -->
+                    <button class="flp-video-toggle" id="flpVideoToggle" style="display: none;" title="Toggle Video">
+                        <i class="fas fa-video"></i>
+                        <span>Show Video</span>
+                    </button>
                 </div>
             </div>
         `;
@@ -139,26 +151,37 @@ class PersistentFloatingPlayer {
         if (!this.videoWindow) return;
         
         this.videoVisible = !this.videoVisible;
-        this.videoWindow.style.display = this.videoVisible ? 'block' : 'none';
         
+        if (this.videoVisible) {
+            this.showVideoWindow();
+        } else {
+            this.closeVideoWindow();
+        }
+        
+        this.updateVideoToggleButton();
+        this.saveState();
+    }
+    
+    updateVideoToggleButton() {
         const toggleBtn = document.getElementById('flpVideoToggle');
         if (toggleBtn) {
-            toggleBtn.innerHTML = this.videoVisible ? '<i class="fas fa-video"></i>' : '<i class="fas fa-video-slash"></i>';
+            if (this.videoVisible) {
+                toggleBtn.innerHTML = '<i class="fas fa-video"></i><span>Hide Video</span>';
+                toggleBtn.classList.add('active');
+            } else {
+                toggleBtn.innerHTML = '<i class="fas fa-video"></i><span>Show Video</span>';
+                toggleBtn.classList.remove('active');
+            }
         }
     }
 
     closeVideoWindow() {
         if (this.videoWindow) {
             this.videoWindow.style.display = 'none';
-            const content = document.getElementById('flpVideoContent');
-            if (content) content.innerHTML = '';
+            this.videoWindow.classList.remove('visible');
         }
         this.videoVisible = false;
-        
-        const toggleBtn = document.getElementById('flpVideoToggle');
-        if (toggleBtn) {
-            toggleBtn.innerHTML = '<i class="fas fa-video-slash"></i>';
-        }
+        this.updateVideoToggleButton();
     }
 
     showVideoWindow() {
@@ -174,6 +197,7 @@ class PersistentFloatingPlayer {
                 this.videoWindow.classList.add('visible');
             }
         }
+        this.updateVideoToggleButton();
     }
     
     positionVideoWindow() {
@@ -192,19 +216,29 @@ class PersistentFloatingPlayer {
 
     attachDragEvents() {
         const dragHandle = this.playerElement.querySelector('.flp-drag-handle');
+        const miniThumb = document.getElementById('flpMiniThumb');
         
-        dragHandle.addEventListener('mousedown', (e) => this.startDrag(e));
+        // Drag handle for expanded mode
+        if (dragHandle) {
+            dragHandle.addEventListener('mousedown', (e) => this.startDrag(e));
+            dragHandle.addEventListener('touchstart', (e) => this.startDrag(e), { passive: false });
+        }
+        
+        // Mini thumbnail is draggable when collapsed
+        if (miniThumb) {
+            miniThumb.addEventListener('mousedown', (e) => this.startDrag(e));
+            miniThumb.addEventListener('touchstart', (e) => this.startDrag(e), { passive: false });
+        }
+        
         document.addEventListener('mousemove', (e) => this.onDrag(e));
         document.addEventListener('mouseup', () => this.stopDrag());
-        
-        // Touch events for mobile
-        dragHandle.addEventListener('touchstart', (e) => this.startDrag(e), { passive: false });
         document.addEventListener('touchmove', (e) => this.onDrag(e), { passive: false });
         document.addEventListener('touchend', () => this.stopDrag());
     }
 
     startDrag(e) {
         this.isDragging = true;
+        this.dragStartPosition = { x: e.clientX || e.touches?.[0]?.clientX, y: e.clientY || e.touches?.[0]?.clientY };
         const rect = this.playerElement.getBoundingClientRect();
         const clientX = e.clientX || e.touches?.[0]?.clientX;
         const clientY = e.clientY || e.touches?.[0]?.clientY;
@@ -490,18 +524,20 @@ class PersistentFloatingPlayer {
             videoTitle.textContent = track.title || 'Now Playing';
         }
         
+        // Show video toggle button for YouTube (including mobile)
+        if (toggleBtn) {
+            toggleBtn.style.display = 'flex';
+        }
+        
         // On mobile, video is closed by default - user can toggle it
         if (this.isMobile) {
             this.videoVisible = false;
             this.closeVideoWindow();
-            // Show toggle button so user can open video
-            if (toggleBtn) {
-                toggleBtn.innerHTML = '<i class="fas fa-video-slash"></i>';
-            }
         } else {
             this.showVideoWindow();
         }
         
+        this.updateVideoToggleButton();
         this.isPlaying = true;
         this.updatePlayButton();
         this.saveState();
@@ -522,9 +558,8 @@ class PersistentFloatingPlayer {
         const toggleBtn = document.getElementById('flpVideoToggle');
         if (toggleBtn) toggleBtn.style.display = 'none';
         
-        // Create YouTube embed but keep video window hidden (audio-only)
+        // Create hidden iframe for audio playback (no video window)
         const videoContent = document.getElementById('flpVideoContent');
-        const videoTitle = document.getElementById('flpVideoTitle');
         
         if (videoContent) {
             videoContent.innerHTML = `
@@ -534,17 +569,13 @@ class PersistentFloatingPlayer {
                     frameborder="0"
                     allow="accelerometer; autoplay; encrypted-media"
                     sandbox="allow-scripts allow-same-origin"
-                    style="opacity: 0; pointer-events: none;"
+                    style="position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none;"
                 ></iframe>
             `;
         }
         
-        if (videoTitle) {
-            videoTitle.textContent = track.title || 'Now Playing';
-        }
-        
-        // Don't show video window for YouTube Music
-        this.videoVisible = false;
+        // Explicitly close video window for YouTube Music
+        this.closeVideoWindow();
         this.isPlaying = true;
         this.updatePlayButton();
         this.saveState();
@@ -585,7 +616,8 @@ class PersistentFloatingPlayer {
             videoTitle.textContent = track.title || 'Now Playing';
         }
         
-        this.showVideoWindow();
+        // Don't show video window for Spotify - it's audio only
+        this.videoVisible = false;
         this.isPlaying = true;
         this.updatePlayButton();
         this.saveState();
@@ -618,7 +650,8 @@ class PersistentFloatingPlayer {
             videoTitle.textContent = track.title || 'Now Playing';
         }
         
-        this.showVideoWindow();
+        // Don't show video window for SoundCloud - it's audio only
+        this.videoVisible = false;
         this.isPlaying = true;
         this.updatePlayButton();
         this.saveState();
@@ -698,6 +731,16 @@ class PersistentFloatingPlayer {
         };
         return icons[platform] || '';
     }
+    
+    sendYouTubeCommand(command) {
+        const iframe = document.getElementById('flpYouTubeEmbed') || document.getElementById('flpYouTubeMusicEmbed');
+        if (!iframe || !iframe.contentWindow) return;
+        
+        iframe.contentWindow.postMessage(JSON.stringify({
+            event: 'command',
+            func: command
+        }), 'https://www.youtube.com');
+    }
 
     play() {
         // Handle embeds (YouTube, Spotify, SoundCloud)
@@ -708,7 +751,7 @@ class PersistentFloatingPlayer {
                 // Reload the embed
                 const { url } = this.detectPlatform(this.currentTrack);
                 if (url) {
-                    if (this.currentPlatform === 'youtube') {
+                    if (this.currentPlatform === 'youtube' || this.currentPlatform === 'youtubemusic') {
                         this.loadYouTubeEmbed(this.currentTrack, url);
                     } else if (this.currentPlatform === 'spotify') {
                         this.loadSpotifyEmbed(this.currentTrack, url);
@@ -717,8 +760,12 @@ class PersistentFloatingPlayer {
                     }
                 }
             }
-            // For embeds, we can't control playback directly
-            // Just update UI state - the embed handles its own playback
+            
+            // Control YouTube embed via postMessage API
+            if (this.currentPlatform === 'youtube' || this.currentPlatform === 'youtubemusic') {
+                this.sendYouTubeCommand('playVideo');
+            }
+            
             this.isPlaying = true;
             this.updatePlayButton();
             this.animateWaveform(true);
@@ -756,6 +803,10 @@ class PersistentFloatingPlayer {
     pause() {
         // Handle embeds
         if (this.currentPlatform && this.currentPlatform !== 'audio') {
+            // Control YouTube embed via postMessage API
+            if (this.currentPlatform === 'youtube' || this.currentPlatform === 'youtubemusic') {
+                this.sendYouTubeCommand('pauseVideo');
+            }
             this.isPlaying = false;
             this.updatePlayButton();
             this.animateWaveform(false);
@@ -824,6 +875,8 @@ class PersistentFloatingPlayer {
     }
     
     expand() {
+        // Don't expand if dragging
+        if (this.isDragging) return;
         if (!this.isCollapsed) return;
         
         this.isCollapsed = false;
@@ -949,6 +1002,8 @@ class PersistentFloatingPlayer {
         const videoToggleBtn = document.getElementById('flpVideoToggle');
         const collapseBtn = document.getElementById('flpCollapseBtn');
         const miniThumb = document.getElementById('flpMiniThumb');
+        const shuffleBtn = document.getElementById('flpShuffleBtn');
+        const repeatBtn = document.getElementById('flpRepeatBtn');
         
         if (playBtn) playBtn.addEventListener('click', () => this.togglePlay());
         if (prevBtn) prevBtn.addEventListener('click', () => this.prevTrack());
@@ -957,7 +1012,17 @@ class PersistentFloatingPlayer {
         if (seekBar) seekBar.addEventListener('input', (e) => this.seek(e.target.value));
         if (videoToggleBtn) videoToggleBtn.addEventListener('click', () => this.toggleVideoWindow());
         if (collapseBtn) collapseBtn.addEventListener('click', () => this.collapse());
-        if (miniThumb) miniThumb.addEventListener('click', () => this.expand());
+        if (miniThumb) {
+            // Use pointerup to detect click after potential drag
+            miniThumb.addEventListener('pointerup', (e) => {
+                // Only expand if not dragging
+                if (!this.isDragging) {
+                    this.expand();
+                }
+            });
+        }
+        if (shuffleBtn) shuffleBtn.addEventListener('click', () => this.toggleShuffle());
+        if (repeatBtn) repeatBtn.addEventListener('click', () => this.toggleRepeat());
         
         // Listen for page navigation to persist player
         window.addEventListener('beforeunload', () => {
@@ -974,12 +1039,24 @@ class PersistentFloatingPlayer {
 
     nextTrack() {
         if (this.playlist.length === 0) return;
-        this.currentIndex = (this.currentIndex + 1) % this.playlist.length;
+        
+        // Handle repeat one
+        if (this.repeatMode === 'one') {
+            this.loadTrack(this.playlist[this.currentIndex]);
+            this.play();
+            return;
+        }
+        
+        // Handle shuffle
+        if (this.isShuffled) {
+            this.currentIndex = Math.floor(Math.random() * this.playlist.length);
+        } else {
+            this.currentIndex = (this.currentIndex + 1) % this.playlist.length;
+        }
+        
         const track = this.playlist[this.currentIndex];
         this.loadTrack(track);
-        if (this.isPlaying || this.audio) {
-            this.play();
-        }
+        this.play();
     }
 
     prevTrack() {
@@ -989,16 +1066,64 @@ class PersistentFloatingPlayer {
             this.audio.currentTime = 0;
             return;
         }
-        this.currentIndex = (this.currentIndex - 1 + this.playlist.length) % this.playlist.length;
+        
+        // Handle shuffle
+        if (this.isShuffled) {
+            this.currentIndex = Math.floor(Math.random() * this.playlist.length);
+        } else {
+            this.currentIndex = (this.currentIndex - 1 + this.playlist.length) % this.playlist.length;
+        }
+        
         const track = this.playlist[this.currentIndex];
         this.loadTrack(track);
-        if (this.isPlaying || this.audio) {
-            this.play();
-        }
+        this.play();
     }
 
     handleTrackEnd() {
-        this.nextTrack();
+        // Handle repeat one
+        if (this.repeatMode === 'one') {
+            if (this.audio) {
+                this.audio.currentTime = 0;
+                this.play();
+            }
+            return;
+        }
+        
+        // Handle repeat all - continue playing
+        if (this.repeatMode === 'all' || this.currentIndex < this.playlist.length - 1) {
+            this.nextTrack();
+        } else {
+            // End of playlist, stop playing
+            this.isPlaying = false;
+            this.updatePlayButton();
+        }
+    }
+    
+    toggleShuffle() {
+        this.isShuffled = !this.isShuffled;
+        const shuffleBtn = document.getElementById('flpShuffleBtn');
+        if (shuffleBtn) {
+            shuffleBtn.classList.toggle('active', this.isShuffled);
+        }
+        this.saveState();
+    }
+    
+    toggleRepeat() {
+        const modes = ['none', 'all', 'one'];
+        const currentIndex = modes.indexOf(this.repeatMode);
+        this.repeatMode = modes[(currentIndex + 1) % modes.length];
+        
+        const repeatBtn = document.getElementById('flpRepeatBtn');
+        if (repeatBtn) {
+            repeatBtn.classList.toggle('active', this.repeatMode !== 'none');
+            // Update icon for repeat one
+            if (this.repeatMode === 'one') {
+                repeatBtn.innerHTML = '<i class="fas fa-redo"></i><span class="flp-repeat-one">1</span>';
+            } else {
+                repeatBtn.innerHTML = '<i class="fas fa-redo"></i>';
+            }
+        }
+        this.saveState();
     }
 
     syncWithMainPlayer(track, isPlaying, currentTime) {
