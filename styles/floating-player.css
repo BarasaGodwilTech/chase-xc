@@ -161,7 +161,7 @@
     border-radius: 12px;
     border: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-    z-index: 9997;
+    z-index: 9999;
     overflow: hidden;
     animation: videoSlideIn 0.3s ease-out;
     pointer-events: auto;
@@ -242,23 +242,22 @@
 }
 
 
-/* Video Toggle Button - at bottom of player */
+/* Video Toggle Button - below artwork */
 .flp-video-toggle {
     display: none;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    width: 100%;
-    padding: 10px;
-    margin-top: 8px;
-    background: rgba(255, 0, 0, 0.2);
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    margin: 4px auto 0;
+    background: rgba(255, 0, 0, 0.15);
     border: 1px solid rgba(255, 0, 0, 0.3);
-    border-radius: 8px;
+    border-radius: 50%;
     color: #ff6b6b;
     cursor: pointer;
     transition: all 0.2s;
-    font-size: 12px;
-    font-weight: 500;
+    font-size: 14px;
 }
 
 .flp-video-toggle i {
@@ -268,11 +267,12 @@
 .flp-video-toggle:hover {
     background: rgba(255, 0, 0, 0.3);
     border-color: rgba(255, 0, 0, 0.5);
+    transform: scale(1.1);
 }
 
 .flp-video-toggle.active {
     background: rgba(29, 185, 84, 0.2);
-    border-color: rgba(29, 185, 84, 0.3);
+    border-color: rgba(29, 185, 84, 0.4);
     color: #1ed760;
 }
 
@@ -504,14 +504,17 @@
     width: 28px;
     height: 28px;
     font-size: 10px;
+    position: relative;
 }
 
 .flp-repeat-one {
     position: absolute;
     font-size: 8px;
     font-weight: bold;
-    bottom: 4px;
-    right: 4px;
+    bottom: 2px;
+    right: 2px;
+    color: #1db954;
+    line-height: 1;
 }
 
 .flp-play-btn {

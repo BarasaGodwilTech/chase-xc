@@ -8,6 +8,7 @@ class PersistentFloatingPlayer {
         this.playerElement = null;
         this.videoWindow = null;
         this.isDragging = false;
+        this.wasDragged = false;
         this.dragOffsetX = 0;
         this.dragOffsetY = 0;
         this.syncInterval = null;
@@ -32,9 +33,13 @@ class PersistentFloatingPlayer {
         this.startSyncInterval();
         this.handleVisibilityChange();
         
-        // Listen for resize to update mobile state
+        // Listen for resize to update mobile state and reposition video
         window.addEventListener('resize', () => {
             this.isMobile = window.innerWidth <= 480;
+            // Reposition video window on resize
+            if (this.videoVisible && this.videoWindow) {
+                this.positionVideoWindow();
+            }
         });
     }
 
@@ -65,6 +70,10 @@ class PersistentFloatingPlayer {
                         <img id="flpArtwork" src="" alt="Now Playing">
                         <div class="flp-waveform" id="flpWaveform"></div>
                     </div>
+                    <!-- Video toggle button below artwork -->
+                    <button class="flp-video-toggle" id="flpVideoToggle" style="display: none;" title="Toggle Video">
+                        <i class="fas fa-video"></i>
+                    </button>
                     <div class="flp-info">
                         <h4 id="flpTitle">Select a track</h4>
                         <p id="flpArtist">--</p>
@@ -95,11 +104,6 @@ class PersistentFloatingPlayer {
                         </div>
                         <span id="flpDuration" class="flp-time">0:00</span>
                     </div>
-                    <!-- Video toggle at bottom -->
-                    <button class="flp-video-toggle" id="flpVideoToggle" style="display: none;" title="Toggle Video">
-                        <i class="fas fa-video"></i>
-                        <span>Show Video</span>
-                    </button>
                 </div>
             </div>
         `;
@@ -166,11 +170,13 @@ class PersistentFloatingPlayer {
         const toggleBtn = document.getElementById('flpVideoToggle');
         if (toggleBtn) {
             if (this.videoVisible) {
-                toggleBtn.innerHTML = '<i class="fas fa-video"></i><span>Hide Video</span>';
+                toggleBtn.innerHTML = '<i class="fas fa-video"></i>';
                 toggleBtn.classList.add('active');
+                toggleBtn.title = 'Hide Video';
             } else {
-                toggleBtn.innerHTML = '<i class="fas fa-video"></i><span>Show Video</span>';
+                toggleBtn.innerHTML = '<i class="fas fa-video-slash"></i>';
                 toggleBtn.classList.remove('active');
+                toggleBtn.title = 'Show Video';
             }
         }
     }
@@ -192,6 +198,10 @@ class PersistentFloatingPlayer {
             // Position video window above the floating player
             this.positionVideoWindow();
             
+            // Reposition again after iframe loads (delayed)
+            setTimeout(() => this.positionVideoWindow(), 100);
+            setTimeout(() => this.positionVideoWindow(), 500);
+            
             // On mobile, add visible class for CSS
             if (this.isMobile) {
                 this.videoWindow.classList.add('visible');
@@ -204,7 +214,12 @@ class PersistentFloatingPlayer {
         if (!this.videoWindow || !this.playerElement) return;
         
         const playerRect = this.playerElement.getBoundingClientRect();
-        const videoHeight = this.videoWindow.offsetHeight || 200;
+        // Use actual height or default to 16:9 ratio based on width
+        let videoHeight = this.videoWindow.offsetHeight;
+        if (videoHeight < 50) {
+            // If video window hasn't rendered yet, calculate based on 16:9 ratio
+            videoHeight = 280 * 9 / 16 + 50; // video width * ratio + header height
+        }
         
         // Position video window above the floating player
         const videoBottom = playerRect.top - 10; // 10px gap
@@ -212,9 +227,13 @@ class PersistentFloatingPlayer {
         this.videoWindow.style.bottom = 'auto';
         this.videoWindow.style.top = `${Math.max(10, videoBottom - videoHeight)}px`;
         this.videoWindow.style.right = `${window.innerWidth - playerRect.right}px`;
+        this.videoWindow.style.left = 'auto';
     }
 
     attachDragEvents() {
+        // Disable dragging on mobile completely
+        if (this.isMobile) return;
+        
         const dragHandle = this.playerElement.querySelector('.flp-drag-handle');
         const miniThumb = document.getElementById('flpMiniThumb');
         
@@ -260,6 +279,9 @@ class PersistentFloatingPlayer {
             clientY = e.touches[0].clientY;
         }
         
+        // Track end position for movement detection
+        this.dragEndPosition = { x: clientX, y: clientY };
+        
         let left = clientX - this.dragOffsetX;
         let top = clientY - this.dragOffsetY;
         
@@ -276,14 +298,31 @@ class PersistentFloatingPlayer {
         this.playerElement.style.top = top + 'px';
         this.playerElement.style.right = 'auto';
         this.playerElement.style.bottom = 'auto';
+        
+        // Reposition video window while dragging
+        if (this.videoVisible) {
+            this.positionVideoWindow();
+        }
     }
 
     stopDrag() {
         if (!this.isDragging) return;
+        
+        // Check if there was actual movement (more than 5px)
+        const start = this.dragStartPosition || { x: 0, y: 0 };
+        const end = this.dragEndPosition || start;
+        const distance = Math.sqrt(Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2));
+        this.wasDragged = distance > 5;
+        
         this.isDragging = false;
         this.playerElement.style.transition = '';
         this.playerElement.classList.remove('dragging');
         this.savePosition();
+        
+        // Reposition video window after drag
+        if (this.videoVisible) {
+            this.positionVideoWindow();
+        }
     }
 
     savePosition() {
@@ -303,6 +342,11 @@ class PersistentFloatingPlayer {
             this.playerElement.style.top = top;
             this.playerElement.style.right = 'auto';
             this.playerElement.style.bottom = 'auto';
+            
+            // Reposition video window after loading position
+            if (this.videoVisible) {
+                setTimeout(() => this.positionVideoWindow(), 0);
+            }
         }
     }
 
@@ -751,8 +795,10 @@ class PersistentFloatingPlayer {
                 // Reload the embed
                 const { url } = this.detectPlatform(this.currentTrack);
                 if (url) {
-                    if (this.currentPlatform === 'youtube' || this.currentPlatform === 'youtubemusic') {
+                    if (this.currentPlatform === 'youtube') {
                         this.loadYouTubeEmbed(this.currentTrack, url);
+                    } else if (this.currentPlatform === 'youtubemusic') {
+                        this.loadYouTubeMusicEmbed(this.currentTrack, url);
                     } else if (this.currentPlatform === 'spotify') {
                         this.loadSpotifyEmbed(this.currentTrack, url);
                     } else if (this.currentPlatform === 'soundcloud') {
@@ -875,8 +921,6 @@ class PersistentFloatingPlayer {
     }
     
     expand() {
-        // Don't expand if dragging
-        if (this.isDragging) return;
         if (!this.isCollapsed) return;
         
         this.isCollapsed = false;
@@ -1015,10 +1059,11 @@ class PersistentFloatingPlayer {
         if (miniThumb) {
             // Use pointerup to detect click after potential drag
             miniThumb.addEventListener('pointerup', (e) => {
-                // Only expand if not dragging
-                if (!this.isDragging) {
+                // Only expand if there was no significant drag movement
+                if (!this.wasDragged) {
                     this.expand();
                 }
+                this.wasDragged = false;
             });
         }
         if (shuffleBtn) shuffleBtn.addEventListener('click', () => this.toggleShuffle());

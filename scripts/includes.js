@@ -1,4 +1,18 @@
 (function () {
+    // Auto-load config-loader.js for settings data on all pages
+    function autoLoadConfig() {
+        // Check if config-loader is already loaded
+        if (document.querySelector('script[src*="config-loader.js"]')) return;
+        
+        const script = document.createElement('script');
+        script.type = 'module';
+        script.src = 'scripts/config-loader.js';
+        document.body.appendChild(script);
+    }
+    
+    // Load config immediately for settings data
+    autoLoadConfig();
+
     async function includeAll() {
         const includeEls = document.querySelectorAll('[data-include]');
         if (includeEls.length === 0) return;

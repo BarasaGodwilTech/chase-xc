@@ -199,11 +199,38 @@ function handlePlayTrack() {
   
   // Use persistent floating player for all tracks
   if (window.persistentPlayer) {
-    // Add track to playlist if not already there
-    if (!window.persistentPlayer.playlist.find(t => t.id === currentTrack.id)) {
-      window.persistentPlayer.setPlaylist([currentTrack], 0)
+    // Build full playlist from all tracks if not set
+    if (window.persistentPlayer.playlist.length === 0 && window.__tracks?.length > 0) {
+      const fullPlaylist = window.__tracks.map(t => ({
+        id: t.id,
+        title: t.title,
+        artistName: t.artistName,
+        artwork: t.artwork,
+        audioUrl: t.audioUrl,
+        platformLinks: t.platformLinks || {},
+        originalData: t
+      }));
+      window.persistentPlayer.setPlaylist(fullPlaylist, 0);
+    }
+    
+    // Find track index in playlist
+    const existingIndex = window.persistentPlayer.playlist.findIndex(t => t.id === currentTrack.id);
+    if (existingIndex !== -1) {
+      window.persistentPlayer.currentIndex = existingIndex;
+      window.persistentPlayer.loadTrack(window.persistentPlayer.playlist[existingIndex]);
     } else {
-      window.persistentPlayer.loadTrack(currentTrack)
+      // Track not in playlist, add it
+      window.persistentPlayer.playlist.push({
+        id: currentTrack.id,
+        title: currentTrack.title,
+        artistName: currentTrack.artistName,
+        artwork: currentTrack.artwork,
+        audioUrl: currentTrack.audioUrl,
+        platformLinks: currentTrack.platformLinks || {},
+        originalData: currentTrack
+      });
+      window.persistentPlayer.currentIndex = window.persistentPlayer.playlist.length - 1;
+      window.persistentPlayer.loadTrack(currentTrack);
     }
     
     // For audio files, also sync with main audio player if available
