@@ -355,23 +355,29 @@ function setupTrackCardListeners() {
 function handlePlayTrack(track) {
   console.log('[MusicPage] Playing track:', track.title)
   
-  // Check if track has audio URL
-  if (track.audioUrl && track.audioUrl.trim() !== '') {
-    // Play using audio player
-    if (window.audioPlayer) {
-      window.audioPlayer.loadTrackByData(track.id)
+  // Use persistent floating player for all tracks
+  if (window.persistentPlayer) {
+    // Add track to playlist if not already there
+    if (!window.persistentPlayer.playlist.find(t => t.id === track.id)) {
+      window.persistentPlayer.setPlaylist([track], 0)
     } else {
-      console.error('[MusicPage] Audio player not available')
+      window.persistentPlayer.loadTrack(track)
     }
-  } else {
-    // Check for external links (Spotify, SoundCloud, etc.)
-    const externalUrl = track.spotifyUrl || track.platformLinks?.spotify || track.platformLinks?.soundcloud || track.platformLinks?.youtube
     
-    if (externalUrl) {
-      openExternalPlayer(externalUrl, track)
-    } else {
-      alert('No audio available for this track')
+    // For audio files, also sync with main audio player if available
+    if (track.audioUrl && track.audioUrl.trim() !== '' && window.audioPlayer) {
+      let trackIndex = window.__tracks.findIndex(t => t.id === track.id)
+      if (trackIndex === -1) {
+        window.__tracks.push(track)
+        trackIndex = window.__tracks.length - 1
+      }
+      window.audioPlayer.currentTrackIndex = trackIndex
+      window.audioPlayer.loadTrack(trackIndex)
     }
+    
+    window.persistentPlayer.play()
+  } else {
+    console.error('[MusicPage] Persistent player not available')
   }
 }
 

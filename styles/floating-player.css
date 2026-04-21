@@ -16,6 +16,145 @@
     user-select: none;
 }
 
+/* Video Window Styles */
+.flp-video-window {
+    position: fixed;
+    bottom: 100px;
+    right: 20px;
+    width: 400px;
+    background: rgba(26, 26, 46, 0.98);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    z-index: 9997;
+    overflow: hidden;
+    animation: videoSlideIn 0.3s ease-out;
+}
+
+@keyframes videoSlideIn {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.flp-video-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: rgba(0, 0, 0, 0.3);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.flp-video-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+}
+
+.flp-video-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.flp-video-btn {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.7);
+    cursor: pointer;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    font-size: 12px;
+}
+
+.flp-video-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.flp-video-content {
+    position: relative;
+    width: 100%;
+    height: 0;
+    padding-bottom: 56.25%; /* 16:9 aspect ratio */
+}
+
+.flp-video-content iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
+/* Video Toggle Button */
+.flp-video-toggle {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    background: rgba(0, 0, 0, 0.6);
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    font-size: 12px;
+}
+
+.flp-video-toggle:hover {
+    background: rgba(29, 185, 84, 0.8);
+    transform: scale(1.1);
+}
+
+/* Platform Badge */
+.flp-platform-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-top: 4px;
+}
+
+.flp-badge-youtube {
+    background: rgba(255, 0, 0, 0.2);
+    color: #ff0000;
+}
+
+.flp-badge-spotify {
+    background: rgba(30, 215, 96, 0.2);
+    color: #1ed760;
+}
+
+.flp-badge-soundcloud {
+    background: rgba(255, 136, 0, 0.2);
+    color: #ff8800;
+}
+
 .persistent-floating-player:hover {
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
 }

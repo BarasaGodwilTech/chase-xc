@@ -197,16 +197,22 @@ function handlePlayTrack() {
   
   console.log('[TrackDetail] Playing track:', currentTrack.title)
   
-  // Check if track has audio URL
-  if (currentTrack.audioUrl && currentTrack.audioUrl.trim() !== '') {
-    // Play using audio player
-    if (window.audioPlayer) {
+  // Use persistent floating player for all tracks
+  if (window.persistentPlayer) {
+    // Add track to playlist if not already there
+    if (!window.persistentPlayer.playlist.find(t => t.id === currentTrack.id)) {
+      window.persistentPlayer.setPlaylist([currentTrack], 0)
+    } else {
+      window.persistentPlayer.loadTrack(currentTrack)
+    }
+    
+    // For audio files, also sync with main audio player if available
+    if (currentTrack.audioUrl && currentTrack.audioUrl.trim() !== '' && window.audioPlayer) {
       // Add track to window.__tracks if not already there
       if (!window.__tracks) {
         window.__tracks = []
       }
       
-      // Find or add track in window.__tracks
       let trackIndex = window.__tracks.findIndex(t => t.id === currentTrack.id)
       if (trackIndex === -1) {
         window.__tracks.push(currentTrack)
@@ -215,19 +221,11 @@ function handlePlayTrack() {
       
       window.audioPlayer.currentTrackIndex = trackIndex
       window.audioPlayer.loadTrack(trackIndex)
-      window.audioPlayer.play()
-    } else {
-      console.error('[TrackDetail] Audio player not available')
     }
-  } else {
-    // Check for external links
-    const externalUrl = currentTrack.spotifyUrl || currentTrack.platformLinks?.spotify || currentTrack.platformLinks?.soundcloud || currentTrack.platformLinks?.youtube
     
-    if (externalUrl) {
-      openExternalPlayer(externalUrl)
-    } else {
-      alert('No audio available for this track')
-    }
+    window.persistentPlayer.play()
+  } else {
+    console.error('[TrackDetail] Persistent player not available')
   }
 }
 
@@ -385,10 +383,21 @@ function setupMoreTracksListeners() {
       const trackIndex = parseInt(card.dataset.track)
       const track = window.__tracks[trackIndex]
       
-      if (track && window.audioPlayer) {
-        window.audioPlayer.currentTrackIndex = trackIndex
-        window.audioPlayer.loadTrack(trackIndex)
-        window.audioPlayer.play()
+      if (track && window.persistentPlayer) {
+        // Use floating player
+        if (!window.persistentPlayer.playlist.find(t => t.id === track.id)) {
+          window.persistentPlayer.setPlaylist([track], 0)
+        } else {
+          window.persistentPlayer.loadTrack(track)
+        }
+        
+        // Also sync with audio player for audio files
+        if (track.audioUrl && track.audioUrl.trim() !== '' && window.audioPlayer) {
+          window.audioPlayer.currentTrackIndex = trackIndex
+          window.audioPlayer.loadTrack(trackIndex)
+        }
+        
+        window.persistentPlayer.play()
       }
     })
   })

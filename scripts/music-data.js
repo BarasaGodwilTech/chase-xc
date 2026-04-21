@@ -350,19 +350,23 @@ class MusicDataRenderer {
     handlePlayTrack(track) {
         console.log('[MusicData] Playing track:', track.title);
 
-        if (track.audioUrl && track.audioUrl.trim() !== '') {
-            if (window.audioPlayer) {
+        // Use persistent floating player for all tracks
+        if (window.persistentPlayer) {
+            // Add track to playlist if not already there
+            if (!window.persistentPlayer.playlist.find(t => t.id === track.id)) {
+                window.persistentPlayer.setPlaylist([track], 0);
+            } else {
+                window.persistentPlayer.loadTrack(track);
+            }
+            
+            // For audio files, also sync with main audio player if available
+            if (track.audioUrl && track.audioUrl.trim() !== '' && window.audioPlayer) {
                 window.audioPlayer.loadTrackByData(track.id);
-            } else {
-                console.error('[MusicData] Audio player not available');
             }
+            
+            window.persistentPlayer.play();
         } else {
-            const externalUrl = track.spotifyUrl || track.platformLinks?.spotify || track.platformLinks?.soundcloud || track.platformLinks?.youtube;
-            if (externalUrl) {
-                this.openExternalPlayer(externalUrl, track);
-            } else {
-                alert('No audio available for this track');
-            }
+            console.error('[MusicData] Persistent player not available');
         }
     }
 

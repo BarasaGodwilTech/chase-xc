@@ -1,22 +1,28 @@
 // Persistent Floating Player - Singleton pattern
+// Handles both audio files and external links (YouTube, Spotify, SoundCloud)
 class PersistentFloatingPlayer {
     constructor() {
         this.audio = null;
         this.isPlaying = false;
         this.currentTrack = null;
         this.playerElement = null;
+        this.videoWindow = null;
         this.isDragging = false;
         this.dragOffsetX = 0;
         this.dragOffsetY = 0;
         this.syncInterval = null;
         this.playlist = [];
         this.currentIndex = 0;
+        this.currentPlatform = null; // 'audio', 'youtube', 'spotify', 'soundcloud'
+        this.embedContainer = null;
+        this.videoVisible = true;
         
         this.init();
     }
 
     init() {
         this.createPlayerElement();
+        this.createVideoWindow();
         this.loadStateFromStorage();
         this.setupEventListeners();
         this.startSyncInterval();
@@ -39,10 +45,14 @@ class PersistentFloatingPlayer {
                     <div class="flp-artwork">
                         <img id="flpArtwork" src="" alt="Now Playing">
                         <div class="flp-waveform" id="flpWaveform"></div>
+                        <button class="flp-video-toggle" id="flpVideoToggle" style="display: none;" title="Toggle Video">
+                            <i class="fas fa-video"></i>
+                        </button>
                     </div>
                     <div class="flp-info">
                         <h4 id="flpTitle">Select a track</h4>
                         <p id="flpArtist">--</p>
+                        <span class="flp-platform-badge" id="flpPlatformBadge" style="display: none;"></span>
                     </div>
                     <div class="flp-controls">
                         <button class="flp-btn" id="flpPrevBtn" aria-label="Previous">
@@ -70,6 +80,77 @@ class PersistentFloatingPlayer {
         document.body.insertAdjacentHTML('beforeend', playerHTML);
         this.playerElement = document.getElementById('persistentFloatingPlayer');
         this.attachDragEvents();
+    }
+
+    createVideoWindow() {
+        // Check if video window already exists
+        if (document.getElementById('flpVideoWindow')) return;
+        
+        const videoWindowHTML = `
+            <div id="flpVideoWindow" class="flp-video-window" style="display: none;">
+                <div class="flp-video-header">
+                    <span class="flp-video-title" id="flpVideoTitle">Now Playing</span>
+                    <div class="flp-video-actions">
+                        <button class="flp-video-btn" id="flpMinimizeVideo" title="Minimize to audio only">
+                            <i class="fas fa-compress-alt"></i>
+                        </button>
+                        <button class="flp-video-btn" id="flpCloseVideo" title="Close video">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="flp-video-content" id="flpVideoContent">
+                    <!-- Embed will be inserted here -->
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', videoWindowHTML);
+        this.videoWindow = document.getElementById('flpVideoWindow');
+        
+        // Setup video window event listeners
+        const minimizeBtn = document.getElementById('flpMinimizeVideo');
+        const closeBtn = document.getElementById('flpCloseVideo');
+        
+        if (minimizeBtn) {
+            minimizeBtn.addEventListener('click', () => this.toggleVideoWindow());
+        }
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => this.closeVideoWindow());
+        }
+    }
+
+    toggleVideoWindow() {
+        if (!this.videoWindow) return;
+        
+        this.videoVisible = !this.videoVisible;
+        this.videoWindow.style.display = this.videoVisible ? 'block' : 'none';
+        
+        const toggleBtn = document.getElementById('flpVideoToggle');
+        if (toggleBtn) {
+            toggleBtn.innerHTML = this.videoVisible ? '<i class="fas fa-video"></i>' : '<i class="fas fa-video-slash"></i>';
+        }
+    }
+
+    closeVideoWindow() {
+        if (this.videoWindow) {
+            this.videoWindow.style.display = 'none';
+            const content = document.getElementById('flpVideoContent');
+            if (content) content.innerHTML = '';
+        }
+        this.videoVisible = false;
+        
+        const toggleBtn = document.getElementById('flpVideoToggle');
+        if (toggleBtn) {
+            toggleBtn.innerHTML = '<i class="fas fa-video-slash"></i>';
+        }
+    }
+
+    showVideoWindow() {
+        if (this.videoWindow) {
+            this.videoWindow.style.display = 'block';
+            this.videoVisible = true;
+        }
     }
 
     attachDragEvents() {
@@ -225,36 +306,231 @@ class PersistentFloatingPlayer {
         if (!track) return;
         
         this.currentTrack = track;
+        this.closeVideoWindow();
         
+        // Detect platform and get URL
+        const { platform, url } = this.detectPlatform(track);
+        this.currentPlatform = platform;
+        
+        if (platform === 'audio' && url) {
+            // Direct audio file
+            this.loadAudioFile(track, url);
+        } else if (platform === 'youtube') {
+            // YouTube - show video window
+            this.loadYouTubeEmbed(track, url);
+        } else if (platform === 'spotify') {
+            // Spotify embed
+            this.loadSpotifyEmbed(track, url);
+        } else if (platform === 'soundcloud') {
+            // SoundCloud embed
+            this.loadSoundCloudEmbed(track, url);
+        } else {
+            this.showNotification('No playable source found', 'warning');
+        }
+    }
+
+    detectPlatform(track) {
+        // Check for direct audio URL first
+        if (track.audioUrl && track.audioUrl.trim() !== '') {
+            return { platform: 'audio', url: track.audioUrl };
+        }
+        
+        // Check platform links
+        const links = track.platformLinks || {};
+        
+        // YouTube
+        const youtubeUrl = track.youtubeUrl || links.youtube || '';
+        if (youtubeUrl) {
+            return { platform: 'youtube', url: youtubeUrl };
+        }
+        
+        // Spotify
+        const spotifyUrl = track.spotifyUrl || links.spotify || '';
+        if (spotifyUrl) {
+            return { platform: 'spotify', url: spotifyUrl };
+        }
+        
+        // SoundCloud
+        const soundcloudUrl = track.soundcloudUrl || links.soundcloud || '';
+        if (soundcloudUrl) {
+            return { platform: 'soundcloud', url: soundcloudUrl };
+        }
+        
+        return { platform: null, url: null };
+    }
+
+    loadAudioFile(track, url) {
         if (!this.audio) {
             this.audio = new Audio();
             this.setupAudioEvents();
         }
         
-        if (track.audioUrl && track.audioUrl.trim() !== '') {
-            this.audio.src = track.audioUrl;
-            this.audio.load();
-            this.updateUI();
-            this.show();
-            this.saveState();
-        } else {
-            // For external links (Spotify, YouTube, SoundCloud), open in new tab
-            const externalUrl = track.spotifyUrl || track.platformLinks?.spotify || track.platformLinks?.soundcloud || track.platformLinks?.youtube;
-            if (externalUrl) {
-                this.showNotification(`Opening "${track.title}" in external player`, 'info');
-                window.open(externalUrl, '_blank');
-                return;
-            }
-            this.showNotification('No audio available for this track', 'warning');
-        }
+        this.audio.src = url;
+        this.audio.load();
+        this.updateUI('audio');
+        this.show();
+        this.saveState();
+        
+        // Hide video toggle for audio files
+        const toggleBtn = document.getElementById('flpVideoToggle');
+        if (toggleBtn) toggleBtn.style.display = 'none';
     }
 
-    updateUI() {
+    loadYouTubeEmbed(track, url) {
+        const videoId = this.extractYouTubeId(url);
+        if (!videoId) {
+            this.showNotification('Invalid YouTube URL', 'error');
+            return;
+        }
+        
+        this.updateUI('youtube');
+        this.show();
+        
+        // Show video toggle button
+        const toggleBtn = document.getElementById('flpVideoToggle');
+        if (toggleBtn) {
+            toggleBtn.style.display = 'flex';
+            toggleBtn.innerHTML = '<i class="fas fa-video"></i>';
+        }
+        
+        // Create YouTube embed in video window
+        const videoContent = document.getElementById('flpVideoContent');
+        const videoTitle = document.getElementById('flpVideoTitle');
+        
+        if (videoContent) {
+            videoContent.innerHTML = `
+                <iframe 
+                    id="flpYouTubeEmbed"
+                    src="https://www.youtube.com/embed/${videoId}?enablejsapi=1&autoplay=1&origin=${window.location.origin}"
+                    frameborder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen
+                ></iframe>
+            `;
+        }
+        
+        if (videoTitle) {
+            videoTitle.textContent = track.title || 'Now Playing';
+        }
+        
+        this.showVideoWindow();
+        this.isPlaying = true;
+        this.updatePlayButton();
+        this.saveState();
+    }
+
+    loadSpotifyEmbed(track, url) {
+        const spotifyUri = this.extractSpotifyUri(url);
+        if (!spotifyUri) {
+            this.showNotification('Invalid Spotify URL', 'error');
+            return;
+        }
+        
+        this.updateUI('spotify');
+        this.show();
+        
+        // Hide video toggle for Spotify
+        const toggleBtn = document.getElementById('flpVideoToggle');
+        if (toggleBtn) toggleBtn.style.display = 'none';
+        
+        // Create Spotify embed in video window (treated as audio player)
+        const videoContent = document.getElementById('flpVideoContent');
+        const videoTitle = document.getElementById('flpVideoTitle');
+        
+        if (videoContent) {
+            videoContent.innerHTML = `
+                <iframe 
+                    id="flpSpotifyEmbed"
+                    src="https://open.spotify.com/embed/${spotifyUri}?utm_source=generator&theme=0"
+                    frameborder="0"
+                    allowfullscreen=""
+                    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                    loading="lazy"
+                ></iframe>
+            `;
+        }
+        
+        if (videoTitle) {
+            videoTitle.textContent = track.title || 'Now Playing';
+        }
+        
+        this.showVideoWindow();
+        this.isPlaying = true;
+        this.updatePlayButton();
+        this.saveState();
+    }
+
+    loadSoundCloudEmbed(track, url) {
+        this.updateUI('soundcloud');
+        this.show();
+        
+        // Hide video toggle for SoundCloud
+        const toggleBtn = document.getElementById('flpVideoToggle');
+        if (toggleBtn) toggleBtn.style.display = 'none';
+        
+        // Create SoundCloud embed in video window
+        const videoContent = document.getElementById('flpVideoContent');
+        const videoTitle = document.getElementById('flpVideoTitle');
+        
+        if (videoContent) {
+            videoContent.innerHTML = `
+                <iframe 
+                    id="flpSoundCloudEmbed"
+                    src="https://w.soundcloud.com/player/?url=${encodeURIComponent(url)}&color=%231db954&auto_play=true&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true"
+                    frameborder="0"
+                    allow="autoplay"
+                ></iframe>
+            `;
+        }
+        
+        if (videoTitle) {
+            videoTitle.textContent = track.title || 'Now Playing';
+        }
+        
+        this.showVideoWindow();
+        this.isPlaying = true;
+        this.updatePlayButton();
+        this.saveState();
+    }
+
+    extractYouTubeId(url) {
+        if (!url) return null;
+        
+        // Handle various YouTube URL formats
+        const patterns = [
+            /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/)([a-zA-Z0-9_-]{11})/,
+            /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/
+        ];
+        
+        for (const pattern of patterns) {
+            const match = url.match(pattern);
+            if (match) return match[1];
+        }
+        
+        return null;
+    }
+
+    extractSpotifyUri(url) {
+        if (!url) return null;
+        
+        // Handle Spotify URL formats
+        // https://open.spotify.com/track/xxx -> track/xxx
+        // https://open.spotify.com/album/xxx -> album/xxx
+        const match = url.match(/spotify\.com\/(track|album|playlist|artist)\/([a-zA-Z0-9]+)/);
+        if (match) {
+            return `${match[1]}/${match[2]}`;
+        }
+        
+        return null;
+    }
+
+    updateUI(platform = null) {
         if (!this.currentTrack) return;
         
         const titleEl = document.getElementById('flpTitle');
         const artistEl = document.getElementById('flpArtist');
         const artworkEl = document.getElementById('flpArtwork');
+        const badgeEl = document.getElementById('flpPlatformBadge');
         
         if (titleEl) titleEl.textContent = this.currentTrack.title || 'Select a track';
         if (artistEl) artistEl.textContent = this.currentTrack.artistName || this.currentTrack.artist || '--';
@@ -262,10 +538,39 @@ class PersistentFloatingPlayer {
             artworkEl.src = this.currentTrack.artwork;
             artworkEl.alt = this.currentTrack.title;
         }
+        
+        // Show platform badge
+        if (badgeEl && platform && platform !== 'audio') {
+            badgeEl.style.display = 'inline-flex';
+            badgeEl.className = `flp-platform-badge flp-badge-${platform}`;
+            badgeEl.innerHTML = this.getPlatformIcon(platform);
+        } else if (badgeEl) {
+            badgeEl.style.display = 'none';
+        }
+    }
+
+    getPlatformIcon(platform) {
+        const icons = {
+            youtube: '<i class="fab fa-youtube"></i> YouTube',
+            spotify: '<i class="fab fa-spotify"></i> Spotify',
+            soundcloud: '<i class="fab fa-soundcloud"></i> SoundCloud'
+        };
+        return icons[platform] || '';
     }
 
     play() {
-        if (!this.audio || !this.currentTrack?.audioUrl) {
+        // Handle embeds (YouTube, Spotify, SoundCloud)
+        if (this.currentPlatform && this.currentPlatform !== 'audio') {
+            // For embeds, we can't control playback directly
+            // Just update UI state - the embed handles its own playback
+            this.isPlaying = true;
+            this.updatePlayButton();
+            this.animateWaveform(true);
+            return;
+        }
+        
+        // Handle audio files
+        if (!this.audio) {
             this.showNotification('No track loaded', 'warning');
             return;
         }
@@ -283,6 +588,15 @@ class PersistentFloatingPlayer {
     }
 
     pause() {
+        // Handle embeds
+        if (this.currentPlatform && this.currentPlatform !== 'audio') {
+            this.isPlaying = false;
+            this.updatePlayButton();
+            this.animateWaveform(false);
+            return;
+        }
+        
+        // Handle audio files
         if (this.audio) {
             this.audio.pause();
             this.isPlaying = false;
@@ -352,7 +666,9 @@ class PersistentFloatingPlayer {
         if (this.audio) {
             this.audio.src = '';
         }
+        this.closeVideoWindow();
         this.currentTrack = null;
+        this.currentPlatform = null;
         this.isPlaying = false;
         this.hide();
         localStorage.removeItem('floatingPlayerState');
@@ -404,12 +720,14 @@ class PersistentFloatingPlayer {
         const nextBtn = document.getElementById('flpNextBtn');
         const closeBtn = document.getElementById('flpCloseBtn');
         const seekBar = document.getElementById('flpSeek');
+        const videoToggleBtn = document.getElementById('flpVideoToggle');
         
         if (playBtn) playBtn.addEventListener('click', () => this.togglePlay());
         if (prevBtn) prevBtn.addEventListener('click', () => this.prevTrack());
         if (nextBtn) nextBtn.addEventListener('click', () => this.nextTrack());
         if (closeBtn) closeBtn.addEventListener('click', () => this.close());
         if (seekBar) seekBar.addEventListener('input', (e) => this.seek(e.target.value));
+        if (videoToggleBtn) videoToggleBtn.addEventListener('click', () => this.toggleVideoWindow());
         
         // Listen for page navigation to persist player
         window.addEventListener('beforeunload', () => {
