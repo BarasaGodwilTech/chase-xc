@@ -959,6 +959,12 @@ class PersistentFloatingPlayer {
         if (this.audio && this.audio.duration) {
             this.audio.currentTime = (percentage / 100) * this.audio.duration;
         }
+        
+        // Update progress fill immediately for visual feedback
+        const fillEl = document.getElementById('flpProgressFill');
+        const seekEl = document.getElementById('flpSeek');
+        if (fillEl) fillEl.style.width = percentage + '%';
+        if (seekEl) seekEl.value = percentage;
     }
 
     formatTime(seconds) {

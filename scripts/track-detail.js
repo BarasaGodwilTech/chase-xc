@@ -174,16 +174,11 @@ function setupEventListeners() {
     shareBtn.addEventListener('click', () => handleShareTrack())
   }
   
-  // Back button - ensure it works
+  // Back button - navigate to music page
   if (backBtn) {
     backBtn.addEventListener('click', (e) => {
       e.preventDefault()
-      // Check if there's history to go back to
-      if (window.history.length > 1 && document.referrer.includes(window.location.hostname)) {
-        window.history.back()
-      } else {
-        window.location.href = 'music.html'
-      }
+      window.location.href = 'music.html'
     })
   }
   
@@ -411,11 +406,38 @@ function setupMoreTracksListeners() {
       const track = window.__tracks[trackIndex]
       
       if (track && window.persistentPlayer) {
-        // Use floating player
-        if (!window.persistentPlayer.playlist.find(t => t.id === track.id)) {
-          window.persistentPlayer.setPlaylist([track], 0)
+        // Build full playlist from all tracks if not set
+        if (window.persistentPlayer.playlist.length === 0 && window.__tracks?.length > 0) {
+          const fullPlaylist = window.__tracks.map(t => ({
+            id: t.id,
+            title: t.title,
+            artistName: t.artistName,
+            artwork: t.artwork,
+            audioUrl: t.audioUrl,
+            platformLinks: t.platformLinks || {},
+            originalData: t
+          }));
+          window.persistentPlayer.setPlaylist(fullPlaylist, 0);
+        }
+        
+        // Find track index in playlist
+        const existingIndex = window.persistentPlayer.playlist.findIndex(t => t.id === track.id);
+        if (existingIndex !== -1) {
+          window.persistentPlayer.currentIndex = existingIndex;
+          window.persistentPlayer.loadTrack(window.persistentPlayer.playlist[existingIndex]);
         } else {
-          window.persistentPlayer.loadTrack(track)
+          // Track not in playlist, add it
+          window.persistentPlayer.playlist.push({
+            id: track.id,
+            title: track.title,
+            artistName: track.artistName,
+            artwork: track.artwork,
+            audioUrl: track.audioUrl,
+            platformLinks: track.platformLinks || {},
+            originalData: track
+          });
+          window.persistentPlayer.currentIndex = window.persistentPlayer.playlist.length - 1;
+          window.persistentPlayer.loadTrack(track);
         }
         
         // Also sync with audio player for audio files

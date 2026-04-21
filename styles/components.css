@@ -9272,7 +9272,7 @@ border-radius: 12px;
 
 .track-detail-page {
     min-height: 100vh;
-    padding: 2rem 0 4rem;
+    padding: 100px 0 4rem 0;
     background: var(--background);
 }
 
@@ -9297,6 +9297,9 @@ border-radius: 12px;
     background: var(--surface);
     border: 1px solid var(--border);
     transition: var(--transition);
+    cursor: pointer;
+    position: relative;
+    z-index: 10;
 }
 
 .back-btn:hover {

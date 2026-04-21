@@ -242,7 +242,7 @@
 }
 
 
-/* Video Toggle Button - below artwork */
+/* Video Toggle Button - below artwork, aligned right */
 .flp-video-toggle {
     display: none;
     align-items: center;
@@ -250,7 +250,7 @@
     width: 32px;
     height: 32px;
     padding: 0;
-    margin: 4px auto 0;
+    margin: 4px 0 0 auto;
     background: rgba(255, 0, 0, 0.15);
     border: 1px solid rgba(255, 0, 0, 0.3);
     border-radius: 50%;
@@ -572,13 +572,32 @@
 
 .flp-seek {
     position: absolute;
-    top: 0;
+    top: -4px;
     left: 0;
     width: 100%;
-    height: 100%;
+    height: 12px;
     opacity: 0;
     cursor: pointer;
     margin: 0;
+    z-index: 10;
+}
+
+.flp-seek::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 12px;
+    height: 12px;
+    background: #1db954;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.flp-seek::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    background: #1db954;
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
 }
 
 .flp-time {

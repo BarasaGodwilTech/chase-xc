@@ -343,13 +343,63 @@ function setupTrackCardListeners() {
       e.stopPropagation()
       const card = indicator.closest('.track-card')
       const spotifyUrl = card.dataset.spotifyUrl
-      
       if (spotifyUrl) {
         window.open(spotifyUrl, '_blank')
       }
     }
     indicator.addEventListener('click', indicator._spotifyHandler)
   })
+  
+  // Search functionality
+  const searchInput = document.getElementById('musicSearch')
+  const searchClear = document.getElementById('searchClear')
+  const resultsCount = document.getElementById('resultsCount')
+  
+  if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+      const query = e.target.value.trim()
+      handleSearch(query)
+      
+      // Show/hide clear button
+      if (searchClear) {
+        searchClear.style.display = query ? 'flex' : 'none'
+      }
+    })
+  }
+  
+  if (searchClear) {
+    searchClear.addEventListener('click', () => {
+      if (searchInput) {
+        searchInput.value = ''
+        handleSearch('')
+        searchClear.style.display = 'none'
+      }
+    })
+  }
+}
+
+function handleSearch(query) {
+  const tracks = document.querySelectorAll('.track-card')
+  const resultsCount = document.getElementById('resultsCount')
+  const lowercaseQuery = query.toLowerCase()
+  let visibleCount = 0
+  
+  tracks.forEach(track => {
+    const title = track.querySelector('.track-title')?.textContent.toLowerCase() || ''
+    const artist = track.querySelector('.track-artist')?.textContent.toLowerCase() || ''
+    const genre = track.dataset.category?.toLowerCase() || ''
+    
+    if (title.includes(lowercaseQuery) || artist.includes(lowercaseQuery) || genre.includes(lowercaseQuery)) {
+      track.style.display = 'block'
+      visibleCount++
+    } else {
+      track.style.display = 'none'
+    }
+  })
+  
+  if (resultsCount) {
+    resultsCount.textContent = `${visibleCount} track${visibleCount !== 1 ? 's' : ''}`
+  }
 }
 
 function handlePlayTrack(track) {
