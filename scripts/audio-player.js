@@ -124,9 +124,13 @@ class AudioPlayer {
     this.audio.addEventListener("loadedmetadata", () => this.updateDuration());
     this.audio.addEventListener("ended", () => this.handleTrackEnd());
 
-    // Track card click handlers - updated to use event delegation for dynamic content
+    // Track card click handlers - updated for Spotify-style play button
+    // On desktop: play button triggers playback
+    // On mobile/touch: card tap navigates to detail page (handled by page-specific JS)
+    const hasHover = window.matchMedia('(hover: hover)').matches;
+    
     document.addEventListener('click', (e) => {
-      const playBtn = e.target.closest('.play-btn-overlay');
+      const playBtn = e.target.closest('.track-play-btn');
       const trackCard = e.target.closest('.track-card');
       
       if (playBtn) {
@@ -135,12 +139,14 @@ class AudioPlayer {
         this.currentTrackIndex = trackIndex;
         this.loadTrack(trackIndex);
         this.play();
-      } else if (trackCard && !e.target.closest('.play-btn-overlay') && !e.target.closest('.overlay-btn') && !e.target.closest('.like-btn-mini')) {
+      } else if (hasHover && trackCard && !e.target.closest('.track-play-btn') && !e.target.closest('.like-btn-mini') && !e.target.closest('.spotify-indicator') && !e.target.closest('.track-socials a')) {
+        // On desktop (hover devices), clicking card area plays the track
         const trackIndex = parseInt(trackCard.getAttribute('data-track'));
         this.currentTrackIndex = trackIndex;
         this.loadTrack(trackIndex);
         this.play();
       }
+      // On mobile/touch devices, card tap navigates to detail page (handled by music-page.js, home-page.js, music-data.js)
     });
 
     // Floating player controls

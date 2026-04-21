@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Track Details - Chase x Records</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/components.css">
+</head> 
+<body>
+    <script src="scripts/includes.js"></script>
+    <div data-include="partials/header.html"></div>
+
+    <!-- Track Detail Section -->
+    <section class="track-detail-page">
+        <div class="track-detail-container">
+            <!-- Back Button -->
+            <a href="music.html" class="back-btn">
+                <i class="fas fa-arrow-left"></i>
+                <span>Back to Music</span>
+            </a>
+
+            <!-- Track Hero -->
+            <div class="track-detail-hero" id="trackHero">
+                <div class="track-detail-artwork">
+                    <img id="trackArtwork" src="" alt="Track Artwork">
+                    <button class="track-detail-play-btn" id="playBtn" type="button">
+                        <i class="fas fa-play"></i>
+                    </button>
+                </div>
+                <div class="track-detail-info">
+                    <span class="track-detail-badge" id="trackBadge"></span>
+                    <h1 class="track-detail-title" id="trackTitle">Loading...</h1>
+                    <p class="track-detail-artist" id="trackArtist">Unknown Artist</p>
+                    <div class="track-detail-meta">
+                        <span class="track-detail-genre" id="trackGenre"></span>
+                        <span class="track-detail-duration" id="trackDuration"></span>
+                        <span class="track-detail-release" id="trackRelease"></span>
+                    </div>
+                    <div class="track-detail-stats">
+                        <div class="stat-item">
+                            <i class="fas fa-play"></i>
+                            <span id="trackStreams">0</span> streams
+                        </div>
+                        <div class="stat-item">
+                            <i class="fas fa-heart"></i>
+                            <span id="trackLikes">0</span> likes
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="track-detail-actions">
+                <button class="action-btn like-btn" id="likeBtn" type="button">
+                    <i class="far fa-heart"></i>
+                    <span>Like</span>
+                </button>
+                <button class="action-btn playlist-btn" id="playlistBtn" type="button">
+                    <i class="fas fa-plus"></i>
+                    <span>Add to Playlist</span>
+                </button>
+                <button class="action-btn share-btn" id="shareBtn" type="button">
+                    <i class="fas fa-share"></i>
+                    <span>Share</span>
+                </button>
+                <a href="#" class="action-btn spotify-btn" id="spotifyBtn" target="_blank" rel="noopener">
+                    <i class="fab fa-spotify"></i>
+                    <span>Spotify</span>
+                </a>
+            </div>
+
+            <!-- Artist Socials -->
+            <div class="track-detail-socials" id="artistSocials">
+                <!-- Populated by JS -->
+            </div>
+
+            <!-- More from Artist Section -->
+            <div class="more-from-artist" id="moreFromArtist">
+                <h2 class="section-title">More from this Artist</h2>
+                <div class="more-tracks-grid" id="moreTracksGrid">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Floating Music Player -->
+    <div class="floating-player" id="floatingPlayer">
+        <div class="floating-waveform" id="floatingWaveform"></div>
+        <div class="floating-track-info">
+            <div class="floating-cover">
+                 <img id="floatingCover" src="" alt="Now Playing">
+            </div>
+            <div class="floating-info">
+                <h5 id="floatingTitle">Select a track</h5>
+                <p id="floatingArtist">--</p>
+            </div>
+        </div>
+        <div class="floating-controls">
+            <button id="floatingPrevBtn" class="floating-btn">
+                <i class="fas fa-step-backward"></i>
+            </button>
+            <button id="floatingPlayBtn" class="floating-btn play-pause">
+                <i class="fas fa-play"></i>
+            </button>
+            <button id="floatingNextBtn" class="floating-btn">
+                <i class="fas fa-step-forward"></i>
+            </button>
+        </div>
+        <div class="floating-progress">
+            <span id="floatingCurrentTime" class="floating-time">0:00</span>
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="floatingProgressBar"></div>
+            </div>
+            <span id="floatingDuration" class="floating-time">0:00</span>
+        </div>
+    </div>
+
+    <div data-include="partials/footer.html"></div>
+
+    <!-- Audio Player -->
+    <audio id="mainAudio" preload="metadata"></audio>
+
+    <script type="module" src="scripts/track-detail.js"></script>
+    <script src="scripts/audio-player.js"></script>
+</body>
+</html>

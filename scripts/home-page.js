@@ -7,6 +7,17 @@ function formatNumber(num) {
   return String(num)
 }
 
+// Helper to escape HTML
+function escapeHtml(str) {
+  if (!str) return ''
+  return String(str).replace(/[&<>]/g, function(m) {
+    if (m === '&') return '&amp;'
+    if (m === '<') return '&lt;'
+    if (m === '>') return '&gt;'
+    return m
+  })
+}
+
 function renderArtistCard(artist, index) {
   const imageUrl = artist.image || artist.artwork || 'images/headphones.png'
   const genre = artist.genre || 'Music'
@@ -139,44 +150,22 @@ async function loadFeaturedTracks() {
       return `
         <div class="track-card" data-track="${index}" data-category="${categories.join(' ')}" data-spotify-url="${spotifyUrl}" data-track-id="${track.id || ''}">
           <div class="track-artwork">
-            <img src="${track.artwork || ''}" alt="${track.title || ''}">
+            <img src="${escapeHtml(track.artwork || '')}" alt="${escapeHtml(track.title || '')}">
             ${badge ? `<div class="track-badge ${badge === 'Trending' ? 'trending' : badge === 'Popular' ? 'popular' : 'new-release'}">${badge}</div>` : ''}
             ${spotifyUrl ? '<div class="spotify-indicator" title="Listen on Spotify"><i class="fab fa-spotify"></i></div>' : ''}
-            <div class="track-overlay">
-              <div class="overlay-actions">
-                <button class="overlay-btn" title="Add to playlist" type="button">
-                  <i class="fas fa-plus"></i>
-                </button>
-                <button class="play-btn-overlay" title="Play" type="button">
-                  <i class="fas fa-play"></i>
-                </button>
-                <button class="overlay-btn" title="Share" type="button">
-                  <i class="fas fa-share"></i>
-                </button>
-              </div>
-            </div>
+            <button class="track-play-btn" aria-label="Play ${escapeHtml(track.title || '')}" type="button">
+              <i class="fas fa-play"></i>
+            </button>
           </div>
           <div class="track-content">
             <div class="track-header">
               <div class="track-info">
-                <h4 class="track-title">${track.title || ''}</h4>
-                <p class="track-artist">${track.artistName || 'Unknown Artist'}</p>
+                <h4 class="track-title">${escapeHtml(track.title || '')}</h4>
+                <p class="track-artist">${escapeHtml(track.artistName || 'Unknown Artist')}</p>
               </div>
               <button class="like-btn-mini" title="Like" data-like-track-id="${track.id}" type="button">
                 <i class="far fa-heart"></i>
               </button>
-            </div>
-            <div class="track-meta">
-              <span class="track-genre">${track.genre || ''}</span>
-              <span class="track-duration">${track.duration || ''}</span>
-            </div>
-            <div class="track-socials">
-              ${track.artistSocials?.instagram ? `<a href="${track.artistSocials.instagram}" target="_blank" title="Instagram"><i class="fab fa-instagram"></i></a>` : ''}
-              ${track.artistSocials?.youtube ? `<a href="${track.artistSocials.youtube}" target="_blank" title="YouTube"><i class="fab fa-youtube"></i></a>` : ''}
-              ${track.artistSocials?.tiktok ? `<a href="${track.artistSocials.tiktok}" target="_blank" title="TikTok"><i class="fab fa-tiktok"></i></a>` : ''}
-              ${track.artistSocials?.spotify ? `<a href="${track.artistSocials.spotify}" target="_blank" title="Spotify"><i class="fab fa-spotify"></i></a>` : ''}
-              ${track.artistSocials?.soundcloud ? `<a href="${track.artistSocials.soundcloud}" target="_blank" title="SoundCloud"><i class="fab fa-soundcloud"></i></a>` : ''}
-              ${track.artistSocials?.twitter ? `<a href="${track.artistSocials.twitter}" target="_blank" title="Twitter"><i class="fab fa-twitter"></i></a>` : ''}
             </div>
           </div>
         </div>
@@ -196,8 +185,11 @@ async function loadFeaturedTracks() {
 }
 
 function setupTrackCardListeners() {
-  // Play button listeners
-  document.querySelectorAll('.play-btn-overlay').forEach(btn => {
+  // Detect if device supports hover (desktop) or not (mobile/touch)
+  const hasHover = window.matchMedia('(hover: hover)').matches
+
+  // Play button listeners - only on desktop (hover devices)
+  document.querySelectorAll('.track-play-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation()
       const card = btn.closest('.track-card')
@@ -210,54 +202,74 @@ function setupTrackCardListeners() {
     })
   })
 
+  // Card click listeners - navigate to detail page on mobile/touch devices
+  if (!hasHover) {
+    document.querySelectorAll('.track-card').forEach(card => {
+      if (card._clickHandler) {
+        card.removeEventListener('click', card._clickHandler)
+      }
+      
+      card._clickHandler = (e) => {
+        if (e.target.closest('.like-btn-mini') || e.target.closest('.spotify-indicator')) {
+          return
+        }
+        
+        const trackId = card.dataset.trackId
+        if (trackId) {
+          window.location.href = `track-detail.html?id=${trackId}`
+        }
+      }
+      card.addEventListener('click', card._clickHandler)
+    })
+  } else {
+    // Desktop: whole card click plays track
+    document.querySelectorAll('.track-card').forEach(card => {
+      if (card._clickHandler) {
+        card.removeEventListener('click', card._clickHandler)
+      }
+      
+      card._clickHandler = (e) => {
+        if (e.target.closest('.like-btn-mini') || e.target.closest('.spotify-indicator')) {
+          return
+        }
+        const trackIndex = parseInt(card.dataset.track)
+        const track = window.__tracks[trackIndex]
+        if (track) {
+          handlePlayTrack(track)
+        }
+      }
+      card.addEventListener('click', card._clickHandler)
+    })
+  }
+
   // Like button listeners
   document.querySelectorAll('.like-btn-mini[data-like-track-id]').forEach(btn => {
-    btn.addEventListener('click', (e) => {
+    if (btn._likeHandler) {
+      btn.removeEventListener('click', btn._likeHandler)
+    }
+    btn._likeHandler = (e) => {
       e.stopPropagation()
       const trackId = btn.dataset.likeTrackId
       handleLikeTrack(trackId, btn)
-    })
-  })
-
-  // Share button listeners
-  document.querySelectorAll('.overlay-btn[title="Share"]').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation()
-      const card = btn.closest('.track-card')
-      const trackIndex = card.dataset.track
-      const track = window.__tracks[trackIndex]
-
-      if (track) {
-        handleShareTrack(track)
-      }
-    })
-  })
-
-  // Add to playlist listeners
-  document.querySelectorAll('.overlay-btn[title="Add to playlist"]').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation()
-      const card = btn.closest('.track-card')
-      const trackIndex = card.dataset.track
-      const track = window.__tracks[trackIndex]
-
-      if (track) {
-        handleAddToPlaylist(track)
-      }
-    })
+    }
+    btn.addEventListener('click', btn._likeHandler)
   })
 
   // Spotify indicator click
   document.querySelectorAll('.spotify-indicator').forEach(indicator => {
-    indicator.addEventListener('click', (e) => {
+    if (indicator._spotifyHandler) {
+      indicator.removeEventListener('click', indicator._spotifyHandler)
+    }
+    indicator._spotifyHandler = (e) => {
       e.stopPropagation()
       const card = indicator.closest('.track-card')
       const spotifyUrl = card.dataset.spotifyUrl
 
       if (spotifyUrl) {
-        openExternalPlayer(spotifyUrl)
+        window.open(spotifyUrl, '_blank')
       }
-    })
+    }
+    indicator.addEventListener('click', indicator._spotifyHandler)
   })
 }
 
