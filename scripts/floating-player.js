@@ -13,9 +13,11 @@ class PersistentFloatingPlayer {
         this.syncInterval = null;
         this.playlist = [];
         this.currentIndex = 0;
-        this.currentPlatform = null; // 'audio', 'youtube', 'spotify', 'soundcloud'
+        this.currentPlatform = null; // 'audio', 'youtube', 'youtubemusic', 'spotify', 'soundcloud'
         this.embedContainer = null;
         this.videoVisible = true;
+        this.isCollapsed = false;
+        this.isMobile = window.innerWidth <= 480;
         
         this.init();
     }
@@ -27,6 +29,11 @@ class PersistentFloatingPlayer {
         this.setupEventListeners();
         this.startSyncInterval();
         this.handleVisibilityChange();
+        
+        // Listen for resize to update mobile state
+        window.addEventListener('resize', () => {
+            this.isMobile = window.innerWidth <= 480;
+        });
     }
 
     createPlayerElement() {
@@ -41,6 +48,14 @@ class PersistentFloatingPlayer {
                 <button class="flp-close" id="flpCloseBtn" aria-label="Close player">
                     <i class="fas fa-times"></i>
                 </button>
+                <button class="flp-collapse" id="flpCollapseBtn" aria-label="Collapse player">
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+                <!-- Mini thumbnail for collapsed mode -->
+                <div class="flp-mini-thumb" id="flpMiniThumb" title="Expand player">
+                    <img id="flpMiniArtwork" src="" alt="Now Playing">
+                    <div class="play-indicator"><i class="fas fa-play"></i></div>
+                </div>
                 <div class="flp-content">
                     <div class="flp-artwork">
                         <img id="flpArtwork" src="" alt="Now Playing">
@@ -150,7 +165,29 @@ class PersistentFloatingPlayer {
         if (this.videoWindow) {
             this.videoWindow.style.display = 'block';
             this.videoVisible = true;
+            
+            // Position video window above the floating player
+            this.positionVideoWindow();
+            
+            // On mobile, add visible class for CSS
+            if (this.isMobile) {
+                this.videoWindow.classList.add('visible');
+            }
         }
+    }
+    
+    positionVideoWindow() {
+        if (!this.videoWindow || !this.playerElement) return;
+        
+        const playerRect = this.playerElement.getBoundingClientRect();
+        const videoHeight = this.videoWindow.offsetHeight || 200;
+        
+        // Position video window above the floating player
+        const videoBottom = playerRect.top - 10; // 10px gap
+        
+        this.videoWindow.style.bottom = 'auto';
+        this.videoWindow.style.top = `${Math.max(10, videoBottom - videoHeight)}px`;
+        this.videoWindow.style.right = `${window.innerWidth - playerRect.right}px`;
     }
 
     attachDragEvents() {
@@ -245,11 +282,31 @@ class PersistentFloatingPlayer {
                     this.currentTrack = state.track;
                     this.playlist = state.playlist || [state.track];
                     this.currentIndex = state.currentIndex || 0;
-                    this.updateUI();
-                    if (state.isPlaying && state.track.audioUrl) {
+                    this.currentPlatform = state.platform || null;
+                    this.videoVisible = state.videoVisible !== false;
+                    this.isCollapsed = state.isCollapsed || false;
+                    
+                    // Restore based on platform type
+                    if (state.platform === 'audio' && state.track.audioUrl) {
                         this.restoreAudio(state);
-                    } else {
+                    } else if (state.platform && state.platform !== 'audio') {
+                        // For embeds, show player but don't auto-play
+                        // User can click play to resume
+                        this.updateUI(state.platform);
                         this.show();
+                        this.updatePlayButton();
+                    } else {
+                        // Fallback - detect platform from track
+                        const { platform } = this.detectPlatform(state.track);
+                        this.currentPlatform = platform;
+                        this.updateUI(platform);
+                        this.show();
+                        this.updatePlayButton();
+                    }
+                    
+                    // Restore collapsed state
+                    if (this.isCollapsed) {
+                        this.playerElement?.classList.add('collapsed');
                     }
                 }
             } catch (e) {
@@ -266,6 +323,7 @@ class PersistentFloatingPlayer {
         this.audio.src = state.track.audioUrl;
         this.audio.currentTime = state.currentTime || 0;
         this.audio.load();
+        this.updateUI('audio');
         this.show();
         // Auto-play might be blocked, so we just show the player
         // User can click play to resume
@@ -307,6 +365,8 @@ class PersistentFloatingPlayer {
         
         this.currentTrack = track;
         this.closeVideoWindow();
+        this.isCollapsed = false;
+        this.playerElement?.classList.remove('collapsed');
         
         // Detect platform and get URL
         const { platform, url } = this.detectPlatform(track);
@@ -315,6 +375,9 @@ class PersistentFloatingPlayer {
         if (platform === 'audio' && url) {
             // Direct audio file
             this.loadAudioFile(track, url);
+        } else if (platform === 'youtubemusic') {
+            // YouTube Music - treat as audio (no video window)
+            this.loadYouTubeMusicEmbed(track, url);
         } else if (platform === 'youtube') {
             // YouTube - show video window
             this.loadYouTubeEmbed(track, url);
@@ -338,7 +401,13 @@ class PersistentFloatingPlayer {
         // Check platform links
         const links = track.platformLinks || {};
         
-        // YouTube
+        // YouTube Music (treat as audio - no video window)
+        const youtubeMusicUrl = track.youtubeMusicUrl || links.youtubeMusic || '';
+        if (youtubeMusicUrl) {
+            return { platform: 'youtubemusic', url: youtubeMusicUrl };
+        }
+        
+        // YouTube (show video window)
         const youtubeUrl = track.youtubeUrl || links.youtube || '';
         if (youtubeUrl) {
             return { platform: 'youtube', url: youtubeUrl };
@@ -393,18 +462,26 @@ class PersistentFloatingPlayer {
             toggleBtn.innerHTML = '<i class="fas fa-video"></i>';
         }
         
-        // Create YouTube embed in video window
+        // Create YouTube embed in video window with ad-blocking parameters
         const videoContent = document.getElementById('flpVideoContent');
         const videoTitle = document.getElementById('flpVideoTitle');
         
         if (videoContent) {
+            // Embed parameters to minimize ads and UI elements
+            // - modestbranding=1: Hide YouTube logo
+            // - rel=0: Hide related videos
+            // - iv_load_policy=3: Hide annotations
+            // - fs=0: Disable fullscreen button
+            // - controls=0: Hide player controls
+            // - disablekb=1: Disable keyboard controls
+            // - playsinline=1: Play inline on mobile
             videoContent.innerHTML = `
                 <iframe 
                     id="flpYouTubeEmbed"
-                    src="https://www.youtube.com/embed/${videoId}?enablejsapi=1&autoplay=1&origin=${window.location.origin}"
+                    src="https://www.youtube.com/embed/${videoId}?enablejsapi=1&autoplay=1&origin=${window.location.origin}&modestbranding=1&rel=0&iv_load_policy=3&fs=0&controls=0&disablekb=1&playsinline=1"
                     frameborder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowfullscreen
+                    allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+                    sandbox="allow-scripts allow-same-origin allow-presentation"
                 ></iframe>
             `;
         }
@@ -413,7 +490,61 @@ class PersistentFloatingPlayer {
             videoTitle.textContent = track.title || 'Now Playing';
         }
         
-        this.showVideoWindow();
+        // On mobile, video is closed by default - user can toggle it
+        if (this.isMobile) {
+            this.videoVisible = false;
+            this.closeVideoWindow();
+            // Show toggle button so user can open video
+            if (toggleBtn) {
+                toggleBtn.innerHTML = '<i class="fas fa-video-slash"></i>';
+            }
+        } else {
+            this.showVideoWindow();
+        }
+        
+        this.isPlaying = true;
+        this.updatePlayButton();
+        this.saveState();
+    }
+    
+    loadYouTubeMusicEmbed(track, url) {
+        // YouTube Music - extract video ID and play as audio-only
+        const videoId = this.extractYouTubeId(url);
+        if (!videoId) {
+            this.showNotification('Invalid YouTube Music URL', 'error');
+            return;
+        }
+        
+        this.updateUI('youtubemusic');
+        this.show();
+        
+        // Hide video toggle - YouTube Music is audio-only
+        const toggleBtn = document.getElementById('flpVideoToggle');
+        if (toggleBtn) toggleBtn.style.display = 'none';
+        
+        // Create YouTube embed but keep video window hidden (audio-only)
+        const videoContent = document.getElementById('flpVideoContent');
+        const videoTitle = document.getElementById('flpVideoTitle');
+        
+        if (videoContent) {
+            videoContent.innerHTML = `
+                <iframe 
+                    id="flpYouTubeMusicEmbed"
+                    src="https://www.youtube.com/embed/${videoId}?enablejsapi=1&autoplay=1&origin=${window.location.origin}&modestbranding=1&rel=0&iv_load_policy=3&fs=0&controls=0&disablekb=1"
+                    frameborder="0"
+                    allow="accelerometer; autoplay; encrypted-media"
+                    sandbox="allow-scripts allow-same-origin"
+                    style="opacity: 0; pointer-events: none;"
+                ></iframe>
+            `;
+        }
+        
+        if (videoTitle) {
+            videoTitle.textContent = track.title || 'Now Playing';
+        }
+        
+        // Don't show video window for YouTube Music
+        this.videoVisible = false;
         this.isPlaying = true;
         this.updatePlayButton();
         this.saveState();
@@ -530,17 +661,26 @@ class PersistentFloatingPlayer {
         const titleEl = document.getElementById('flpTitle');
         const artistEl = document.getElementById('flpArtist');
         const artworkEl = document.getElementById('flpArtwork');
+        const miniArtworkEl = document.getElementById('flpMiniArtwork');
         const badgeEl = document.getElementById('flpPlatformBadge');
         
         if (titleEl) titleEl.textContent = this.currentTrack.title || 'Select a track';
         if (artistEl) artistEl.textContent = this.currentTrack.artistName || this.currentTrack.artist || '--';
+        
+        // Set main artwork
         if (artworkEl && this.currentTrack.artwork) {
             artworkEl.src = this.currentTrack.artwork;
             artworkEl.alt = this.currentTrack.title;
         }
         
+        // Set mini thumbnail artwork
+        if (miniArtworkEl && this.currentTrack.artwork) {
+            miniArtworkEl.src = this.currentTrack.artwork;
+            miniArtworkEl.alt = this.currentTrack.title;
+        }
+        
         // Show platform badge
-        if (badgeEl && platform && platform !== 'audio') {
+        if (badgeEl && platform && platform !== 'audio' && platform !== 'youtubemusic') {
             badgeEl.style.display = 'inline-flex';
             badgeEl.className = `flp-platform-badge flp-badge-${platform}`;
             badgeEl.innerHTML = this.getPlatformIcon(platform);
@@ -552,6 +692,7 @@ class PersistentFloatingPlayer {
     getPlatformIcon(platform) {
         const icons = {
             youtube: '<i class="fab fa-youtube"></i> YouTube',
+            youtubemusic: '<i class="fab fa-youtube"></i> YouTube Music',
             spotify: '<i class="fab fa-spotify"></i> Spotify',
             soundcloud: '<i class="fab fa-soundcloud"></i> SoundCloud'
         };
@@ -561,18 +702,42 @@ class PersistentFloatingPlayer {
     play() {
         // Handle embeds (YouTube, Spotify, SoundCloud)
         if (this.currentPlatform && this.currentPlatform !== 'audio') {
+            // Check if embed needs to be loaded (after page navigation)
+            const videoContent = document.getElementById('flpVideoContent');
+            if (!videoContent || !videoContent.innerHTML.trim()) {
+                // Reload the embed
+                const { url } = this.detectPlatform(this.currentTrack);
+                if (url) {
+                    if (this.currentPlatform === 'youtube') {
+                        this.loadYouTubeEmbed(this.currentTrack, url);
+                    } else if (this.currentPlatform === 'spotify') {
+                        this.loadSpotifyEmbed(this.currentTrack, url);
+                    } else if (this.currentPlatform === 'soundcloud') {
+                        this.loadSoundCloudEmbed(this.currentTrack, url);
+                    }
+                }
+            }
             // For embeds, we can't control playback directly
             // Just update UI state - the embed handles its own playback
             this.isPlaying = true;
             this.updatePlayButton();
             this.animateWaveform(true);
+            this.dispatchStateChange();
             return;
         }
         
         // Handle audio files
         if (!this.audio) {
-            this.showNotification('No track loaded', 'warning');
-            return;
+            // Try to restore audio if we have a track
+            if (this.currentTrack && this.currentTrack.audioUrl) {
+                this.audio = new Audio();
+                this.setupAudioEvents();
+                this.audio.src = this.currentTrack.audioUrl;
+                this.audio.load();
+            } else {
+                this.showNotification('No track loaded', 'warning');
+                return;
+            }
         }
         
         this.audio.play().then(() => {
@@ -580,6 +745,7 @@ class PersistentFloatingPlayer {
             this.updatePlayButton();
             this.saveState();
             this.animateWaveform(true);
+            this.dispatchStateChange();
         }).catch(err => {
             console.error('[FloatingPlayer] Play error:', err);
             // Show play button so user can interact
@@ -593,6 +759,7 @@ class PersistentFloatingPlayer {
             this.isPlaying = false;
             this.updatePlayButton();
             this.animateWaveform(false);
+            this.dispatchStateChange();
             return;
         }
         
@@ -603,6 +770,7 @@ class PersistentFloatingPlayer {
             this.updatePlayButton();
             this.saveState();
             this.animateWaveform(false);
+            this.dispatchStateChange();
         }
     }
 
@@ -613,12 +781,67 @@ class PersistentFloatingPlayer {
             this.play();
         }
     }
+    
+    dispatchStateChange() {
+        if (!this.currentTrack) return;
+        
+        document.dispatchEvent(new CustomEvent('floatingPlayerStateChanged', {
+            detail: {
+                track: this.currentTrack,
+                isPlaying: this.isPlaying,
+                currentTime: this.audio?.currentTime || 0,
+                platform: this.currentPlatform
+            }
+        }));
+    }
 
     updatePlayButton() {
         const playBtn = document.getElementById('flpPlayBtn');
         if (playBtn) {
             playBtn.innerHTML = this.isPlaying ? '<i class="fas fa-pause"></i>' : '<i class="fas fa-play"></i>';
             playBtn.setAttribute('aria-label', this.isPlaying ? 'Pause' : 'Play');
+        }
+        
+        // Update mini thumbnail play indicator
+        const playIndicator = document.querySelector('.flp-mini-thumb .play-indicator i');
+        if (playIndicator) {
+            playIndicator.className = this.isPlaying ? 'fas fa-pause' : 'fas fa-play';
+        }
+    }
+    
+    collapse() {
+        if (this.isCollapsed) return;
+        
+        this.isCollapsed = true;
+        this.playerElement?.classList.add('collapsed');
+        
+        // Close video window when collapsing
+        if (this.videoVisible) {
+            this.closeVideoWindow();
+        }
+        
+        this.saveState();
+    }
+    
+    expand() {
+        if (!this.isCollapsed) return;
+        
+        this.isCollapsed = false;
+        this.playerElement?.classList.remove('collapsed');
+        
+        // Re-open video window if it was visible
+        if (this.videoVisible && this.currentPlatform === 'youtube') {
+            this.showVideoWindow();
+        }
+        
+        this.saveState();
+    }
+    
+    toggleCollapse() {
+        if (this.isCollapsed) {
+            this.expand();
+        } else {
+            this.collapse();
         }
     }
 
@@ -683,6 +906,9 @@ class PersistentFloatingPlayer {
             currentIndex: this.currentIndex,
             isPlaying: this.isPlaying,
             currentTime: this.audio?.currentTime || 0,
+            platform: this.currentPlatform,
+            videoVisible: this.videoVisible,
+            isCollapsed: this.isCollapsed,
             timestamp: Date.now()
         };
         localStorage.setItem('floatingPlayerState', JSON.stringify(state));
@@ -721,6 +947,8 @@ class PersistentFloatingPlayer {
         const closeBtn = document.getElementById('flpCloseBtn');
         const seekBar = document.getElementById('flpSeek');
         const videoToggleBtn = document.getElementById('flpVideoToggle');
+        const collapseBtn = document.getElementById('flpCollapseBtn');
+        const miniThumb = document.getElementById('flpMiniThumb');
         
         if (playBtn) playBtn.addEventListener('click', () => this.togglePlay());
         if (prevBtn) prevBtn.addEventListener('click', () => this.prevTrack());
@@ -728,6 +956,8 @@ class PersistentFloatingPlayer {
         if (closeBtn) closeBtn.addEventListener('click', () => this.close());
         if (seekBar) seekBar.addEventListener('input', (e) => this.seek(e.target.value));
         if (videoToggleBtn) videoToggleBtn.addEventListener('click', () => this.toggleVideoWindow());
+        if (collapseBtn) collapseBtn.addEventListener('click', () => this.collapse());
+        if (miniThumb) miniThumb.addEventListener('click', () => this.expand());
         
         // Listen for page navigation to persist player
         window.addEventListener('beforeunload', () => {

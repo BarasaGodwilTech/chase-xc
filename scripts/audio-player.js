@@ -58,6 +58,45 @@ class AudioPlayer {
         this.loadTrack(this.currentTrackIndex);
       }
     });
+    
+    // Sync with floating player when it changes
+    this.setupFloatingPlayerSync();
+  }
+  
+  setupFloatingPlayerSync() {
+    // Listen for floating player state changes
+    document.addEventListener('floatingPlayerStateChanged', (e) => {
+      if (!e.detail || !e.detail.track) return;
+      
+      const { track, isPlaying, currentTime } = e.detail;
+      
+      // Only sync if it's an audio track (not embed)
+      if (track.audioUrl && track.audioUrl.trim() !== '') {
+        // Find track index
+        const trackIndex = this.tracks.findIndex(t => t.id === track.id);
+        if (trackIndex !== -1 && trackIndex !== this.currentTrackIndex) {
+          this.currentTrackIndex = trackIndex;
+          this.loadTrack(trackIndex);
+        }
+        
+        // Sync playback state
+        if (isPlaying && !this.isPlaying) {
+          this.audio.play().catch(console.error);
+          this.isPlaying = true;
+        } else if (!isPlaying && this.isPlaying) {
+          this.audio.pause();
+          this.isPlaying = false;
+        }
+        
+        // Sync current time
+        if (currentTime && Math.abs(this.audio.currentTime - currentTime) > 1) {
+          this.audio.currentTime = currentTime;
+        }
+        
+        // Update UI
+        this.updatePlayButton();
+      }
+    });
   }
 
   loadTracksFromData() {
@@ -818,8 +857,21 @@ class AudioPlayer {
       artistName: track.artist,
       artwork: track.cover,
       audioUrl: track.src,
+      platformLinks: track.originalData?.platformLinks || {},
       originalData: track.originalData
     };
+    
+    // Update persistent player state
+    window.persistentPlayer.currentTrack = trackData;
+    window.persistentPlayer.currentPlatform = 'audio';
+    window.persistentPlayer.updateUI('audio');
+    window.persistentPlayer.isPlaying = this.isPlaying;
+    window.persistentPlayer.updatePlayButton();
+    
+    // Sync current time if audio exists
+    if (window.persistentPlayer.audio && this.audio) {
+      window.persistentPlayer.audio.currentTime = this.audio.currentTime;
+    }
     
     // Dispatch event for persistent player
     document.dispatchEvent(new CustomEvent('trackChanged', {
@@ -838,6 +890,7 @@ class AudioPlayer {
         artistName: t.artist,
         artwork: t.cover,
         audioUrl: t.src,
+        platformLinks: t.originalData?.platformLinks || {},
         originalData: t.originalData
       }));
       window.persistentPlayer.setPlaylist(playlist, this.currentTrackIndex);

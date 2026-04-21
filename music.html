@@ -69,41 +69,6 @@
         </div>
     </section>
 
-    <!-- Floating Music Player -->
-    <div class="floating-player" id="floatingPlayer">
-        <div class="floating-waveform" id="floatingWaveform"></div>
-        <div class="floating-track-info">
-            <div class="floating-cover">
-                 <img id="floatingCover" src="" alt="Now Playing">
-                </div>
-            <div class="floating-info">
-                <h5 id="floatingTitle">Select a track</h5>
-                <p id="floatingArtist">--</p>
-            </div>
-        </div>
-        <div class="floating-controls">
-            <button id="floatingPrevBtn" class="floating-btn">
-                <i class="fas fa-step-backward"></i>
-            </button>
-            <button id="floatingPlayBtn" class="floating-btn play-pause">
-                <i class="fas fa-play"></i>
-            </button>
-            <button id="floatingNextBtn" class="floating-btn">
-                <i class="fas fa-step-forward"></i>
-            </button>
-        </div>
-        <div class="floating-progress">
-            <span id="floatingCurrentTime" class="floating-time">0:00</span>
-            <div class="progress-bar-container">
-                <div class="progress-bar" id="floatingProgressBar"></div>
-            </div>
-            <span id="floatingDuration" class="floating-time">0:00</span>
-        </div>
-        <button class="floating-close" id="floatingClose">
-            <i class="fas fa-times"></i>
-        </button>
-    </div>
-
     <!-- Music Player Section -->
     <section class="music" id="musicSection">
         <div class="container">
@@ -129,77 +94,6 @@
                 </div>
             </div>
             
-            <!-- Custom Audio Player -->
-            <div class="audio-player enhanced-player" id="audioPlayer">
-                <div class="player-waveform" id="playerWaveform"></div>
-                <div class="player-track-info">
-                    <div class="player-cover">
-                        <img id="playerCover" src="" alt="Now Playing">
-        <div class="vinyl-overlay"></div>
-    </div>
-                    <div class="player-info">
-                        <h5 id="playerTitle">Select a track</h5>
-                        <p id="playerArtist">--</p>
-                        <div class="track-progress-mobile">
-                            <span id="currentTimeMobile">0:00</span>
-                            <div class="progress-bar-container">
-                                <div class="progress-bar" id="progressBarMobile"></div>
-                            </div>
-                            <span id="durationMobile">0:00</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="player-controls">
-                    <button id="prevBtn" class="player-btn" title="Previous">
-                        <i class="fas fa-step-backward"></i>
-                    </button>
-                    <button id="playBtn" class="player-btn play-pause" title="Play/Pause">
-                        <i class="fas fa-play"></i>
-                    </button>
-                    <button id="nextBtn" class="player-btn" title="Next">
-                        <i class="fas fa-step-forward"></i>
-                    </button>
-                </div>
-
-                <div class="player-progress">
-                    <span id="currentTime">0:00</span>
-                    <div class="progress-bar-container">
-                        <div class="progress-bar" id="progressBar"></div>
-                        <input type="range" id="seekBar" class="seek-bar" min="0" max="100" value="0">
-                    </div>
-                    <span id="duration">0:00</span>
-                </div>
-
-                <div class="player-volume">
-                    <button class="volume-btn" id="volumeToggle">
-                        <i class="fas fa-volume-up"></i>
-                    </button>
-                    <div class="volume-control" id="volumeControlContainer">
-                        <input type="range" id="volumeControl" class="volume-slider" min="0" max="100" value="70">
-                    </div>
-                </div>
-
-                <div class="player-actions">
-                    <button class="player-action-btn" id="repeatBtn" title="Repeat">
-                        <i class="fas fa-redo"></i>
-                    </button>
-                    <button class="player-action-btn" id="shuffleBtn" title="Shuffle">
-                        <i class="fas fa-random"></i>
-                    </button>
-                    <button class="player-action-btn" id="likeBtn" title="Like">
-                        <i class="far fa-heart"></i>
-                    </button>
-                    <button class="player-action-btn" id="downloadBtn" title="Download">
-                        <i class="fas fa-download"></i>
-                    </button>
-                </div>
-
-                <audio id="audioElement">
-                    <source src="/placeholder.mp3" type="audio/mpeg">
-                </audio>
-            </div>
-             
             <!-- Search Section -->
             <div class="search-section">
                 <div class="search-container">
@@ -385,7 +279,6 @@
 
     <script type="module" src="scripts/firebase-init.js"></script>
     <script type="module" src="scripts/auth.js"></script>
-    <script src="scripts/audio-player.js"></script>
     <script src="scripts/main.js"></script>
     <script type="module" src="scripts/music-page.js"></script>
     <script src="scripts/music-enhancements.js"></script>

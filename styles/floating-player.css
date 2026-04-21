@@ -3,25 +3,82 @@
     position: fixed;
     bottom: 20px;
     right: 20px;
-    width: 360px;
+    width: 280px;
     background: rgba(26, 26, 46, 0.95);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border-radius: 16px;
+    border-radius: 12px;
     border: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
     z-index: 9998;
-    transition: box-shadow 0.2s ease, transform 0.2s ease;
+    transition: all 0.3s ease;
     cursor: default;
     user-select: none;
 }
 
-/* Video Window Styles */
+/* Collapsed/Mini Mode */
+.persistent-floating-player.collapsed {
+    width: auto;
+    height: auto;
+    padding: 0;
+    border-radius: 8px;
+}
+
+.persistent-floating-player.collapsed .flp-content,
+.persistent-floating-player.collapsed .flp-controls,
+.persistent-floating-player.collapsed .flp-progress-container,
+.persistent-floating-player.collapsed .flp-drag-handle {
+    display: none;
+}
+
+.persistent-floating-player.collapsed .flp-mini-thumb {
+    display: block;
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.persistent-floating-player.collapsed .flp-mini-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.persistent-floating-player.collapsed .flp-mini-thumb::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.persistent-floating-player.collapsed .flp-mini-thumb .play-indicator {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #fff;
+    font-size: 16px;
+    opacity: 0.9;
+}
+
+/* Mini thumbnail hidden in expanded mode */
+.flp-mini-thumb {
+    display: none;
+}
+
+/* Video Window Styles - positioned above floating player */
 .flp-video-window {
     position: fixed;
-    bottom: 100px;
+    bottom: auto;
+    top: auto;
     right: 20px;
-    width: 400px;
+    width: 280px;
     background: rgba(26, 26, 46, 0.98);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
@@ -31,6 +88,26 @@
     z-index: 9997;
     overflow: hidden;
     animation: videoSlideIn 0.3s ease-out;
+    pointer-events: auto;
+}
+
+/* Prevent iframe interactions from showing YouTube UI */
+.flp-video-content {
+    position: relative;
+    width: 100%;
+    height: 0;
+    padding-bottom: 56.25%; /* 16:9 aspect ratio */
+    pointer-events: none; /* Prevent clicks on video */
+}
+
+.flp-video-content iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+    pointer-events: none; /* Block all interactions including ads/actions */
 }
 
 @keyframes videoSlideIn {
@@ -88,21 +165,6 @@
     color: #fff;
 }
 
-.flp-video-content {
-    position: relative;
-    width: 100%;
-    height: 0;
-    padding-bottom: 56.25%; /* 16:9 aspect ratio */
-}
-
-.flp-video-content iframe {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    border: none;
-}
 
 /* Video Toggle Button */
 .flp-video-toggle {
@@ -216,6 +278,31 @@
     color: #fff;
     background: rgba(255, 255, 255, 0.1);
     transform: scale(1.1);
+}
+
+/* Collapse button */
+.flp-collapse {
+    position: absolute;
+    top: 8px;
+    right: 40px;
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    font-size: 14px;
+    z-index: 10;
+    transition: color 0.2s, transform 0.2s;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.flp-collapse:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.1);
 }
 
 .flp-content {
@@ -429,6 +516,19 @@ a[href*="whatsapp"] {
         border-radius: 12px;
     }
     
+    /* Video window closed by default on mobile */
+    .flp-video-window {
+        display: none !important;
+    }
+    
+    .flp-video-window.visible {
+        display: block !important;
+        width: calc(100% - 32px);
+        left: 16px !important;
+        right: 16px !important;
+        bottom: auto !important;
+    }
+    
     .flp-drag-handle {
         display: none;
     }
@@ -464,6 +564,19 @@ a[href*="whatsapp"] {
     .flp-btn {
         width: 32px;
         height: 32px;
+    }
+    
+    /* Collapsed mode on mobile */
+    .persistent-floating-player.collapsed {
+        width: 56px !important;
+        height: 56px !important;
+        left: auto !important;
+        right: 16px !important;
+    }
+    
+    .persistent-floating-player.collapsed .flp-mini-thumb {
+        width: 56px;
+        height: 56px;
     }
 }
 
