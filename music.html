@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="styles/main.css">
     <link rel="stylesheet" href="styles/components.css">
+    <link rel="stylesheet" href="styles/music-enhancements.css">
 </head> 
 <body>
     <script src="scripts/includes.js"></script>
@@ -17,6 +18,7 @@
 
     <!-- Page Header -->
     <section class="music-hero" data-music-hero>
+        <div class="hero-particles" id="heroParticles"></div>
         <div class="music-hero-video-bg">
             <video class="music-hero-video" autoplay muted playsinline loop preload="auto" aria-hidden="true" poster="studio-poster.jpg" loading="lazy">
                 <source src="studio-video.mp4" type="video/mp4">
@@ -31,9 +33,9 @@
                         <i class="fas fa-music"></i> Our Music
                     </span>
                     <h1 class="music-hero-title">
-                        <span class="music-hero-title-line">Discover</span>
-                        <span class="music-hero-title-line music-hero-title-accent">Our Sound</span>
-                        <span class="music-hero-title-line">Collection</span>
+                        <span class="music-hero-title-line" data-text="Discover">Discover</span>
+                        <span class="music-hero-title-line music-hero-title-accent" data-text="Our Sound">Our Sound</span>
+                        <span class="music-hero-title-line" data-text="Collection">Collection</span>
                     </h1>
                     <p class="music-hero-subtitle">
                         Explore tracks produced at Chase x Records. From Afro-Pop to Electronic, discover our diverse musical catalog featuring talented artists and innovative productions.
@@ -69,6 +71,7 @@
 
     <!-- Floating Music Player -->
     <div class="floating-player" id="floatingPlayer">
+        <div class="floating-waveform" id="floatingWaveform"></div>
         <div class="floating-track-info">
             <div class="floating-cover">
                  <img id="floatingCover" src="" alt="Now Playing">
@@ -90,9 +93,11 @@
             </button>
         </div>
         <div class="floating-progress">
+            <span id="floatingCurrentTime" class="floating-time">0:00</span>
             <div class="progress-bar-container">
                 <div class="progress-bar" id="floatingProgressBar"></div>
             </div>
+            <span id="floatingDuration" class="floating-time">0:00</span>
         </div>
         <button class="floating-close" id="floatingClose">
             <i class="fas fa-times"></i>
@@ -103,29 +108,30 @@
     <section class="music" id="musicSection">
         <div class="container">
             <div class="section-header">
-    <h3 class="section-title">Featured Releases</h3>
-    <div class="section-controls">
-        <button class="filter-btn active" data-filter="all">
-            <i class="fas fa-layer-group"></i>
-            <span>All</span>
-        </button>
-        <button class="filter-btn" data-filter="new">
-            <i class="fas fa-fire"></i>
-            <span>New Releases</span>
-        </button>
-        <button class="filter-btn" data-filter="popular">
-            <i class="fas fa-chart-line"></i>
-            <span>Popular</span>
-        </button>
-        <button class="filter-btn" data-filter="trending">
-            <i class="fas fa-bolt"></i>
-            <span>Trending</span>
-        </button>
-    </div>
-</div>
+                <h3 class="section-title">Featured Releases</h3>
+                <div class="section-controls">
+                    <button class="filter-btn active" data-filter="all">
+                        <i class="fas fa-layer-group"></i>
+                        <span>All</span>
+                    </button>
+                    <button class="filter-btn" data-filter="new">
+                        <i class="fas fa-fire"></i>
+                        <span>New Releases</span>
+                    </button>
+                    <button class="filter-btn" data-filter="popular">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Popular</span>
+                    </button>
+                    <button class="filter-btn" data-filter="trending">
+                        <i class="fas fa-bolt"></i>
+                        <span>Trending</span>
+                    </button>
+                </div>
+            </div>
             
             <!-- Custom Audio Player -->
             <div class="audio-player enhanced-player" id="audioPlayer">
+                <div class="player-waveform" id="playerWaveform"></div>
                 <div class="player-track-info">
                     <div class="player-cover">
                         <img id="playerCover" src="" alt="Now Playing">
@@ -249,16 +255,71 @@
                 </div>
             </div>
 
+            <!-- Loading Skeletons -->
+            <div class="music-grid loading-skeletons" id="loadingSkeletons">
+                <div class="track-skeleton">
+                    <div class="skeleton-artwork shimmer"></div>
+                    <div class="skeleton-content">
+                        <div class="skeleton-title shimmer"></div>
+                        <div class="skeleton-artist shimmer"></div>
+                        <div class="skeleton-meta shimmer"></div>
+                    </div>
+                </div>
+                <div class="track-skeleton">
+                    <div class="skeleton-artwork shimmer"></div>
+                    <div class="skeleton-content">
+                        <div class="skeleton-title shimmer"></div>
+                        <div class="skeleton-artist shimmer"></div>
+                        <div class="skeleton-meta shimmer"></div>
+                    </div>
+                </div>
+                <div class="track-skeleton">
+                    <div class="skeleton-artwork shimmer"></div>
+                    <div class="skeleton-content">
+                        <div class="skeleton-title shimmer"></div>
+                        <div class="skeleton-artist shimmer"></div>
+                        <div class="skeleton-meta shimmer"></div>
+                    </div>
+                </div>
+                <div class="track-skeleton">
+                    <div class="skeleton-artwork shimmer"></div>
+                    <div class="skeleton-content">
+                        <div class="skeleton-title shimmer"></div>
+                        <div class="skeleton-artist shimmer"></div>
+                        <div class="skeleton-meta shimmer"></div>
+                    </div>
+                </div>
+                <div class="track-skeleton">
+                    <div class="skeleton-artwork shimmer"></div>
+                    <div class="skeleton-content">
+                        <div class="skeleton-title shimmer"></div>
+                        <div class="skeleton-artist shimmer"></div>
+                        <div class="skeleton-meta shimmer"></div>
+                    </div>
+                </div>
+                <div class="track-skeleton">
+                    <div class="skeleton-artwork shimmer"></div>
+                    <div class="skeleton-content">
+                        <div class="skeleton-title shimmer"></div>
+                        <div class="skeleton-artist shimmer"></div>
+                        <div class="skeleton-meta shimmer"></div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Music Grid -->
-             <!-- Enhanced Music Grid - Tracks loaded dynamically via music-data.js -->
-<div class="music-grid" id="musicGrid">
-    <!-- Track cards will be dynamically loaded here -->
-</div>
+            <!-- Enhanced Music Grid - Tracks loaded dynamically via music-data.js -->
+            <div class="music-grid" id="musicGrid">
+                <!-- Track cards will be dynamically loaded here -->
+            </div>
             
             <!-- Load More Button -->
             <div class="load-more-container">
                 <button class="btn btn-outline" id="loadMoreBtn">
                     <i class="fas fa-plus"></i> Load More Tracks
+                </button>
+            </div>
+        </div>
     </section>
 
     <!-- Music Categories -->
@@ -282,16 +343,39 @@
     </section>
 
     <!-- Newsletter Section -->
-    <section class="newsletter">
+    <section class="newsletter enhanced-newsletter">
         <div class="container">
             <div class="newsletter-content">
+                <div class="newsletter-icon">
+                    <i class="fas fa-envelope-open-text"></i>
+                </div>
                 <div class="newsletter-text">
                     <h3>Stay Updated</h3>
                     <p>Get notified about new releases, exclusive content, and special offers.</p>
                 </div>
                 <div class="newsletter-form">
-                    <input type="email" placeholder="Enter your email">
-                    <button class="btn btn-primary">Subscribe</button>
+                    <div class="newsletter-input-wrapper">
+                        <i class="fas fa-envelope newsletter-input-icon"></i>
+                        <input type="email" id="newsletterEmail" placeholder="Enter your email" required>
+                    </div>
+                    <button class="newsletter-btn" id="newsletterSubmit">
+                        <span>Subscribe</span>
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+                <div class="newsletter-features">
+                    <div class="newsletter-feature">
+                        <i class="fas fa-music"></i>
+                        <span>New Releases</span>
+                    </div>
+                    <div class="newsletter-feature">
+                        <i class="fas fa-gift"></i>
+                        <span>Exclusive Content</span>
+                    </div>
+                    <div class="newsletter-feature">
+                        <i class="fas fa-percent"></i>
+                        <span>Special Offers</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -304,5 +388,6 @@
     <script src="scripts/audio-player.js"></script>
     <script src="scripts/main.js"></script>
     <script type="module" src="scripts/music-page.js"></script>
+    <script src="scripts/music-enhancements.js"></script>
 </body>
 </html>

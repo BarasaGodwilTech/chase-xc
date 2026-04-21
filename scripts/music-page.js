@@ -283,6 +283,9 @@ async function initMusicPage() {
   if (grid) grid.innerHTML = cards.join('')
   if (resultsCount) resultsCount.textContent = `${tracks.length} track${tracks.length !== 1 ? 's' : ''}`
 
+  // Dispatch event for loading skeleton to hide
+  document.dispatchEvent(new CustomEvent('music:loaded'))
+
   // Render Latest Releases section
   await renderLatestReleases(normalizedTracks)
 

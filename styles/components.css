@@ -308,9 +308,9 @@
 }
 
 .track-card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-  border-color: rgba(0, 212, 255, 0.3);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.25);
+  border-color: rgba(0, 212, 255, 0.2);
 }
 
 .track-card.active {
@@ -374,71 +374,70 @@
 
 .track-badge {
   position: absolute;
-  top: 12px;
-  left: 12px;
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 0.7rem;
+  top: 10px;
+  left: 10px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 0.65rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
   z-index: 5;
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(8px);
   pointer-events: none;
 }
 
 .track-badge.trending {
-  background: linear-gradient(135deg, #f59e0b, #f97316);
+  background: rgba(245, 158, 11, 0.9);
   color: white;
-  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
 }
 
 .track-badge.popular {
-  background: linear-gradient(135deg, #10b981, #059669);
+  background: rgba(16, 185, 129, 0.9);
   color: white;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
 }
 
 .track-badge.new-release {
-  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  background: rgba(0, 212, 255, 0.9);
   color: white;
-  box-shadow: 0 4px 12px rgba(0, 212, 255, 0.4);
 }
 
 .spotify-indicator {
   position: absolute;
-  top: 12px;
-  right: 12px;
-  width: 32px;
-  height: 32px;
-  background: rgba(30, 30, 30, 0.9);
-  border-radius: 8px;
+  top: 10px;
+  right: 10px;
+  width: 26px;
+  height: 26px;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #1DB954;
-  font-size: 1rem;
+  font-size: 0.85rem;
   z-index: 5;
-  backdrop-filter: blur(10px);
-  transition: all 0.3s ease;
+  backdrop-filter: blur(8px);
+  transition: all 0.2s ease;
   cursor: pointer;
+  opacity: 0.8;
 }
 
 .track-card:hover .spotify-indicator {
-  background: #1DB954;
+  opacity: 1;
+  background: rgba(29, 185, 84, 0.9);
   color: white;
 }
 
 .track-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, transparent 50%);
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.2) 40%, transparent 60%);
   opacity: 0;
-  transition: opacity 0.3s ease;
+  transition: opacity 0.25s ease;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
-  padding: 16px;
+  padding: 12px;
   z-index: 15;
 }
 
@@ -448,59 +447,67 @@
 
 .overlay-actions {
   display: flex;
-  gap: 12px;
+  gap: 8px;
   align-items: center;
+  justify-content: center;
 }
 
 .play-btn-overlay {
-  width: 56px;
-  height: 56px;
-  background: rgba(255, 255, 255, 0.95);
+  width: 40px;
+  height: 40px;
+  background: var(--primary);
   border: none;
   border-radius: 50%;
-  color: var(--primary);
-  font-size: 1.3rem;
+  color: white;
+  font-size: 0.9rem;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 212, 255, 0.3);
 }
 
 .play-btn-overlay:hover {
-  background: var(--primary);
-  color: white;
-  transform: scale(1.1);
-  box-shadow: 0 12px 32px rgba(0, 212, 255, 0.4);
+  transform: scale(1.08);
+  box-shadow: 0 6px 16px rgba(0, 212, 255, 0.4);
+}
+
+.play-btn-overlay:active {
+  transform: scale(0.95);
 }
 
 .overlay-btn {
-  width: 40px;
-  height: 40px;
-  background: rgba(255, 255, 255, 0.95);
-  border: none;
+  width: 32px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 50%;
-  color: var(--text-primary);
-  font-size: 0.95rem;
+  color: white;
+  font-size: 0.75rem;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
+  backdrop-filter: blur(8px);
 }
 
 .overlay-btn:hover {
-  background: var(--primary);
-  color: white;
-  transform: scale(1.1);
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: scale(1.05);
+}
+
+.overlay-btn:active {
+  transform: scale(0.95);
 }
 
 .track-content {
-  padding: 16px;
+  padding: 14px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .track-header {
@@ -542,33 +549,32 @@
 }
 
 .like-btn-mini {
-  width: 32px;
-  height: 32px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--border);
+  width: 24px;
+  height: 24px;
+  background: transparent;
+  border: none;
   border-radius: 50%;
   color: var(--text-secondary);
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   padding: 0;
+  opacity: 0.6;
 }
 
 .like-btn-mini:hover {
-  background: rgba(239, 68, 68, 0.1);
-  border-color: rgba(239, 68, 68, 0.3);
   color: #ef4444;
   transform: scale(1.1);
+  opacity: 1;
 }
 
 .like-btn-mini.liked {
-  background: rgba(239, 68, 68, 0.1);
-  border-color: #ef4444;
   color: #ef4444;
+  opacity: 1;
 }
 
 .like-btn-mini.liked i {
@@ -583,11 +589,11 @@
 }
 
 .track-genre {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: var(--primary);
-  background: rgba(0, 212, 255, 0.1);
-  padding: 4px 10px;
-  border-radius: 12px;
+  background: rgba(0, 212, 255, 0.08);
+  padding: 3px 8px;
+  border-radius: 4px;
   font-weight: 500;
 }
 
@@ -598,29 +604,29 @@
 
 .track-socials {
   display: flex;
-  gap: 12px;
+  gap: 8px;
   padding-top: 8px;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .track-socials a {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.05);
+  width: 26px;
+  height: 26px;
+  border-radius: 4px;
+  background: transparent;
   color: var(--text-secondary);
-  font-size: 0.9rem;
-  transition: all 0.3s ease;
+  font-size: 0.8rem;
+  transition: all 0.2s ease;
   text-decoration: none;
+  opacity: 0.6;
 }
 
 .track-socials a:hover {
-  background: var(--primary);
-  color: white;
-  transform: translateY(-2px);
+  color: var(--primary);
+  opacity: 1;
 }
 
 .track-socials a i {
@@ -886,15 +892,153 @@
   }
 }
 
-/* Touch device optimizations */
-@media (hover: none) {
-  .play-btn-overlay {
+/* Touch device optimizations - devices without hover capability */
+@media (hover: none) and (pointer: coarse) {
+  /* Remove hover transform effects on touch devices */
+  .track-card {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+    cursor: pointer;
+  }
+
+  .track-card:hover,
+  .track-card:active {
+    transform: none;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+    border-color: rgba(0, 212, 255, 0.15);
+  }
+
+  .track-card:active {
+    background: rgba(0, 212, 255, 0.05);
+    border-color: rgba(0, 212, 255, 0.3);
+  }
+
+  /* Remove hover effects on artwork */
+  .track-card:hover .track-artwork img {
+    transform: none;
+  }
+
+  .track-card:active .track-artwork img {
+    transform: scale(1.02);
+  }
+
+  /* Show overlay by default on touch - positioned at bottom */
+  .track-overlay {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.75) 0%, rgba(0, 0, 0, 0.3) 50%, transparent 70%);
+    align-items: flex-end;
+    justify-content: center;
+    padding: 10px;
+  }
+
+  /* Center and align overlay actions properly */
+  .overlay-actions {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+  }
+
+  /* Touch-friendly button sizes */
+  .play-btn-overlay {
+    width: 44px;
+    height: 44px;
+    font-size: 1rem;
+    opacity: 1;
+    transform: none;
+    box-shadow: 0 2px 8px rgba(0, 212, 255, 0.3);
+  }
+
+  .play-btn-overlay:active {
+    transform: scale(0.92);
+    box-shadow: 0 4px 12px rgba(0, 212, 255, 0.4);
+  }
+
+  .overlay-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 0.8rem;
+    opacity: 1;
+    transform: none;
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+  }
+
+  .overlay-btn:active {
+    background: rgba(255, 255, 255, 0.35);
+    transform: scale(0.92);
+  }
+
+  /* Hide center play button on touch - use overlay instead */
+  .play-btn-card {
+    display: none;
+  }
+
+  /* Like button touch behavior */
+  .like-btn-mini {
+    opacity: 0.8;
+    width: 28px;
+    height: 28px;
+  }
+
+  .like-btn-mini:active {
+    transform: scale(0.9);
+    opacity: 1;
+  }
+
+  /* Remove hover color changes */
+  .track-card:hover .track-title {
+    color: var(--text-primary);
+  }
+
+  .track-card:active .track-title {
+    color: var(--primary);
+  }
+
+  /* Social links touch behavior */
+  .track-socials a {
+    opacity: 0.7;
+  }
+
+  .track-socials a:active {
+    opacity: 1;
+    color: var(--primary);
+  }
+
+  /* Badge and indicator touch adjustments */
+  .spotify-indicator {
+    opacity: 1;
+  }
+
+  .spotify-indicator:active {
+    background: rgba(29, 185, 84, 0.9);
+    color: white;
+  }
+}
+
+/* Additional mobile touch optimizations for small screens */
+@media (max-width: 480px) and (hover: none) {
+  .overlay-actions {
+    gap: 8px;
+  }
+
+  .play-btn-overlay {
+    width: 40px;
+    height: 40px;
+    font-size: 0.9rem;
+  }
+
+  .overlay-btn {
+    width: 34px;
+    height: 34px;
+    font-size: 0.75rem;
   }
 
   .track-overlay {
-    opacity: 1;
+    padding: 8px;
   }
 }
 
