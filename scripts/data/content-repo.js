@@ -58,3 +58,17 @@ export async function fetchArtistById(artistId) {
     throw error
   }
 }
+
+export async function fetchTrackById(trackId) {
+  console.log('[ContentRepo] Fetching track by ID:', trackId)
+  try {
+    const ref = doc(db, 'tracks', trackId)
+    const snap = await getDoc(ref)
+    const track = snap.exists() ? { id: snap.id, ...snap.data() } : null
+    console.log('[ContentRepo] Track found:', !!track)
+    return track
+  } catch (error) {
+    console.error('[ContentRepo] Error fetching track by ID:', error)
+    throw error
+  }
+}
