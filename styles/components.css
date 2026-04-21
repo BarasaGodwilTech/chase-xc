@@ -9292,7 +9292,7 @@ border-radius: 12px;
     font-size: 0.9rem;
     font-weight: 500;
     margin-bottom: 2rem;
-    padding: 0.5rem 1rem;
+    padding: 0.6rem 1.2rem;
     border-radius: var(--radius);
     background: var(--surface);
     border: 1px solid var(--border);
@@ -9300,16 +9300,27 @@ border-radius: 12px;
     cursor: pointer;
     position: relative;
     z-index: 10;
+    pointer-events: auto;
 }
 
 .back-btn:hover {
     color: var(--primary);
     border-color: var(--primary);
+    background: rgba(0, 212, 255, 0.1);
     transform: translateX(-4px);
+}
+
+.back-btn:active {
+    transform: translateX(-2px);
 }
 
 .back-btn i {
     font-size: 0.85rem;
+    transition: transform 0.2s;
+}
+
+.back-btn:hover i {
+    transform: translateX(-2px);
 }
 
 /* Track Hero Section */

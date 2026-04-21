@@ -152,7 +152,6 @@ function setupEventListeners() {
   const likeBtn = document.getElementById('likeBtn')
   const playlistBtn = document.getElementById('playlistBtn')
   const shareBtn = document.getElementById('shareBtn')
-  const backBtn = document.querySelector('.back-btn')
   
   // Play button
   if (playBtn) {
@@ -174,13 +173,8 @@ function setupEventListeners() {
     shareBtn.addEventListener('click', () => handleShareTrack())
   }
   
-  // Back button - navigate to music page
-  if (backBtn) {
-    backBtn.addEventListener('click', (e) => {
-      e.preventDefault()
-      window.location.href = 'music.html'
-    })
-  }
+  // Back button - let anchor href work naturally
+  // No JavaScript needed - the <a href="music.html"> handles navigation
   
   // Setup track card listeners for "More from Artist" section
   setupTrackCardListeners()
