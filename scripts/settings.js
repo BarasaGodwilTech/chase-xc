@@ -9,6 +9,12 @@ class SettingsManager {
     }
 
     init() {
+        // Ensure modal is hidden on page load
+        const deleteAccountModal = document.getElementById('deleteAccountModal');
+        if (deleteAccountModal) {
+            deleteAccountModal.classList.remove('active');
+        }
+
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 this.currentUser = user;
