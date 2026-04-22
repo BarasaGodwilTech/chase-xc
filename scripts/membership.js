@@ -1,6 +1,8 @@
 import { auth } from './firebase-init.js'
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js'
 import { initSettings, getConfig } from './config-loader.js'
+import { db } from './firebase-init.js'
+import { collection, addDoc, query, where, onSnapshot, orderBy, getDocs, doc, updateDoc, deleteDoc } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js'
 
 class MembershipManager {
     constructor() {
@@ -41,7 +43,7 @@ class MembershipManager {
         };
 
         this.updateUI();
-        this.loadBillingHistory();
+        this.loadBillingHistoryFromFirestore();
         this.loadPaymentMethods();
     }
 
@@ -254,7 +256,63 @@ class MembershipManager {
         }
     }
 
-    loadBillingHistory() {
+    loadBillingHistoryFromFirestore() {
+        const billingHistoryBody = document.getElementById('billingHistoryBody');
+        if (!billingHistoryBody || !this.currentUser) return;
+
+        // Set up real-time listener for user's payments
+        const paymentsQuery = query(
+            collection(db, 'payments'),
+            where('userId', '==', this.currentUser.uid),
+            orderBy('createdAt', 'desc')
+        );
+
+        this.paymentsUnsubscribe = onSnapshot(paymentsQuery, (snapshot) => {
+            const payments = [];
+            snapshot.forEach(doc => {
+                payments.push({ id: doc.id, ...doc.data() });
+            });
+
+            // Update membership status if payment is verified
+            const verifiedPayment = payments.find(p => p.status === 'verified' && this.currentPlan.status === 'pending');
+            if (verifiedPayment) {
+                this.currentPlan.status = 'active';
+                localStorage.setItem(`membership_${this.currentUser.uid}`, JSON.stringify(this.currentPlan));
+                this.updateUI();
+                this.showNotification('Your membership has been activated!', 'success');
+            }
+
+            if (payments.length === 0) {
+                billingHistoryBody.innerHTML = `
+                    <tr class="no-billing">
+                        <td colspan="5">
+                            <div class="empty-state">
+                                <i class="fas fa-receipt"></i>
+                                <p>No billing history yet</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            billingHistoryBody.innerHTML = payments.map(item => `
+                <tr>
+                    <td>${new Date(item.createdAt).toLocaleDateString()}</td>
+                    <td>${item.description}</td>
+                    <td>UGX ${item.amount.toLocaleString()}</td>
+                    <td><span class="status-${item.status}">${item.status}</span></td>
+                    <td><button class="btn-text"><i class="fas fa-download"></i></button></td>
+                </tr>
+            `).join('');
+        }, (error) => {
+            console.error('Error loading billing history:', error);
+            // Fallback to localStorage if Firestore fails
+            this.loadBillingHistoryFromLocalStorage();
+        });
+    }
+
+    loadBillingHistoryFromLocalStorage() {
         const billingHistoryBody = document.getElementById('billingHistoryBody');
         if (!billingHistoryBody) return;
 
@@ -451,7 +509,7 @@ class MembershipManager {
         }
     }
 
-    handleUpgrade(e) {
+    async handleUpgrade(e) {
         e.preventDefault();
 
         const phone = document.getElementById('upgradePhone').value.trim();
@@ -468,41 +526,52 @@ class MembershipManager {
             return;
         }
 
-        // Update membership
-        this.currentPlan = {
-            plan: this.selectedPlan,
-            status: 'active',
-            startDate: new Date().toISOString(),
-            paymentMethod: paymentMethod,
-            phone: phone,
-            transactionId: transactionId,
-            usage: {
-                studioHours: { used: 0, total: this.getPlanLimits(this.selectedPlan).studioHours },
-                mixingSessions: { used: 0, total: this.getPlanLimits(this.selectedPlan).mixingSessions },
-                masteringTracks: { used: 0, total: this.getPlanLimits(this.selectedPlan).masteringTracks }
-            }
-        };
+        const config = getConfig();
+        const price = config?.plans?.[this.selectedPlan]?.price || 0;
 
-        localStorage.setItem(`membership_${this.currentUser.uid}`, JSON.stringify(this.currentPlan));
+        // Save payment to Firestore
+        try {
+            const paymentData = {
+                userId: this.currentUser.uid,
+                userEmail: this.currentUser.email,
+                userName: this.currentUser.displayName || 'User',
+                plan: this.selectedPlan,
+                amount: price,
+                paymentMethod: paymentMethod,
+                phoneNumber: phone,
+                transactionId: transactionId,
+                status: 'pending',
+                description: `${this.selectedPlan.charAt(0).toUpperCase() + this.selectedPlan.slice(1)} Plan`,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
 
-        // Add to billing history
-        const billingHistory = JSON.parse(localStorage.getItem(`billingHistory_${this.currentUser.uid}`) || '[]');
-        const price = window.studioConfig?.plans?.[this.selectedPlan]?.price || 0;
-        billingHistory.unshift({
-            id: `billing_${Date.now()}`,
-            date: new Date().toISOString(),
-            description: `${this.selectedPlan.charAt(0).toUpperCase() + this.selectedPlan.slice(1)} Plan`,
-            amount: price,
-            status: 'pending',
-            paymentMethod: paymentMethod,
-            transactionId: transactionId
-        });
-        localStorage.setItem(`billingHistory_${this.currentUser.uid}`, JSON.stringify(billingHistory));
+            await addDoc(collection(db, 'payments'), paymentData);
 
-        this.updateUI();
-        this.loadBillingHistory();
-        this.closeUpgradeModal();
-        this.showNotification('Membership upgrade submitted! We will confirm your payment shortly.', 'success');
+            // Update local membership (will be fully activated when admin confirms)
+            this.currentPlan = {
+                plan: this.selectedPlan,
+                status: 'pending', // Pending until admin confirms payment
+                startDate: new Date().toISOString(),
+                paymentMethod: paymentMethod,
+                phone: phone,
+                transactionId: transactionId,
+                usage: {
+                    studioHours: { used: 0, total: this.getPlanLimits(this.selectedPlan).studioHours },
+                    mixingSessions: { used: 0, total: this.getPlanLimits(this.selectedPlan).mixingSessions },
+                    masteringTracks: { used: 0, total: this.getPlanLimits(this.selectedPlan).masteringTracks }
+                }
+            };
+
+            localStorage.setItem(`membership_${this.currentUser.uid}`, JSON.stringify(this.currentPlan));
+
+            this.updateUI();
+            this.closeUpgradeModal();
+            this.showNotification('Payment submitted! We will verify and activate your membership shortly.', 'success');
+        } catch (error) {
+            console.error('Error submitting payment:', error);
+            this.showNotification('Error submitting payment. Please try again.', 'error');
+        }
     }
 
     handleCancelSubscription() {

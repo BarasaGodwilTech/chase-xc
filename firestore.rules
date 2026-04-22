@@ -35,12 +35,23 @@ service cloud.firestore {
     
     // Helper function to validate payment data
     function isValidPaymentData() {
-      return request.resource.data.fullName is string &&
-             request.resource.data.fullName.size() > 0 &&
+      return request.resource.data.userId is string &&
+             request.resource.data.userId.size() > 0 &&
+             request.resource.data.userEmail is string &&
+             request.resource.data.userEmail.size() > 0 &&
+             request.resource.data.userName is string &&
+             request.resource.data.userName.size() > 0 &&
+             request.resource.data.plan is string &&
+             request.resource.data.plan.size() > 0 &&
              request.resource.data.amount is number &&
              request.resource.data.amount > 0 &&
-             request.resource.data.billingCycle in ['weekly', 'monthly', 'yearly'] &&
-             request.resource.data.status in ['pending', 'completed', 'failed'];
+             request.resource.data.paymentMethod is string &&
+             request.resource.data.paymentMethod.size() > 0 &&
+             request.resource.data.transactionId is string &&
+             request.resource.data.transactionId.size() > 0 &&
+             request.resource.data.phoneNumber is string &&
+             request.resource.data.phoneNumber.size() > 0 &&
+             request.resource.data.status in ['pending', 'verified', 'rejected', 'completed'];
     }
     
     // Helper function to validate settings data
@@ -86,21 +97,32 @@ service cloud.firestore {
     
     // Payments collection
     match /payments/{paymentId} {
-      // Admin read access for dashboard
+      // Users can read their own payments
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      
+      // Admins can read all payments
       allow read: if true;
       
-      // Write access (TEMPORARY: disabled auth for development)
-      allow create: if true;
+      // Users can create their own payments
+      allow create: if isAuthenticated() && 
+                     request.resource.data.userId == request.auth.uid &&
+                     isValidPaymentData();
+      
+      // Admins can update payment status
       allow update: if true;
+      
+      // Admins can delete payments
       allow delete: if true;
       
-      // In production, use:
-      // allow read: if isAdmin();
-      // allow create: if isAdmin() && isValidPaymentData();
-      // allow update: if isAdmin();
-      // allow delete: if isAdmin();
-      
+      // Admins can list all payments
       allow list: if true;
+    }
+    
+    // User payments subcollection - users can only read their own
+    match /users/{userId}/payments/{paymentId} {
+      allow read: if isAuthenticated() && userId == request.auth.uid;
+      allow create: if isAuthenticated() && userId == request.auth.uid && isValidPaymentData();
+      allow list: if isAuthenticated() && userId == request.auth.uid;
     }
     
     // Settings collection - public read, admin write

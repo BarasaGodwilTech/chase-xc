@@ -1256,27 +1256,129 @@ class AdminPanel {
         const table = document.getElementById('paymentsTable');
         if (!table) return;
         
-        const payments = await window.fetchPayments();
+        // Load payments from Firestore
+        const { db } = await import('./admin-firebase.js');
+        const { collection, getDocs, query, orderBy } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
         
-        if (payments.length === 0) {
-            table.innerHTML = '<tr><td colspan="7" class="text-center">No payments found</td></tr>';
+        try {
+            const paymentsQuery = query(collection(db, 'payments'), orderBy('createdAt', 'desc'));
+            const snapshot = await getDocs(paymentsQuery);
+            
+            const payments = [];
+            snapshot.forEach(doc => {
+                payments.push({ id: doc.id, ...doc.data() });
+            });
+            
+            if (payments.length === 0) {
+                table.innerHTML = '<tr><td colspan="9" class="text-center">No payments found</td></tr>';
+                return;
+            }
+            
+            table.innerHTML = payments.map(payment => `
+                <tr>
+                    <td>
+                        <div class="user-cell">
+                            <div class="user-name">${payment.userName || 'Unknown'}</div>
+                            <div class="user-email">${payment.userEmail || ''}</div>
+                        </div>
+                    </td>
+                    <td>${payment.plan || 'Unknown'}</td>
+                    <td>UGX ${this.formatNumber(payment.amount || 0)}</td>
+                    <td>${payment.paymentMethod || 'Unknown'}</td>
+                    <td>${payment.phoneNumber || 'N/A'}</td>
+                    <td><code>${payment.transactionId || 'N/A'}</code></td>
+                    <td>${new Date(payment.createdAt).toLocaleDateString()}</td>
+                    <td><span class="status-badge status-${payment.status}">${payment.status}</span></td>
+                    <td>
+                        ${payment.status === 'pending' ? `
+                            <button class="btn btn-success btn-sm" onclick="adminPanel.verifyPayment('${payment.id}')" title="Verify">
+                                <i class="fas fa-check"></i>
+                            </button>
+                            <button class="btn btn-danger btn-sm" onclick="adminPanel.rejectPayment('${payment.id}')" title="Reject">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        ` : `
+                            <button class="btn btn-secondary btn-sm" onclick="adminPanel.viewPayment('${payment.id}')" title="View">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        `}
+                    </td>
+                </tr>
+            `).join('');
+        } catch (error) {
+            console.error('Error loading payments from Firestore:', error);
+            // Fallback to localStorage
+            const payments = await window.fetchPayments();
+            
+            if (payments.length === 0) {
+                table.innerHTML = '<tr><td colspan="9" class="text-center">No payments found</td></tr>';
+                return;
+            }
+            
+            table.innerHTML = payments.map(payment => `
+                <tr>
+                    <td>${payment.fullName || payment.artist || 'Unknown'}</td>
+                    <td>${payment.billingCycle || 'Membership'}</td>
+                    <td>UGX ${this.formatNumber(payment.amount || 0)}</td>
+                    <td>N/A</td>
+                    <td>N/A</td>
+                    <td>N/A</td>
+                    <td>${new Date(payment.timestamp).toLocaleDateString()}</td>
+                    <td><span class="status-badge status-${payment.status}">${payment.status}</span></td>
+                    <td>
+                        <button class="btn btn-primary btn-sm" onclick="adminPanel.viewPayment('${payment.id}')">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+    }
+
+    async verifyPayment(paymentId) {
+        if (!confirm('Are you sure you want to verify this payment? This will activate the user\'s membership.')) {
             return;
         }
-        table.innerHTML = payments.map(payment => `
-            <tr>
-                <td>${payment.id}</td>
-                <td>${payment.fullName || payment.artist || 'Unknown'}</td>
-                <td>UGX ${this.formatNumber(payment.amount || 0)}</td>
-                <td>${payment.billingCycle || payment.service || 'Membership'}</td>
-                <td>${new Date(payment.timestamp).toLocaleDateString()}</td>
-                <td><span class="status-badge status-${payment.status}">${payment.status}</span></td>
-                <td>
-                    <button class="btn btn-primary" onclick="adminPanel.viewPayment('${payment.id}')">
-                        <i class="fas fa-eye"></i>
-                    </button>
-                </td>
-            </tr>
-        `).join('');
+
+        try {
+            const { db } = await import('./admin-firebase.js');
+            const { doc, updateDoc } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
+            
+            const paymentRef = doc(db, 'payments', paymentId);
+            await updateDoc(paymentRef, {
+                status: 'verified',
+                updatedAt: new Date().toISOString()
+            });
+
+            this.showNotification('Payment verified successfully', 'success');
+            this.loadPayments();
+        } catch (error) {
+            console.error('Error verifying payment:', error);
+            this.showNotification('Error verifying payment', 'error');
+        }
+    }
+
+    async rejectPayment(paymentId) {
+        if (!confirm('Are you sure you want to reject this payment?')) {
+            return;
+        }
+
+        try {
+            const { db } = await import('./admin-firebase.js');
+            const { doc, updateDoc } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
+            
+            const paymentRef = doc(db, 'payments', paymentId);
+            await updateDoc(paymentRef, {
+                status: 'rejected',
+                updatedAt: new Date().toISOString()
+            });
+
+            this.showNotification('Payment rejected', 'success');
+            this.loadPayments();
+        } catch (error) {
+            console.error('Error rejecting payment:', error);
+            this.showNotification('Error rejecting payment', 'error');
+        }
     }
 
     async loadSettings() {
