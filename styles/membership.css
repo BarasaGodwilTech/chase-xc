@@ -1,0 +1,661 @@
+/* Membership Page Styles */
+.membership-page-header {
+    padding: 120px 0 60px;
+    background: linear-gradient(135deg, rgba(0, 212, 255, 0.05), rgba(168, 85, 247, 0.05));
+}
+
+.membership-header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 2rem;
+}
+
+.membership-header-left {
+    flex: 1;
+}
+
+.membership-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: var(--background);
+    padding: 0.5rem 1.25rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.membership-title {
+    font-family: var(--font-heading);
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 0 0 0.75rem 0;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.membership-subtitle {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    margin: 0;
+}
+
+.membership-header-right {
+    flex-shrink: 0;
+}
+
+/* Current Plan Section */
+.current-plan-section {
+    padding: 3rem 0;
+}
+
+.current-plan-card {
+    background: var(--surface);
+    border-radius: 16px;
+    border: 2px solid var(--border);
+    overflow: hidden;
+}
+
+.plan-card-header {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 2rem;
+    background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(168, 85, 247, 0.1));
+    border-bottom: 1px solid var(--border);
+}
+
+.plan-icon-wrapper {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    color: var(--background);
+    flex-shrink: 0;
+}
+
+.plan-header-info {
+    flex: 1;
+}
+
+.plan-header-info h2 {
+    font-family: var(--font-heading);
+    font-size: 1.8rem;
+    margin: 0 0 0.5rem 0;
+    color: var(--text-primary);
+}
+
+.plan-header-info p {
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.plan-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #10b981;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.plan-card-body {
+    padding: 2rem;
+}
+
+.plan-features-list {
+    margin-bottom: 2rem;
+}
+
+.plan-features-list h3 {
+    font-size: 1.2rem;
+    margin: 0 0 1rem 0;
+    color: var(--text-primary);
+}
+
+.plan-features-list ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+}
+
+.plan-features-list li {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+}
+
+.plan-features-list li i {
+    color: #10b981;
+    font-size: 1rem;
+}
+
+.plan-usage {
+    padding-top: 2rem;
+    border-top: 1px solid var(--border);
+}
+
+.plan-usage h3 {
+    font-size: 1.2rem;
+    margin: 0 0 1.5rem 0;
+    color: var(--text-primary);
+}
+
+.usage-item {
+    margin-bottom: 1.25rem;
+}
+
+.usage-label {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+}
+
+.usage-label span:first-child {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.usage-value {
+    color: var(--primary);
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.usage-progress {
+    height: 8px;
+    background: var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), var(--secondary));
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.plan-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 2rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-top: 1px solid var(--border);
+}
+
+.plan-renewal {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.plan-renewal span:last-child {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.plan-actions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.plan-actions .btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+}
+
+/* Available Plans Section */
+.available-plans-section {
+    padding: 3rem 0;
+    background: var(--background);
+}
+
+.plans-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.plan-card {
+    background: var(--surface);
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    transition: var(--transition);
+    position: relative;
+}
+
+.plan-card:hover {
+    transform: translateY(-8px);
+    border-color: var(--primary);
+    box-shadow: 0 12px 32px rgba(0, 212, 255, 0.15);
+}
+
+.plan-card.featured {
+    border: 2px solid var(--primary);
+    transform: scale(1.05);
+}
+
+.plan-card.featured:hover {
+    transform: scale(1.05) translateY(-8px);
+}
+
+.popular-badge {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: var(--background);
+    padding: 0.4rem 1rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.plan-card .plan-card-header {
+    flex-direction: column;
+    text-align: center;
+    padding: 2rem 1.5rem;
+}
+
+.plan-card .plan-icon-wrapper {
+    width: 50px;
+    height: 50px;
+    font-size: 1.5rem;
+}
+
+.plan-card h3 {
+    font-family: var(--font-heading);
+    font-size: 1.4rem;
+    margin: 1rem 0 0.5rem 0;
+    color: var(--text-primary);
+}
+
+.plan-price {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 0.25rem;
+    margin-top: 0.5rem;
+}
+
+.price-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.price-period {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.plan-card .plan-card-body {
+    padding: 1.5rem;
+}
+
+.plan-card .plan-features {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.plan-card .plan-features li {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.plan-card .plan-features li i {
+    color: #10b981;
+    font-size: 0.9rem;
+}
+
+.plan-card .plan-card-footer {
+    padding: 1.5rem;
+    background: transparent;
+    border-top: 1px solid var(--border);
+}
+
+.plan-card .plan-card-footer .btn {
+    width: 100%;
+}
+
+/* Billing History Section */
+.billing-history-section {
+    padding: 3rem 0;
+}
+
+.billing-table-wrapper {
+    background: var(--surface);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+}
+
+.billing-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.billing-table thead {
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.billing-table th {
+    padding: 1rem 1.5rem;
+    text-align: left;
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.billing-table td {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--border);
+    color: var(--text-primary);
+}
+
+.billing-table tr.no-billing td {
+    padding: 3rem;
+}
+
+.empty-state {
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+.empty-state i {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.empty-state p {
+    margin: 0;
+    font-size: 1rem;
+}
+
+/* Payment Methods Section */
+.payment-methods-section {
+    padding: 3rem 0;
+    background: var(--background);
+}
+
+.payment-methods-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    margin-top: 2rem;
+}
+
+.payment-method-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: var(--transition);
+}
+
+.payment-method-card:hover {
+    border-color: var(--primary);
+    transform: translateY(-3px);
+}
+
+.payment-method-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(168, 85, 247, 0.1));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    color: var(--primary);
+    flex-shrink: 0;
+}
+
+.payment-method-info {
+    flex: 1;
+}
+
+.payment-method-info h4 {
+    font-size: 1rem;
+    margin: 0 0 0.25rem 0;
+    color: var(--text-primary);
+}
+
+.payment-method-info p {
+    font-size: 0.85rem;
+    margin: 0;
+    color: var(--text-secondary);
+}
+
+/* Upgrade Modal */
+.selected-plan-summary {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(168, 85, 247, 0.1));
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+}
+
+.summary-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    color: var(--background);
+}
+
+.summary-info h4 {
+    font-size: 1.1rem;
+    margin: 0 0 0.25rem 0;
+    color: var(--text-primary);
+}
+
+.summary-info p {
+    font-size: 0.9rem;
+    margin: 0;
+    color: var(--primary);
+    font-weight: 600;
+}
+
+.payment-info {
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.payment-info p {
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .plans-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .payment-methods-list {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .membership-page-header {
+        padding: 100px 0 40px;
+    }
+    
+    .membership-header-content {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .membership-badge {
+        align-self: center;
+    }
+    
+    .membership-title {
+        font-size: 2rem;
+    }
+    
+    .membership-subtitle {
+        font-size: 1rem;
+    }
+    
+    .plan-card-header {
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
+    }
+    
+    .plan-features-list ul {
+        grid-template-columns: 1fr;
+    }
+    
+    .plan-card-footer {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+    }
+    
+    .plan-actions {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .plan-actions .btn {
+        width: 100%;
+    }
+    
+    .plans-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .plan-card.featured {
+        transform: none;
+    }
+    
+    .plan-card.featured:hover {
+        transform: translateY(-8px);
+    }
+    
+    .billing-table {
+        font-size: 0.85rem;
+    }
+    
+    .billing-table th,
+    .billing-table td {
+        padding: 0.75rem 1rem;
+    }
+    
+    .payment-method-card {
+        flex-direction: column;
+        text-align: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .membership-page-header {
+        padding: 80px 0 30px;
+    }
+    
+    .membership-title {
+        font-size: 1.5rem;
+    }
+    
+    .current-plan-card {
+        border-radius: 12px;
+    }
+    
+    .plan-card-header,
+    .plan-card-body,
+    .plan-card-footer {
+        padding: 1.5rem;
+    }
+    
+    .plan-icon-wrapper {
+        width: 50px;
+        height: 50px;
+        font-size: 1.5rem;
+    }
+    
+    .plan-header-info h2 {
+        font-size: 1.4rem;
+    }
+    
+    .billing-table-wrapper {
+        border-radius: 8px;
+    }
+    
+    .billing-table {
+        font-size: 0.8rem;
+    }
+    
+    .billing-table th,
+    .billing-table td {
+        padding: 0.5rem 0.75rem;
+    }
+    
+    .billing-table th:nth-child(4),
+    .billing-table th:nth-child(5),
+    .billing-table td:nth-child(4),
+    .billing-table td:nth-child(5) {
+        display: none;
+    }
+}

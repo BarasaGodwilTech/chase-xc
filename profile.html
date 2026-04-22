@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile - Chase x Records</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/components.css">
+    <link rel="stylesheet" href="styles/profile.css">
+</head>
+<body>
+    <script src="scripts/includes.js"></script>
+    <script type="module" src="scripts/config-loader.js"></script>
+    <div data-include="partials/header.html"></div>
+
+    <!-- Profile Page Header -->
+    <section class="profile-header">
+        <div class="profile-header-bg">
+            <div class="profile-header-pattern"></div>
+        </div>
+        <div class="container">
+            <div class="profile-header-content">
+                <div class="profile-avatar-section">
+                    <div class="profile-avatar">
+                        <i class="fas fa-user"></i>
+                        <button class="avatar-edit-btn" id="editAvatarBtn" aria-label="Edit avatar">
+                            <i class="fas fa-camera"></i>
+                        </button>
+                    </div>
+                    <div class="profile-status-badge" id="profileStatusBadge">
+                        <i class="fas fa-check-circle"></i> Verified
+                    </div>
+                </div>
+                <div class="profile-info-section">
+                    <h1 class="profile-name" id="profileName">Loading...</h1>
+                    <p class="profile-email" id="profileEmail">Loading...</p>
+                    <div class="profile-meta">
+                        <span class="profile-joined">
+                            <i class="fas fa-calendar-alt"></i>
+                            Member since <span id="memberSince">Loading...</span>
+                        </span>
+                    </div>
+                </div>
+                <div class="profile-actions">
+                    <button class="btn btn-primary" id="editProfileBtn">
+                        <i class="fas fa-edit"></i> Edit Profile
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Profile Stats -->
+    <section class="profile-stats-section">
+        <div class="container">
+            <div class="profile-stats-grid">
+                <div class="profile-stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-music"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="stat-value" id="tracksListened">0</h3>
+                        <p class="stat-label">Tracks Listened</p>
+                    </div>
+                </div>
+                <div class="profile-stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-heart"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="stat-value" id="favoritesCount">0</h3>
+                        <p class="stat-label">Favorites</p>
+                    </div>
+                </div>
+                <div class="profile-stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-crown"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="stat-value" id="membershipStatus">Free</h3>
+                        <p class="stat-label">Membership</p>
+                    </div>
+                </div>
+                <div class="profile-stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="stat-value" id="totalListeningTime">0h</h3>
+                        <p class="stat-label">Listening Time</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Profile Content Tabs -->
+    <section class="profile-content-section">
+        <div class="container">
+            <div class="profile-tabs">
+                <button class="profile-tab active" data-tab="overview">
+                    <i class="fas fa-th-large"></i>
+                    <span>Overview</span>
+                </button>
+                <button class="profile-tab" data-tab="favorites">
+                    <i class="fas fa-heart"></i>
+                    <span>Favorites</span>
+                </button>
+                <button class="profile-tab" data-tab="history">
+                    <i class="fas fa-history"></i>
+                    <span>History</span>
+                </button>
+                <button class="profile-tab" data-tab="playlists">
+                    <i class="fas fa-list"></i>
+                    <span>Playlists</span>
+                </button>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="profile-tab-content">
+                <!-- Overview Tab -->
+                <div class="tab-panel active" id="overview">
+                    <div class="profile-overview-grid">
+                        <div class="overview-card">
+                            <div class="overview-card-header">
+                                <h3><i class="fas fa-user-circle"></i> Personal Information</h3>
+                                <button class="btn-text" id="editPersonalInfo">
+                                    <i class="fas fa-edit"></i> Edit
+                                </button>
+                            </div>
+                            <div class="overview-card-body">
+                                <div class="info-row">
+                                    <span class="info-label">Full Name</span>
+                                    <span class="info-value" id="infoName">Loading...</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-label">Email</span>
+                                    <span class="info-value" id="infoEmail">Loading...</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-label">Phone</span>
+                                    <span class="info-value" id="infoPhone">Not provided</span>
+                                </div>
+                                <div class="info-row">
+                                    <span class="info-label">Location</span>
+                                    <span class="info-value" id="infoLocation">Not provided</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="overview-card">
+                            <div class="overview-card-header">
+                                <h3><i class="fas fa-chart-line"></i> Listening Activity</h3>
+                            </div>
+                            <div class="overview-card-body">
+                                <div class="activity-chart">
+                                    <div class="activity-bar">
+                                        <div class="bar-fill" style="width: 75%"></div>
+                                        <span class="bar-label">Mon</span>
+                                    </div>
+                                    <div class="activity-bar">
+                                        <div class="bar-fill" style="width: 45%"></div>
+                                        <span class="bar-label">Tue</span>
+                                    </div>
+                                    <div class="activity-bar">
+                                        <div class="bar-fill" style="width: 90%"></div>
+                                        <span class="bar-label">Wed</span>
+                                    </div>
+                                    <div class="activity-bar">
+                                        <div class="bar-fill" style="width: 60%"></div>
+                                        <span class="bar-label">Thu</span>
+                                    </div>
+                                    <div class="activity-bar">
+                                        <div class="bar-fill" style="width: 80%"></div>
+                                        <span class="bar-label">Fri</span>
+                                    </div>
+                                    <div class="activity-bar">
+                                        <div class="bar-fill" style="width: 30%"></div>
+                                        <span class="bar-label">Sat</span>
+                                    </div>
+                                    <div class="activity-bar">
+                                        <div class="bar-fill" style="width: 50%"></div>
+                                        <span class="bar-label">Sun</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="overview-card">
+                            <div class="overview-card-header">
+                                <h3><i class="fas fa-star"></i> Top Tracks</h3>
+                                <a href="music.html" class="btn-text">View All</a>
+                            </div>
+                            <div class="overview-card-body">
+                                <div class="top-tracks-list" id="topTracksList">
+                                    <div class="top-track-item">
+                                        <span class="track-rank">1</span>
+                                        <div class="track-info">
+                                            <p class="track-title">Blessed</p>
+                                            <p class="track-artist">Chase Xc</p>
+                                        </div>
+                                        <span class="track-plays">24 plays</span>
+                                    </div>
+                                    <div class="top-track-item">
+                                        <span class="track-rank">2</span>
+                                        <div class="track-info">
+                                            <p class="track-title">Fire</p>
+                                            <p class="track-artist">Chase Xc</p>
+                                        </div>
+                                        <span class="track-plays">18 plays</span>
+                                    </div>
+                                    <div class="top-track-item">
+                                        <span class="track-rank">3</span>
+                                        <div class="track-info">
+                                            <p class="track-title">Rise Up</p>
+                                            <p class="track-artist">Chase Xc</p>
+                                        </div>
+                                        <span class="track-plays">12 plays</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="overview-card">
+                            <div class="overview-card-header">
+                                <h3><i class="fas fa-bell"></i> Notifications</h3>
+                                <button class="btn-text" id="markAllRead">Mark all read</button>
+                            </div>
+                            <div class="overview-card-body">
+                                <div class="notifications-list" id="notificationsList">
+                                    <div class="notification-item unread">
+                                        <div class="notification-icon">
+                                            <i class="fas fa-music"></i>
+                                        </div>
+                                        <div class="notification-content">
+                                            <p class="notification-text">New release from Chase Xc</p>
+                                            <span class="notification-time">2 hours ago</span>
+                                        </div>
+                                    </div>
+                                    <div class="notification-item unread">
+                                        <div class="notification-icon">
+                                            <i class="fas fa-gift"></i>
+                                        </div>
+                                        <div class="notification-content">
+                                            <p class="notification-text">Special offer: 20% off membership</p>
+                                            <span class="notification-time">1 day ago</span>
+                                        </div>
+                                    </div>
+                                    <div class="notification-item">
+                                        <div class="notification-icon">
+                                            <i class="fas fa-check-circle"></i>
+                                        </div>
+                                        <div class="notification-content">
+                                            <p class="notification-text">Your profile is now verified</p>
+                                            <span class="notification-time">3 days ago</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Favorites Tab -->
+                <div class="tab-panel" id="favorites">
+                    <div class="tab-panel-header">
+                        <h2>Your Favorites</h2>
+                        <p class="tab-panel-subtitle">Tracks you've loved</p>
+                    </div>
+                    <div class="favorites-grid" id="favoritesGrid">
+                        <!-- Favorites will be loaded dynamically -->
+                        <div class="empty-state">
+                            <i class="fas fa-heart"></i>
+                            <h3>No favorites yet</h3>
+                            <p>Start exploring and add tracks to your favorites</p>
+                            <a href="music.html" class="btn btn-primary">Browse Music</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- History Tab -->
+                <div class="tab-panel" id="history">
+                    <div class="tab-panel-header">
+                        <h2>Listening History</h2>
+                        <p class="tab-panel-subtitle">Your recently played tracks</p>
+                    </div>
+                    <div class="history-list" id="historyList">
+                        <!-- History will be loaded dynamically -->
+                        <div class="empty-state">
+                            <i class="fas fa-history"></i>
+                            <h3>No listening history</h3>
+                            <p>Start listening to build your history</p>
+                            <a href="music.html" class="btn btn-primary">Browse Music</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Playlists Tab -->
+                <div class="tab-panel" id="playlists">
+                    <div class="tab-panel-header">
+                        <h2>Your Playlists</h2>
+                        <button class="btn btn-primary" id="createPlaylistBtn">
+                            <i class="fas fa-plus"></i> Create Playlist
+                        </button>
+                    </div>
+                    <div class="playlists-grid" id="playlistsGrid">
+                        <!-- Playlists will be loaded dynamically -->
+                        <div class="empty-state">
+                            <i class="fas fa-list"></i>
+                            <h3>No playlists yet</h3>
+                            <p>Create your first playlist to organize your music</p>
+                            <button class="btn btn-primary" id="createFirstPlaylist">
+                                <i class="fas fa-plus"></i> Create Playlist
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Edit Profile Modal -->
+    <div class="modal" id="editProfileModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit Profile</h3>
+                <button class="modal-close" id="closeEditModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="editProfileForm">
+                    <div class="form-group">
+                        <label for="editFullName">Full Name</label>
+                        <input type="text" id="editFullName" name="fullName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editPhone">Phone Number</label>
+                        <input type="tel" id="editPhone" name="phone" placeholder="Enter your phone number">
+                    </div>
+                    <div class="form-group">
+                        <label for="editLocation">Location</label>
+                        <input type="text" id="editLocation" name="location" placeholder="City, Country">
+                    </div>
+                    <div class="form-group">
+                        <label for="editBio">Bio</label>
+                        <textarea id="editBio" name="bio" rows="4" placeholder="Tell us about yourself"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div data-include="partials/footer.html"></div>
+
+    <script type="module" src="scripts/firebase-init.js"></script>
+    <script type="module" src="scripts/auth.js"></script>
+    <script type="module" src="scripts/profile.js"></script>
+    <script src="scripts/main.js"></script>
+</body>
+</html>

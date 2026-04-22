@@ -68,11 +68,18 @@ function initNavigation() {
     const hamburger = document.getElementById("hamburger")
     const nav = document.getElementById("nav")
     const navLinks = document.querySelectorAll(".nav-link")
+    const profileBtn = document.getElementById("profileBtn")
+    const profileDropdown = document.getElementById("profileDropdown")
 
     if (hamburger) {
         hamburger.addEventListener("click", () => {
             hamburger.classList.toggle("active")
             nav.classList.toggle("active")
+            
+            // Close profile dropdown when opening mobile menu
+            if (profileDropdown) {
+                profileDropdown.classList.remove("active")
+            }
         })
     }
 
@@ -83,6 +90,27 @@ function initNavigation() {
                 nav.classList.remove("active")
             }
         })
+    })
+
+    // Handle profile button click on mobile
+    if (profileBtn) {
+        profileBtn.addEventListener("click", (e) => {
+            // On mobile, if nav is open, close it first
+            if (nav && nav.classList.contains("active")) {
+                hamburger.classList.remove("active")
+                nav.classList.remove("active")
+            }
+        })
+    }
+
+    // Close mobile menu when clicking outside
+    document.addEventListener("click", (e) => {
+        if (hamburger && nav) {
+            if (!nav.contains(e.target) && !hamburger.contains(e.target)) {
+                hamburger.classList.remove("active")
+                nav.classList.remove("active")
+            }
+        }
     })
 }
 

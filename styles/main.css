@@ -1265,6 +1265,38 @@ section {
     display: flex;
   }
 
+  .nav-profile {
+    margin-left: auto;
+  }
+
+  .profile-dropdown {
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    right: 0;
+    left: 0;
+    width: 100%;
+    min-width: auto;
+    border-radius: 16px 16px 0 0;
+    transform: translateY(100%);
+    padding: var(--spacing-lg);
+  }
+
+  .profile-dropdown.active {
+    transform: translateY(0);
+  }
+
+  .profile-dropdown::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: -1;
+  }
+
   .hamburger {
     display: flex;
   }
@@ -1327,6 +1359,19 @@ section {
 
   .container {
     padding: 0 0.5rem;
+  }
+
+  .profile-dropdown {
+    padding: var(--spacing-md);
+  }
+
+  .profile-user-info {
+    padding: var(--spacing-sm) 0;
+  }
+
+  .profile-menu-item {
+    padding: 1rem;
+    font-size: 1rem;
   }
 
   .hero-title {

@@ -413,6 +413,11 @@ class UserAuth {
         const dropdown = document.getElementById('profileDropdown');
         if (dropdown) {
             dropdown.classList.toggle('active');
+            
+            // On mobile, prevent body scroll when dropdown is open
+            if (window.innerWidth <= 768 && dropdown.classList.contains('active')) {
+                document.body.style.overflow = 'hidden';
+            }
         }
     }
 
@@ -420,6 +425,7 @@ class UserAuth {
         const dropdown = document.getElementById('profileDropdown');
         if (dropdown) {
             dropdown.classList.remove('active');
+            document.body.style.overflow = '';
         }
     }
 
@@ -437,15 +443,15 @@ class UserAuth {
                     <div class="profile-user-name">${displayName}</div>
                     <div class="profile-user-email">${email}</div>
                 </div>
-                <a href="#" class="profile-menu-item" id="profileMenu">
+                <a href="profile.html" class="profile-menu-item">
                     <i class="fas fa-user"></i>
                     <span>My Profile</span>
                 </a>
-                <a href="#" class="profile-menu-item" id="membershipMenu">
+                <a href="membership.html" class="profile-menu-item">
                     <i class="fas fa-crown"></i>
                     <span>My Membership</span>
                 </a>
-                <a href="#" class="profile-menu-item" id="settingsMenu">
+                <a href="settings.html" class="profile-menu-item">
                     <i class="fas fa-cog"></i>
                     <span>Settings</span>
                 </a>
@@ -459,7 +465,10 @@ class UserAuth {
             // Add event listener for logout button
             const logoutBtn = document.getElementById('userLogoutBtn');
             if (logoutBtn) {
-                logoutBtn.addEventListener('click', () => this.handleLogout());
+                logoutBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.handleLogout();
+                });
             }
         } else {
             // User is not logged in - show only Sign In option

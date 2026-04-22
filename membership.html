@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Membership - Chase x Records</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/components.css">
+    <link rel="stylesheet" href="styles/membership.css">
+</head>
+<body>
+    <script src="scripts/includes.js"></script>
+    <script type="module" src="scripts/config-loader.js"></script>
+    <div data-include="partials/header.html"></div>
+
+    <!-- Membership Header -->
+    <section class="membership-page-header">
+        <div class="container">
+            <div class="membership-header-content">
+                <div class="membership-header-left">
+                    <span class="membership-badge" id="currentMembershipBadge">
+                        <i class="fas fa-crown"></i> Free Member
+                    </span>
+                    <h1 class="membership-title">Your Membership</h1>
+                    <p class="membership-subtitle">Manage your studio membership and benefits</p>
+                </div>
+                <div class="membership-header-right">
+                    <button class="btn btn-primary" id="upgradeMembershipBtn">
+                        <i class="fas fa-rocket"></i> Upgrade Plan
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Current Plan Overview -->
+    <section class="current-plan-section">
+        <div class="container">
+            <div class="current-plan-card" id="currentPlanCard">
+                <div class="plan-card-header">
+                    <div class="plan-icon-wrapper">
+                        <i class="fas fa-crown" id="currentPlanIcon"></i>
+                    </div>
+                    <div class="plan-header-info">
+                        <h2 id="currentPlanName">Free Plan</h2>
+                        <p id="currentPlanDescription">Basic access to studio features</p>
+                    </div>
+                    <div class="plan-status" id="planStatus">
+                        <span class="status-dot"></span> Active
+                    </div>
+                </div>
+                <div class="plan-card-body">
+                    <div class="plan-features-list">
+                        <h3>Current Benefits</h3>
+                        <ul id="currentPlanFeatures">
+                            <li><i class="fas fa-check-circle"></i> Browse music library</li>
+                            <li><i class="fas fa-check-circle"></i> Create playlists</li>
+                            <li><i class="fas fa-check-circle"></i> Basic streaming</li>
+                        </ul>
+                    </div>
+                    <div class="plan-usage">
+                        <h3>Usage This Month</h3>
+                        <div class="usage-item">
+                            <div class="usage-label">
+                                <span>Studio Hours Used</span>
+                                <span class="usage-value" id="studioHoursUsed">0 / 0</span>
+                            </div>
+                            <div class="usage-progress">
+                                <div class="progress-fill" id="studioHoursProgress" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div class="usage-item">
+                            <div class="usage-label">
+                                <span>Mixing Sessions</span>
+                                <span class="usage-value" id="mixingSessionsUsed">0 / 0</span>
+                            </div>
+                            <div class="usage-progress">
+                                <div class="progress-fill" id="mixingSessionsProgress" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div class="usage-item">
+                            <div class="usage-label">
+                                <span>Mastering Tracks</span>
+                                <span class="usage-value" id="masteringTracksUsed">0 / 0</span>
+                            </div>
+                            <div class="usage-progress">
+                                <div class="progress-fill" id="masteringTracksProgress" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="plan-card-footer">
+                    <div class="plan-renewal">
+                        <span>Next billing date: </span>
+                        <span id="nextBillingDate">N/A</span>
+                    </div>
+                    <div class="plan-actions">
+                        <button class="btn btn-outline" id="manageSubscriptionBtn">
+                            <i class="fas fa-cog"></i> Manage
+                        </button>
+                        <button class="btn btn-primary" id="cancelSubscriptionBtn">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Available Plans -->
+    <section class="available-plans-section">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Upgrade Your Plan</h2>
+                <p class="section-subtitle">Choose a plan that fits your creative needs</p>
+            </div>
+            <div class="plans-grid">
+                <div class="plan-card" data-plan="weekly">
+                    <div class="plan-card-header">
+                        <div class="plan-icon-wrapper">
+                            <i class="fas fa-calendar-week"></i>
+                        </div>
+                        <h3>Weekly Pass</h3>
+                        <div class="plan-price">
+                            <span class="price-value" id="weeklyPrice">UGX 150,000</span>
+                            <span class="price-period">/ week</span>
+                        </div>
+                    </div>
+                    <div class="plan-card-body">
+                        <ul class="plan-features">
+                            <li><i class="fas fa-check-circle"></i> 10 hours studio time</li>
+                            <li><i class="fas fa-check-circle"></i> Basic mixing (2 tracks)</li>
+                            <li><i class="fas fa-check-circle"></i> Equipment rental</li>
+                            <li><i class="fas fa-check-circle"></i> Engineer assistance</li>
+                        </ul>
+                    </div>
+                    <div class="plan-card-footer">
+                        <button class="btn btn-outline select-plan-btn" data-plan="weekly">
+                            Select Plan
+                        </button>
+                    </div>
+                </div>
+
+                <div class="plan-card featured" data-plan="monthly">
+                    <div class="popular-badge">Most Popular</div>
+                    <div class="plan-card-header">
+                        <div class="plan-icon-wrapper">
+                            <i class="fas fa-crown"></i>
+                        </div>
+                        <h3>Monthly Pro</h3>
+                        <div class="plan-price">
+                            <span class="price-value" id="monthlyPrice">UGX 500,000</span>
+                            <span class="price-period">/ month</span>
+                        </div>
+                    </div>
+                    <div class="plan-card-body">
+                        <ul class="plan-features">
+                            <li><i class="fas fa-check-circle"></i> 50 hours studio time</li>
+                            <li><i class="fas fa-check-circle"></i> Unlimited mixing</li>
+                            <li><i class="fas fa-check-circle"></i> Premium equipment</li>
+                            <li><i class="fas fa-check-circle"></i> Dedicated engineer</li>
+                            <li><i class="fas fa-check-circle"></i> Mastering (5 tracks)</li>
+                            <li><i class="fas fa-check-circle"></i> Vocal tuning (4 sessions)</li>
+                        </ul>
+                    </div>
+                    <div class="plan-card-footer">
+                        <button class="btn btn-primary select-plan-btn" data-plan="monthly">
+                            Select Plan
+                        </button>
+                    </div>
+                </div>
+
+                <div class="plan-card" data-plan="yearly">
+                    <div class="plan-card-header">
+                        <div class="plan-icon-wrapper">
+                            <i class="fas fa-gem"></i>
+                        </div>
+                        <h3>Yearly Elite</h3>
+                        <div class="plan-price">
+                            <span class="price-value" id="yearlyPrice">UGX 5,000,000</span>
+                            <span class="price-period">/ year</span>
+                        </div>
+                    </div>
+                    <div class="plan-card-body">
+                        <ul class="plan-features">
+                            <li><i class="fas fa-check-circle"></i> 600 hours studio time</li>
+                            <li><i class="fas fa-check-circle"></i> Unlimited mixing & mastering</li>
+                            <li><i class="fas fa-check-circle"></i> VIP equipment priority</li>
+                            <li><i class="fas fa-check-circle"></i> Personal producer sessions</li>
+                            <li><i class="fas fa-check-circle"></i> Unlimited vocal tuning</li>
+                            <li><i class="fas fa-check-circle"></i> 2 free music videos</li>
+                        </ul>
+                    </div>
+                    <div class="plan-card-footer">
+                        <button class="btn btn-outline select-plan-btn" data-plan="yearly">
+                            Select Plan
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Billing History -->
+    <section class="billing-history-section">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Billing History</h2>
+            </div>
+            <div class="billing-table-wrapper">
+                <table class="billing-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Description</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Invoice</th>
+                        </tr>
+                    </thead>
+                    <tbody id="billingHistoryBody">
+                        <tr class="no-billing">
+                            <td colspan="5">
+                                <div class="empty-state">
+                                    <i class="fas fa-receipt"></i>
+                                    <p>No billing history yet</p>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- Payment Methods -->
+    <section class="payment-methods-section">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Payment Methods</h2>
+                <button class="btn btn-outline" id="addPaymentMethodBtn">
+                    <i class="fas fa-plus"></i> Add Payment Method
+                </button>
+            </div>
+            <div class="payment-methods-list" id="paymentMethodsList">
+                <div class="payment-method-card">
+                    <div class="payment-method-icon">
+                        <i class="fas fa-mobile-alt"></i>
+                    </div>
+                    <div class="payment-method-info">
+                        <h4>MTN Mobile Money</h4>
+                        <p>Not configured</p>
+                    </div>
+                    <button class="btn-text">Setup</button>
+                </div>
+                <div class="payment-method-card">
+                    <div class="payment-method-icon">
+                        <i class="fas fa-wallet"></i>
+                    </div>
+                    <div class="payment-method-info">
+                        <h4>Airtel Money</h4>
+                        <p>Not configured</p>
+                    </div>
+                    <button class="btn-text">Setup</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Upgrade Modal -->
+    <div class="modal" id="upgradeModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Upgrade Your Plan</h3>
+                <button class="modal-close" id="closeUpgradeModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="selected-plan-summary" id="selectedPlanSummary">
+                    <div class="summary-icon">
+                        <i class="fas fa-crown"></i>
+                    </div>
+                    <div class="summary-info">
+                        <h4 id="selectedPlanName">Monthly Pro</h4>
+                        <p id="selectedPlanPrice">UGX 500,000 / month</p>
+                    </div>
+                </div>
+                <form id="upgradeForm">
+                    <div class="form-group">
+                        <label for="upgradePhone">Phone Number</label>
+                        <input type="tel" id="upgradePhone" name="phone" placeholder="Enter your phone number" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="upgradePaymentMethod">Payment Method</label>
+                        <select id="upgradePaymentMethod" name="paymentMethod" required>
+                            <option value="">Select payment method</option>
+                            <option value="mtn">MTN Mobile Money</option>
+                            <option value="airtel">Airtel Money</option>
+                            <option value="bank">Bank Transfer</option>
+                        </select>
+                    </div>
+                    <div class="payment-info" id="paymentInfo" style="display: none;">
+                        <p id="paymentInstructions"></p>
+                    </div>
+                    <div class="form-group" id="transactionIdGroup" style="display: none;">
+                        <label for="transactionId">Transaction ID</label>
+                        <input type="text" id="transactionId" name="transactionId" placeholder="Enter transaction ID">
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-lock"></i> Complete Upgrade
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div data-include="partials/footer.html"></div>
+
+    <script type="module" src="scripts/firebase-init.js"></script>
+    <script type="module" src="scripts/auth.js"></script>
+    <script type="module" src="scripts/membership.js"></script>
+    <script src="scripts/main.js"></script>
+</body>
+</html>
