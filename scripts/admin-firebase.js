@@ -792,11 +792,120 @@ function initAdminFirebase() {
     })
   }
 
-  // Track link test button - remember the last tested audio URL.
-  document.getElementById('testAudioUrlBtn')?.addEventListener('click', () => {
-    const url = document.getElementById('audioUrl')?.value?.trim()
-    if (url) window.__lastTestedAudioUrl = url
-  })
+  // Inline audio/link preview for the admin panel
+  const audioUrlInput = document.getElementById('audioUrl')
+  if (audioUrlInput && !audioUrlInput.dataset.previewBound) {
+    audioUrlInput.dataset.previewBound = 'true'
+
+    const updatePreview = () => {
+      const url = String(audioUrlInput.value || '').trim()
+      const previewWrap = document.getElementById('audioUrlPreview')
+      const previewLink = document.getElementById('audioUrlPreviewLink')
+      const status = document.getElementById('audioUrlStatus')
+      const inline = document.getElementById('audioUrlInlinePreview')
+
+      if (!previewWrap || !previewLink || !status || !inline) return
+
+      if (!url) {
+        previewWrap.style.display = 'none'
+        inline.innerHTML = ''
+        return
+      }
+
+      // Basic URL validation
+      let parsed = null
+      try {
+        parsed = new URL(url)
+      } catch {
+        previewWrap.style.display = 'block'
+        previewLink.textContent = url
+        previewLink.href = '#'
+        status.textContent = 'Invalid URL format'
+        status.className = 'link-preview-status invalid'
+        inline.innerHTML = ''
+        return
+      }
+
+      previewWrap.style.display = 'block'
+      previewLink.href = url
+      previewLink.textContent = url.length > 60 ? url.slice(0, 57) + '...' : url
+      status.textContent = 'Preview generated below. If it plays here, it will play on the website.'
+      status.className = 'link-preview-status valid'
+      inline.innerHTML = ''
+
+      const host = parsed.hostname.replace(/^www\./, '')
+      const path = parsed.pathname || ''
+      const lower = url.toLowerCase()
+
+      // Direct audio files
+      if (lower.match(/\.(mp3|wav|ogg|m4a)(\?.*)?$/)) {
+        const audio = document.createElement('audio')
+        audio.controls = true
+        audio.preload = 'none'
+        audio.src = url
+        inline.appendChild(audio)
+        // Mark as tested when playback starts
+        audio.addEventListener('play', () => {
+          window.__lastTestedAudioUrl = url
+        })
+        return
+      }
+
+      // YouTube
+      if (host === 'youtube.com' || host === 'm.youtube.com' || host === 'youtu.be') {
+        let videoId = ''
+        if (host === 'youtu.be') {
+          videoId = path.split('/').filter(Boolean)[0] || ''
+        } else {
+          videoId = parsed.searchParams.get('v') || ''
+        }
+        if (videoId) {
+          const iframe = document.createElement('iframe')
+          iframe.src = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(videoId)}`
+          iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share'
+          iframe.allowFullscreen = true
+          inline.appendChild(iframe)
+          // Admin “tested” intent when preview is visible
+          window.__lastTestedAudioUrl = url
+          return
+        }
+      }
+
+      // SoundCloud (basic embed)
+      if (host === 'soundcloud.com') {
+        const iframe = document.createElement('iframe')
+        iframe.src = `https://w.soundcloud.com/player/?url=${encodeURIComponent(url)}&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&visual=true`
+        iframe.allow = 'autoplay'
+        inline.appendChild(iframe)
+        window.__lastTestedAudioUrl = url
+        return
+      }
+
+      // Spotify
+      if (host === 'open.spotify.com') {
+        const parts = path.split('/').filter(Boolean)
+        const type = parts[0]
+        const id = parts[1]
+        if (type && id) {
+          const iframe = document.createElement('iframe')
+          iframe.src = `https://open.spotify.com/embed/${encodeURIComponent(type)}/${encodeURIComponent(id)}`
+          iframe.allow = 'autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture'
+          inline.appendChild(iframe)
+          window.__lastTestedAudioUrl = url
+          return
+        }
+      }
+
+      // Fallback
+      status.textContent = 'Link looks valid, but this platform cannot be previewed inline. The website will open it as a link.'
+      status.className = 'link-preview-status valid'
+    }
+
+    audioUrlInput.addEventListener('input', updatePreview)
+    audioUrlInput.addEventListener('paste', () => setTimeout(updatePreview, 50))
+    // Initial render if form is prefilled (edit mode)
+    setTimeout(updatePreview, 0)
+  }
 
   // Global delegated delete handling (covers both admin.js and admin-firebase rendered tables)
   if (!window.__adminDeleteDelegationBound) {
@@ -805,7 +914,7 @@ function initAdminFirebase() {
       'click',
       async (e) => {
         const artistDel = e.target.closest('.js-delete-artist, .delete-artist-btn')
-        const trackDel = e.target.closest('.js-delete-track')
+        const trackDel = e.target.closest('.js-delete-track, .delete-track-btn')
 
         if (!artistDel && !trackDel) return
 
