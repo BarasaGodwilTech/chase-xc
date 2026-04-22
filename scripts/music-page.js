@@ -254,7 +254,6 @@ async function initMusicPage() {
     return artistData
   }
 
-  const cards = []
   const normalizedTracks = []
   for (let i = 0; i < tracks.length; i++) {
     const artistData = await resolveArtistName(tracks[i])
@@ -263,14 +262,14 @@ async function initMusicPage() {
       artistName: artistData.name,
     }
     normalizedTracks.push(normalized)
-    cards.push(renderTrackCard(normalized, i, artistData.name, artistData.socials))
   }
 
   // Used by audio-player.js (which prefers window.__tracks when present)
   window.__tracks = normalizedTracks
 
-  if (grid) grid.innerHTML = cards.join('')
-  if (resultsCount) resultsCount.textContent = `${tracks.length} track${tracks.length !== 1 ? 's' : ''}`
+  // Render all tracks initially using the filtered rendering system
+  renderFilteredTracks(normalizedTracks)
+  if (resultsCount) resultsCount.textContent = `${normalizedTracks.length} track${normalizedTracks.length !== 1 ? 's' : ''}`
 
   // Dispatch event for loading skeleton to hide
   document.dispatchEvent(new CustomEvent('music:loaded'))
@@ -354,19 +353,19 @@ function setupTrackCardListeners() {
   const searchInput = document.getElementById('musicSearch')
   const searchClear = document.getElementById('searchClear')
   const resultsCount = document.getElementById('resultsCount')
-  
+
   if (searchInput) {
     searchInput.addEventListener('input', (e) => {
       const query = e.target.value.trim()
       handleSearch(query)
-      
+
       // Show/hide clear button
       if (searchClear) {
         searchClear.style.display = query ? 'flex' : 'none'
       }
     })
   }
-  
+
   if (searchClear) {
     searchClear.addEventListener('click', () => {
       if (searchInput) {
@@ -376,30 +375,190 @@ function setupTrackCardListeners() {
       }
     })
   }
+
+  // Filter buttons (All, New, Popular, Trending)
+  const filterButtons = document.querySelectorAll('.filter-btn')
+  filterButtons.forEach(button => {
+    button.addEventListener('click', (e) => {
+      const filter = button.dataset.filter
+      filterState.currentFilter = filter
+
+      // Update active state
+      filterButtons.forEach(btn => btn.classList.remove('active'))
+      button.classList.add('active')
+
+      applyAllFilters()
+    })
+  })
+
+  // Advanced filters
+  const sortBy = document.getElementById('sortBy')
+  const genreFilter = document.getElementById('genreFilter')
+  const durationFilter = document.getElementById('durationFilter')
+  const searchFilterToggle = document.getElementById('searchFilterToggle')
+  const searchFilters = document.getElementById('searchFilters')
+
+  if (sortBy) {
+    sortBy.addEventListener('change', (e) => {
+      filterState.sortBy = e.target.value
+      applyAllFilters()
+    })
+  }
+
+  if (genreFilter) {
+    genreFilter.addEventListener('change', (e) => {
+      filterState.genreFilter = e.target.value
+      applyAllFilters()
+    })
+  }
+
+  if (durationFilter) {
+    durationFilter.addEventListener('change', (e) => {
+      filterState.durationFilter = e.target.value
+      applyAllFilters()
+    })
+  }
+
+  // Filter toggle
+  if (searchFilterToggle && searchFilters) {
+    searchFilterToggle.addEventListener('click', () => {
+      searchFilters.classList.toggle('active')
+      searchFilterToggle.classList.toggle('active')
+    })
+  }
+}
+
+// Unified filtering state
+const filterState = {
+  currentFilter: 'all',
+  searchTerm: '',
+  genreFilter: 'all',
+  durationFilter: 'all',
+  sortBy: 'relevance'
+}
+
+function parseDuration(durationStr) {
+  if (!durationStr) return 0
+  const parts = durationStr.split(':').map(Number)
+  if (parts.length >= 2) {
+    return parts[0] * 60 + parts[1]
+  }
+  return parts[0] || 0
+}
+
+function applyAllFilters() {
+  const grid = document.getElementById('musicGrid')
+  const resultsCount = document.getElementById('resultsCount')
+  
+  if (!window.__tracks || !Array.isArray(window.__tracks)) {
+    console.warn('[MusicPage] No tracks available for filtering')
+    return
+  }
+
+  let filteredTracks = [...window.__tracks]
+
+  // Apply category filter (All, New, Popular, Trending)
+  if (filterState.currentFilter !== 'all') {
+    filteredTracks = filteredTracks.filter(track => {
+      const categories = getTrackCategories(track)
+      return categories.includes(filterState.currentFilter)
+    })
+  }
+
+  // Apply search term
+  if (filterState.searchTerm) {
+    const query = filterState.searchTerm.toLowerCase()
+    filteredTracks = filteredTracks.filter(track => {
+      const title = (track.title || '').toLowerCase()
+      const artist = (track.artistName || '').toLowerCase()
+      const genre = (track.genre || '').toLowerCase()
+      return title.includes(query) || artist.includes(query) || genre.includes(query)
+    })
+  }
+
+  // Apply genre filter
+  if (filterState.genreFilter !== 'all') {
+    filteredTracks = filteredTracks.filter(track => {
+      const genre = (track.genre || '').toLowerCase()
+      return genre.includes(filterState.genreFilter.toLowerCase())
+    })
+  }
+
+  // Apply duration filter
+  if (filterState.durationFilter !== 'all') {
+    filteredTracks = filteredTracks.filter(track => {
+      const duration = parseDuration(track.duration)
+      switch (filterState.durationFilter) {
+        case 'short': return duration > 0 && duration < 180
+        case 'medium': return duration >= 180 && duration <= 300
+        case 'long': return duration > 300
+        default: return true
+      }
+    })
+  }
+
+  // Apply sorting
+  switch (filterState.sortBy) {
+    case 'newest':
+      filteredTracks.sort((a, b) => new Date(b.releaseDate || 0) - new Date(a.releaseDate || 0))
+      break
+    case 'oldest':
+      filteredTracks.sort((a, b) => new Date(a.releaseDate || 0) - new Date(b.releaseDate || 0))
+      break
+    case 'popular':
+      filteredTracks.sort((a, b) => (b.streams || 0) - (a.streams || 0))
+      break
+    case 'duration':
+      filteredTracks.sort((a, b) => parseDuration(b.duration) - parseDuration(a.duration))
+      break
+    default: // relevance - keep original order
+      break
+  }
+
+  // Re-render the grid with filtered tracks
+  renderFilteredTracks(filteredTracks)
+
+  // Update results count
+  if (resultsCount) {
+    resultsCount.textContent = `${filteredTracks.length} track${filteredTracks.length !== 1 ? 's' : ''}`
+  }
+}
+
+function renderFilteredTracks(tracks) {
+  const grid = document.getElementById('musicGrid')
+  if (!grid) return
+
+  // Remove existing no results message
+  const existingMessage = grid.querySelector('.no-results-message')
+  if (existingMessage) {
+    existingMessage.remove()
+  }
+
+  if (tracks.length === 0) {
+    // Show no results message
+    grid.innerHTML = `
+      <div class="no-results-message">
+        <div class="no-results-content">
+          <i class="fas fa-music"></i>
+          <h4>No Results Found</h4>
+          <p>Try adjusting your filters or search terms</p>
+        </div>
+      </div>
+    `
+    return
+  }
+
+  // Render filtered tracks
+  const cards = tracks.map((track, index) => renderTrackCard(track, index, track.artistName))
+  grid.innerHTML = cards.join('')
+
+  // Re-setup event listeners for new cards
+  setupTrackCardListeners()
 }
 
 function handleSearch(query) {
-  const tracks = document.querySelectorAll('.track-card')
-  const resultsCount = document.getElementById('resultsCount')
-  const lowercaseQuery = query.toLowerCase()
-  let visibleCount = 0
-  
-  tracks.forEach(track => {
-    const title = track.querySelector('.track-title')?.textContent.toLowerCase() || ''
-    const artist = track.querySelector('.track-artist')?.textContent.toLowerCase() || ''
-    const genre = track.dataset.category?.toLowerCase() || ''
-    
-    if (title.includes(lowercaseQuery) || artist.includes(lowercaseQuery) || genre.includes(lowercaseQuery)) {
-      track.style.display = 'block'
-      visibleCount++
-    } else {
-      track.style.display = 'none'
-    }
-  })
-  
-  if (resultsCount) {
-    resultsCount.textContent = `${visibleCount} track${visibleCount !== 1 ? 's' : ''}`
-  }
+  filterState.searchTerm = query
+  applyAllFilters()
 }
 
 function handlePlayTrack(track) {
