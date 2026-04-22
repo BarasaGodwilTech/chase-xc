@@ -364,11 +364,11 @@ function openExternalPlayer(url, track = null) {
 }
 
 function isUserAuthenticated() {
-  if (typeof window.auth !== 'undefined' && window.auth.currentUser) {
+  // Use centralized userAuth from auth.js
+  if (typeof window.userAuth !== 'undefined' && window.userAuth.isLoggedIn()) {
     return true
   }
-  const user = JSON.parse(sessionStorage.getItem('currentUser') || 'null')
-  return user !== null
+  return false
 }
 
 function storePendingAction(actionType, actionData) {

@@ -687,14 +687,11 @@ function handleAddToPlaylist(track) {
 
 // Helper function to check if user is authenticated
 function isUserAuthenticated() {
-  // Check Firebase Auth
-  if (typeof window.auth !== 'undefined' && window.auth.currentUser) {
+  // Use centralized userAuth from auth.js
+  if (typeof window.userAuth !== 'undefined' && window.userAuth.isLoggedIn()) {
     return true
   }
-  
-  // Check for custom auth implementation
-  const user = JSON.parse(sessionStorage.getItem('currentUser') || 'null')
-  return user !== null
+  return false
 }
 
 // Helper function to store pending action
