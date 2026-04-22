@@ -32,6 +32,10 @@ class UserAuth {
             }
         });
 
+        // Initial UI update to clear loading state immediately
+        // This ensures the loading message is removed even before auth state is determined
+        this.updateProfileUI();
+
         // Check if there's a redirect URL stored from previous attempt
         const storedRedirect = sessionStorage.getItem('authRedirectUrl');
         if (storedRedirect) {
@@ -52,6 +56,27 @@ class UserAuth {
     }
 
     setupEventListeners() {
+        // Profile button - toggle dropdown
+        const profileBtn = document.getElementById('profileBtn');
+        if (profileBtn) {
+            profileBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.toggleProfileDropdown();
+            });
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            const dropdown = document.getElementById('profileDropdown');
+            const profileBtn = document.getElementById('profileBtn');
+            if (dropdown && profileBtn) {
+                if (!dropdown.contains(e.target) && !profileBtn.contains(e.target)) {
+                    this.closeProfileDropdown();
+                }
+            }
+        });
+
         // Login form
         const loginForm = document.getElementById('loginForm');
         if (loginForm) {
@@ -409,6 +434,9 @@ class UserAuth {
             window.location.href = 'auth.html';
             return;
         }
+
+        // Ensure UI is updated before showing dropdown
+        this.updateProfileUI();
 
         const dropdown = document.getElementById('profileDropdown');
         if (dropdown) {
