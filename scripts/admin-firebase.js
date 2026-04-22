@@ -867,7 +867,7 @@ function initAdminFirebase() {
       }
 
       // SoundCloud (basic embed)
-      if (host === 'soundcloud.com') {
+      if (host === 'soundcloud.com' || host === 'm.soundcloud.com' || host === 'on.soundcloud.com') {
         const iframe = document.createElement('iframe')
         iframe.src = `https://w.soundcloud.com/player/?url=${encodeURIComponent(url)}&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&visual=true`
         iframe.allow = 'autoplay'
@@ -902,10 +902,18 @@ function initAdminFirebase() {
         return
       }
 
-      // Fallback
+      // Fallback: attempt a best-effort inline embed for unknown links.
+      // If the platform forbids embedding (X-Frame-Options/CSP), the iframe will appear blank.
+      const iframe = document.createElement('iframe')
+      iframe.src = url
+      iframe.sandbox = 'allow-scripts allow-same-origin allow-forms allow-popups'
+      iframe.referrerPolicy = 'no-referrer'
+      inline.appendChild(iframe)
+      window.__lastTestedAudioUrl = url
+
       const note = document.createElement('div')
       note.className = 'audio-inline-note'
-      note.textContent = 'This link cannot be tested inline in admin. If it plays on the website, it will still work there.'
+      note.textContent = 'If the player area above is blank, this platform blocks embedding. Try a different link (e.g., an official embed/share link) or a direct audio file URL.'
       inline.appendChild(note)
     }
 
