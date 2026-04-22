@@ -10,8 +10,12 @@
         document.body.appendChild(script);
     }
     
-    // Load config immediately for settings data
-    autoLoadConfig();
+    // Load config once DOM is ready so we can reliably detect existing script tags
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', autoLoadConfig)
+    } else {
+        autoLoadConfig()
+    }
 
     async function includeAll() {
         const includeEls = document.querySelectorAll('[data-include]');

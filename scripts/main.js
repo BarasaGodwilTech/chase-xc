@@ -36,6 +36,8 @@ function initHeader() {
     let lastScrollY = window.scrollY
     let ticking = false
 
+    if (!header) return
+
     window.addEventListener("scroll", () => {
         if (!ticking) {
             window.requestAnimationFrame(() => {
@@ -74,7 +76,7 @@ function initNavigation() {
     if (hamburger) {
         hamburger.addEventListener("click", () => {
             hamburger.classList.toggle("active")
-            nav.classList.toggle("active")
+            if (nav) nav.classList.toggle("active")
             
             // Close profile dropdown when opening mobile menu
             if (profileDropdown) {
@@ -87,7 +89,7 @@ function initNavigation() {
         link.addEventListener("click", () => {
             if (hamburger) {
                 hamburger.classList.remove("active")
-                nav.classList.remove("active")
+                if (nav) nav.classList.remove("active")
             }
         })
     })
@@ -97,7 +99,7 @@ function initNavigation() {
         profileBtn.addEventListener("click", (e) => {
             // On mobile, if nav is open, close it first
             if (nav && nav.classList.contains("active")) {
-                hamburger.classList.remove("active")
+                if (hamburger) hamburger.classList.remove("active")
                 nav.classList.remove("active")
             }
         })
@@ -286,7 +288,11 @@ function isValidEmail(email) {
 function showError(fieldId, errorMessage) {
     const field = document.getElementById(fieldId)
     const errorElement = document.getElementById(`${fieldId}Error`)
+
+    if (!field || !errorElement) return
+
     const formGroup = field.closest(".form-group")
+    if (!formGroup) return
 
     formGroup.classList.add("error")
     errorElement.textContent = errorMessage
