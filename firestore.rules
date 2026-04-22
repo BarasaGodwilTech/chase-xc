@@ -136,6 +136,16 @@ service cloud.firestore {
       // In production, use:
       // allow write: if isAdmin() && isValidSettingsData();
     }
+
+    // Users collection - each user can access only their own data
+    match /users/{userId} {
+      allow read, create, update, delete: if isAuthenticated() && userId == request.auth.uid;
+
+      // Subcollections under a user (listeningEvents, notifications, favorites, playlists, etc.)
+      match /{subcollection}/{docId} {
+        allow read, create, update, delete: if isAuthenticated() && userId == request.auth.uid;
+      }
+    }
     
     // Team collection - public read, admin write
     match /team/{document=**} {

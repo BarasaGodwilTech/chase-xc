@@ -1,6 +1,15 @@
 import { auth } from './firebase-init.js'
 import { updateProfile, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js'
 import { initSettings, getConfig } from './config-loader.js'
+import {
+    ensureUserProfileDoc,
+    updateUserProfile,
+    getRecentListeningEvents,
+    getTopTracks,
+    getNotifications,
+    markAllNotificationsRead,
+    getWeeklyListeningActivity
+} from './user-data.js'
 
 class UserProfile {
     constructor() {
@@ -33,21 +42,8 @@ class UserProfile {
     async loadUserProfile() {
         if (!this.currentUser) return;
 
-        // Load from localStorage for demo (in production, use Firestore)
-        const savedProfile = localStorage.getItem(`userProfile_${this.currentUser.uid}`);
-        this.userProfile = savedProfile ? JSON.parse(savedProfile) : {
-            displayName: this.currentUser.displayName || 'User',
-            email: this.currentUser.email,
-            phone: '',
-            location: '',
-            bio: '',
-            memberSince: this.currentUser.metadata?.creationTime || new Date().toISOString(),
-            stats: {
-                tracksListened: 0,
-                favorites: 0,
-                totalListeningTime: 0
-            }
-        };
+        const ensured = await ensureUserProfileDoc(this.currentUser)
+        this.userProfile = ensured?.data || null
 
         this.updateUI();
     }
@@ -90,6 +86,11 @@ class UserProfile {
         this.loadFavorites();
         this.loadHistory();
         this.loadPlaylists();
+
+        // Load overview widgets
+        this.loadTopTracks();
+        this.loadNotifications();
+        this.loadListeningActivity();
     }
 
     getMembershipStatus() {
@@ -241,8 +242,12 @@ class UserProfile {
             this.userProfile.location = location;
             this.userProfile.bio = bio;
 
-            // Save to localStorage
-            localStorage.setItem(`userProfile_${this.currentUser.uid}`, JSON.stringify(this.userProfile));
+            await updateUserProfile(this.currentUser.uid, {
+                displayName: fullName,
+                phone,
+                location,
+                bio
+            })
 
             this.updateUI();
             this.closeEditModal();
@@ -253,12 +258,16 @@ class UserProfile {
         }
     }
 
-    markAllNotificationsRead() {
-        const notifications = document.querySelectorAll('.notification-item.unread');
-        notifications.forEach(notif => {
-            notif.classList.remove('unread');
-        });
-        this.showNotification('All notifications marked as read', 'success');
+    async markAllNotificationsRead() {
+        if (!this.currentUser?.uid) return
+        try {
+            await markAllNotificationsRead(this.currentUser.uid)
+            await this.loadNotifications()
+            this.showNotification('All notifications marked as read', 'success')
+        } catch (e) {
+            console.error('Error marking notifications read:', e)
+            this.showNotification('Error marking notifications read', 'error')
+        }
     }
 
     loadFavorites() {
@@ -299,7 +308,41 @@ class UserProfile {
         const historyList = document.getElementById('historyList');
         if (!historyList) return;
 
-        const history = JSON.parse(localStorage.getItem(`history_${this.currentUser.uid}`) || '[]');
+        getRecentListeningEvents(this.currentUser.uid, 20).then((events) => {
+            const history = events.map((e) => ({
+                title: e.title,
+                artist: e.artistName,
+                artwork: e.artwork,
+                timestamp: e.clientStartedAt?.toDate?.() || e.clientStartedAt
+            }))
+
+            if (history.length === 0) {
+                historyList.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-history"></i>
+                        <h3>No listening history</h3>
+                        <p>Start listening to build your history</p>
+                        <a href="music.html" class="btn btn-primary">Browse Music</a>
+                    </div>
+                `;
+                return;
+            }
+
+            historyList.innerHTML = history.slice(0, 20).map(track => `
+                <div class="history-item">
+                    <img src="${track.artwork || 'public/player-cover-1.jpg'}" alt="${track.title}">
+                    <div class="history-info">
+                        <h4>${track.title}</h4>
+                        <p>${track.artist}</p>
+                    </div>
+                    <span class="history-time">${this.formatTimeAgo(track.timestamp)}</span>
+                </div>
+            `).join('');
+        }).catch((e) => {
+            console.error('Error loading history:', e)
+        })
+
+        return
 
         if (history.length === 0) {
             historyList.innerHTML = `
@@ -323,6 +366,99 @@ class UserProfile {
                 <span class="history-time">${this.formatTimeAgo(track.timestamp)}</span>
             </div>
         `).join('');
+    }
+
+    async loadTopTracks() {
+        const list = document.getElementById('topTracksList')
+        if (!list || !this.currentUser?.uid) return
+
+        try {
+            const top = await getTopTracks(this.currentUser.uid, 3)
+            if (!top || top.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-star"></i>
+                        <h3>No top tracks yet</h3>
+                        <p>Play some music to see your top tracks here</p>
+                        <a href="music.html" class="btn btn-primary">Browse Music</a>
+                    </div>
+                `
+                return
+            }
+
+            list.innerHTML = top.map((t, idx) => `
+                <div class="top-track-item">
+                    <span class="track-rank">${idx + 1}</span>
+                    <div class="track-info">
+                        <p class="track-title">${t.title || ''}</p>
+                        <p class="track-artist">${t.artistName || ''}</p>
+                    </div>
+                    <span class="track-plays">${t.plays} play${t.plays !== 1 ? 's' : ''}</span>
+                </div>
+            `).join('')
+        } catch (e) {
+            console.error('Error loading top tracks:', e)
+        }
+    }
+
+    async loadNotifications() {
+        const list = document.getElementById('notificationsList')
+        if (!list || !this.currentUser?.uid) return
+
+        try {
+            const items = await getNotifications(this.currentUser.uid, 10)
+            if (!items || items.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-bell"></i>
+                        <h3>No notifications</h3>
+                        <p>You're all caught up</p>
+                    </div>
+                `
+                return
+            }
+
+            list.innerHTML = items.map((n) => {
+                const created = n.createdAt?.toDate?.() || n.createdAt || n.clientCreatedAt
+                const time = created ? this.formatTimeAgo(created) : ''
+                const icon = n.type === 'welcome' ? 'fa-music' : n.type === 'tip' ? 'fa-info-circle' : 'fa-bell'
+                const unread = n.read === false ? 'unread' : ''
+                return `
+                    <div class="notification-item ${unread}">
+                        <div class="notification-icon">
+                            <i class="fas ${icon}"></i>
+                        </div>
+                        <div class="notification-content">
+                            <p class="notification-text">${n.message || ''}</p>
+                            <span class="notification-time">${time}</span>
+                        </div>
+                    </div>
+                `
+            }).join('')
+        } catch (e) {
+            console.error('Error loading notifications:', e)
+        }
+    }
+
+    async loadListeningActivity() {
+        const chart = document.querySelector('.activity-chart')
+        if (!chart || !this.currentUser?.uid) return
+
+        try {
+            const activity = await getWeeklyListeningActivity(this.currentUser.uid)
+            const max = Math.max(1, ...activity.map(a => a.count))
+            chart.innerHTML = activity.map((a) => {
+                const pct = Math.round((a.count / max) * 100)
+                return `
+                    <div class="activity-bar">
+                        <div class="bar-fill" style="width: ${pct}%"></div>
+                        <span class="bar-label">${a.label}</span>
+                    </div>
+                `
+            }).join('')
+        } catch (e) {
+            console.error('Error loading listening activity:', e)
+        }
     }
 
     loadPlaylists() {

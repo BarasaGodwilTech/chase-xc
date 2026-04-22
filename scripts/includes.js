@@ -17,6 +17,21 @@
         autoLoadConfig()
     }
 
+    function autoLoadUserDataTracker() {
+        if (document.querySelector('script[src*="user-data-tracker.js"]')) return
+
+        const script = document.createElement('script')
+        script.type = 'module'
+        script.src = 'scripts/user-data-tracker.js'
+        document.body.appendChild(script)
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', autoLoadUserDataTracker)
+    } else {
+        autoLoadUserDataTracker()
+    }
+
     async function includeAll() {
         const includeEls = document.querySelectorAll('[data-include]');
         if (includeEls.length === 0) return;
