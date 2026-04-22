@@ -1260,6 +1260,10 @@ class AdminPanel {
         `).join('');
     }
 
+    async loadSettings() {
+        // Settings are auto-loaded by config-loader.js on page init
+    }
+
     async loadTeam() {
         console.log('Loading team members...');
         const table = document.getElementById('teamTable');
@@ -2260,11 +2264,6 @@ class AdminPanel {
     // --- Inline Form Listeners & Handlers ---
 
     setupInlineFormListeners() {
-        // Add Artist button
-        document.getElementById('addArtistBtn')?.addEventListener('click', () => {
-            this.openArtistForm(null);
-        });
-
         // Close / Cancel artist form
         document.getElementById('closeArtistForm')?.addEventListener('click', () => {
             this.closeArtistForm();
@@ -2273,31 +2272,9 @@ class AdminPanel {
             this.closeArtistForm();
         });
 
-        // Artist form submit
-        document.getElementById('artistForm')?.addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.saveArtistForm();
-        });
-
         // Artist image upload
         document.getElementById('uploadArtistImageBtn')?.addEventListener('click', () => {
             document.getElementById('artistImageInput')?.click();
-        });
-        document.getElementById('artistImageInput')?.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                const preview = document.getElementById('artistImagePreview');
-                if (preview) {
-                    const reader = new FileReader();
-                    reader.onload = (ev) => {
-                        preview.style.backgroundImage = `url('${ev.target.result}')`;
-                        preview.classList.add('has-image');
-                        preview.querySelector('i')?.remove();
-                        preview.querySelector('span')?.remove();
-                    };
-                    reader.readAsDataURL(file);
-                }
-            }
         });
 
         // Add Team Member button
@@ -2389,57 +2366,6 @@ class AdminPanel {
         if (formContainer) formContainer.style.display = 'none';
         if (form) form.reset();
         this.editingItem = null;
-    }
-
-    async saveArtistForm() {
-        const name = document.getElementById('artistName')?.value?.trim();
-        const genre = document.getElementById('artistGenre')?.value?.trim();
-        const status = document.getElementById('artistStatus')?.value || 'active';
-        const bio = document.getElementById('artistBio')?.value?.trim();
-        const imageInput = document.getElementById('artistImageInput');
-
-        if (!name) {
-            this.showNotification('Artist name is required', 'error');
-            return;
-        }
-
-        try {
-            let imageUrl = '';
-            if (imageInput?.files?.[0]) {
-                imageUrl = await this.handleImageUpload(imageInput.files[0]);
-            } else if (this.editingItem?.data?.image) {
-                imageUrl = this.editingItem.data.image;
-            }
-
-            const artistData = { name, genre, status, bio, image: imageUrl };
-
-            if (this.editingItem?.id) {
-                if (typeof window.updateArtistInFirestore === 'function') {
-                    await window.updateArtistInFirestore(this.editingItem.id, artistData);
-                } else {
-                    const { db } = await import('../scripts/firebase-init.js');
-                    const { doc, updateDoc } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
-                    await updateDoc(doc(db, 'artists', this.editingItem.id), artistData);
-                }
-                this.showNotification('Artist updated successfully!', 'success');
-            } else {
-                if (typeof window.saveArtistToFirestore === 'function') {
-                    await window.saveArtistToFirestore(artistData);
-                } else {
-                    const { db } = await import('../scripts/firebase-init.js');
-                    const { collection, addDoc } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
-                    artistData.createdAt = new Date().toISOString();
-                    await addDoc(collection(db, 'artists'), artistData);
-                }
-                this.showNotification('Artist added successfully!', 'success');
-            }
-
-            this.closeArtistForm();
-            this.loadArtists();
-        } catch (error) {
-            console.error('Error saving artist:', error);
-            this.showNotification('Failed to save artist: ' + error.message, 'error');
-        }
     }
 
     openTeamForm(member = null) {
@@ -2544,17 +2470,11 @@ class AdminPanel {
     }
 
     async editArtist(artistId) {
-        try {
-            const artists = await window.fetchArtists?.() || [];
-            const artist = artists.find(a => a.id === artistId);
-            if (artist) {
-                this.openArtistForm(artist);
-            } else {
-                this.showNotification('Artist not found', 'error');
-            }
-        } catch (error) {
-            console.error('Error loading artist:', error);
-            this.showNotification('Error loading artist: ' + error.message, 'error');
+        // Delegate to admin-firebase.js which manages editingArtistId and form population
+        if (typeof window.editArtist === 'function') {
+            await window.editArtist(artistId);
+        } else {
+            this.showNotification('Edit functionality not available', 'error');
         }
     }
 

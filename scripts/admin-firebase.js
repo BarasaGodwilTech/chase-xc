@@ -221,31 +221,34 @@ async function populateArtistSelect(selectedId = '') {
 let editingArtistId = null
 
 function openAddArtistModal() {
-  const modal = document.getElementById('addArtistModal')
-  if (!modal) return
+  const formContainer = document.getElementById('artistManagementForm')
+  if (!formContainer) return
   editingArtistId = null
-  modal.style.display = 'flex'
-  modal.setAttribute('aria-hidden', 'false')
   
   // Reset form for add mode
-  const form = document.getElementById('addArtistForm')
+  const form = document.getElementById('artistForm')
   if (form) {
     form.reset()
     setArtistImagePreview(null)
   }
   
-  // Update modal title
-  const modalTitle = modal.querySelector('.modal-header h3')
-  if (modalTitle) {
-    modalTitle.textContent = 'Add New Artist'
+  // Update form title
+  const formTitle = document.getElementById('artistFormTitle')
+  if (formTitle) {
+    formTitle.textContent = 'Add New Artist'
   }
+  
+  formContainer.style.display = ''
+  formContainer.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
-function closeAddArtistModal() {
-  const modal = document.getElementById('addArtistModal')
-  if (!modal) return
-  modal.style.display = 'none'
-  modal.setAttribute('aria-hidden', 'true')
+function closeAddArtistForm() {
+  const formContainer = document.getElementById('artistManagementForm')
+  if (formContainer) formContainer.style.display = 'none'
+  const form = document.getElementById('artistForm')
+  if (form) form.reset()
+  setArtistImagePreview(null)
+  editingArtistId = null
 }
 
 function schedulePopulateArtistSelect(selectedId = '') {
@@ -261,16 +264,14 @@ function setArtistImagePreview(file) {
   if (!preview) return
 
   if (!file || !(file instanceof File) || file.size === 0) {
-    preview.classList.remove('is-visible')
+    preview.classList.remove('has-image')
     preview.style.backgroundImage = ''
-    preview.setAttribute('aria-hidden', 'true')
     return
   }
 
   const url = URL.createObjectURL(file)
   preview.style.backgroundImage = `url('${url}')`
-  preview.classList.add('is-visible')
-  preview.setAttribute('aria-hidden', 'false')
+  preview.classList.add('has-image')
 }
 
 function captureAudioUploadDraft() {
@@ -404,7 +405,7 @@ async function handleAddArtistSubmit(e) {
       window.__audioUploadDraft = null
     }
 
-    closeAddArtistModal()
+    closeAddArtistForm()
     form.reset()
     setArtistImagePreview(null)
     editingArtistId = null
@@ -621,10 +622,11 @@ window.editArtist = async function(artistId) {
     editingArtistId = artistId;
     
     // Populate form with artist data
-    const form = document.getElementById('addArtistForm');
+    const form = document.getElementById('artistForm');
     if (form) {
       document.getElementById('artistName').value = artist.name || '';
       document.getElementById('artistGenre').value = artist.genre || '';
+      document.getElementById('artistStatus').value = artist.status || 'active';
       document.getElementById('artistBio').value = artist.bio || '';
       
       // Show existing image preview
@@ -632,22 +634,25 @@ window.editArtist = async function(artistId) {
         const preview = document.getElementById('artistImagePreview');
         if (preview) {
           preview.style.backgroundImage = `url('${artist.image}')`;
-          preview.classList.add('is-visible');
-          preview.setAttribute('aria-hidden', 'false');
+          preview.classList.add('has-image');
+          preview.querySelector('i')?.remove();
+          preview.querySelector('span')?.remove();
         }
       }
     }
 
-    // Update modal title
-    const modal = document.getElementById('addArtistModal');
-    const modalTitle = modal.querySelector('.modal-header h3');
-    if (modalTitle) {
-      modalTitle.textContent = 'Edit Artist';
+    // Update form title
+    const formTitle = document.getElementById('artistFormTitle');
+    if (formTitle) {
+      formTitle.textContent = 'Edit Artist';
     }
 
-    // Open modal
-    modal.style.display = 'flex';
-    modal.setAttribute('aria-hidden', 'false');
+    // Show inline form
+    const formContainer = document.getElementById('artistManagementForm');
+    if (formContainer) {
+      formContainer.style.display = '';
+      formContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   } catch (error) {
     console.error('[admin-firebase] Error opening edit artist:', error);
     if (window.notifications) {
@@ -764,7 +769,7 @@ function initAdminFirebase() {
   document.getElementById('addArtistBtn')?.addEventListener('click', openAddArtistModal)
 
   // Image preview
-  const artistImageInput = document.getElementById('artistImage')
+  const artistImageInput = document.getElementById('artistImageInput')
   if (artistImageInput) {
     artistImageInput.addEventListener('change', () => {
       const f = artistImageInput.files && artistImageInput.files[0]
@@ -799,21 +804,14 @@ function initAdminFirebase() {
     })
   }
 
-  document.getElementById('closeAddArtistModal')?.addEventListener('click', closeAddArtistModal)
-  document.getElementById('cancelAddArtist')?.addEventListener('click', closeAddArtistModal)
+  document.getElementById('closeArtistForm')?.addEventListener('click', closeAddArtistForm)
+  document.getElementById('cancelArtistForm')?.addEventListener('click', closeAddArtistForm)
 
-  const modal = document.getElementById('addArtistModal')
-  if (modal) {
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal) closeAddArtistModal()
-    })
-  }
-
-  const addArtistForm = document.getElementById('addArtistForm')
-  if (addArtistForm) {
-    addArtistForm.addEventListener('submit', handleAddArtistSubmit)
+  const artistForm = document.getElementById('artistForm')
+  if (artistForm) {
+    artistForm.addEventListener('submit', handleAddArtistSubmit)
   } else {
-    console.error('[admin-firebase] addArtistForm not found; Save Artist will not work')
+    console.warn('[admin-firebase] artistForm not found; inline artist save will not work')
   }
 
   window.dispatchEvent(new Event('adminFirebaseReady'))
