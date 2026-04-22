@@ -245,16 +245,6 @@ class AdminPanel {
             });
         }
 
-        // Test Link button
-        document.getElementById('testAudioUrlBtn')?.addEventListener('click', () => {
-            const url = document.getElementById('audioUrl')?.value?.trim();
-            if (url) {
-                window.open(url, '_blank', 'noopener,noreferrer');
-            } else {
-                this.showNotification('No URL to test', 'error');
-            }
-        });
-
         this.setupBasicMusicManagement();
         this.setupSpotifyImport();
 

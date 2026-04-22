@@ -439,7 +439,8 @@ async function handleAudioUploadSubmit(e) {
   const releaseDate = String(fd.get('releaseDate') || '').trim()
   const duration = String(fd.get('trackDuration') || '').trim()
   const description = String(fd.get('trackDescription') || '').trim()
-  const audioUrlInput = String(fd.get('audioUrl') || '').trim()
+  const rawAudioUrlInput = String(fd.get('audioUrl') || '').trim()
+  const audioUrlInput = rawAudioUrlInput && !/^https?:\/\//i.test(rawAudioUrlInput) ? `https://${rawAudioUrlInput}` : rawAudioUrlInput
 
   const artworkFile = /** @type {File|null} */ (fd.get('trackArtwork'))
 
@@ -473,7 +474,7 @@ async function handleAudioUploadSubmit(e) {
 
   // Ask for confirmation if the current audio link hasn't been tested in this session.
   if (effectiveAudioUrlForSave && window.__lastTestedAudioUrl !== effectiveAudioUrlForSave) {
-    const msg = 'You have not tested the current audio link in this session. Open it in a new tab first (recommended) or continue anyway?'
+    const msg = 'You have not tested the current audio link in this session. Use the inline preview below the field (recommended) or continue anyway?'
     let ok = false
     if (window.notifications && window.notifications.confirm) {
       ok = await window.notifications.confirm(msg, 'Link Not Tested', 'warning')
@@ -798,13 +799,24 @@ function initAdminFirebase() {
     audioUrlInput.dataset.previewBound = 'true'
 
     const updatePreview = () => {
-      const url = String(audioUrlInput.value || '').trim()
+      const raw = String(audioUrlInput.value || '').trim()
+      const url = raw && !/^https?:\/\//i.test(raw) ? `https://${raw}` : raw
       const previewWrap = document.getElementById('audioUrlPreview')
       const previewLink = document.getElementById('audioUrlPreviewLink')
       const status = document.getElementById('audioUrlStatus')
       const inline = document.getElementById('audioUrlInlinePreview')
 
       if (!previewWrap || !previewLink || !status || !inline) return
+
+      // Never navigate out of admin when clicking the preview link.
+      if (!previewLink.dataset.noNavigateBound) {
+        previewLink.dataset.noNavigateBound = 'true'
+        previewLink.addEventListener('click', (e) => {
+          e.preventDefault()
+        })
+        previewLink.removeAttribute('target')
+        previewLink.removeAttribute('rel')
+      }
 
       if (!url) {
         previewWrap.style.display = 'none'
