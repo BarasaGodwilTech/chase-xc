@@ -1634,8 +1634,8 @@ class AdminPanel {
             const durationInput = document.getElementById('trackDuration');
             const releaseDateInput = document.getElementById('releaseDate');
             const descriptionInput = document.getElementById('trackDescription');
-            const artworkPreview = document.getElementById('artworkPreview');
             const audioUrlInput = document.getElementById('audioUrl');
+            const artworkPreview = document.getElementById('artworkPreview');
 
             if (titleInput) titleInput.value = track.title || '';
             if (artistInput) artistInput.value = track.artist || '';
@@ -1646,10 +1646,26 @@ class AdminPanel {
 
             // Populate audio URL and show link preview
             if (audioUrlInput) {
-                const existingUrl = track.audioUrl || track.audioLink || track.url || track.link || '';
+                const fromPlatformLinks = (() => {
+                    const pl = track.platformLinks || {};
+                    const candidates = [pl.audioUrl, pl.youtube, pl.spotify, pl.soundcloud, pl.appleMusic, pl.url, pl.link];
+                    for (const c of candidates) {
+                        if (typeof c === 'string' && c.trim()) return c.trim();
+                    }
+                    // Any string value
+                    for (const v of Object.values(pl)) {
+                        if (typeof v === 'string' && v.trim()) return v.trim();
+                    }
+                    return '';
+                })();
+
+                let existingUrl = track.audioUrl || track.audioLink || track.url || track.link || fromPlatformLinks || '';
+                if (existingUrl && !/^https?:\/\//i.test(existingUrl)) {
+                    existingUrl = `https://${existingUrl}`;
+                }
+
                 audioUrlInput.value = existingUrl;
                 if (existingUrl) {
-                    this.showLinkPreview(existingUrl);
                     audioUrlInput.dispatchEvent(new Event('input', { bubbles: true }));
                 }
             }

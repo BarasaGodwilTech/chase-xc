@@ -869,13 +869,16 @@ class MusicFilters {
     }
 }
 
-// Initialize music filters when DOM is ready
+// Initialize music filters when DOM is ready (but not on music page)
 document.addEventListener('DOMContentLoaded', () => {
-    // Initialize music filters
-    new MusicFilters();
-    
-    // Initialize music search
-    new MusicSearch();
+    // Don't initialize on music page - music-page.js handles it
+    if (!window.location.pathname.includes('music.html')) {
+        // Initialize music filters
+        new MusicFilters();
+        
+        // Initialize music search
+        new MusicSearch();
+    }
 });
 
 // === MUSIC SEARCH FUNCTIONALITY ===

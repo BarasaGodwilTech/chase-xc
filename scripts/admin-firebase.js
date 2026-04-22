@@ -935,7 +935,9 @@ function initAdminFirebase() {
             const artistId = artistDel.dataset?.artistId || artistDel.closest('tr')?.dataset?.artistId
             const artistName = artistDel.closest('tr')?.dataset?.artistName || 'Unknown'
             console.log('[admin-firebase] Delegated artist delete click:', artistId)
-            if (artistId) {
+            if (!artistId) {
+              if (window.notifications) window.notifications.show('Delete failed: missing artist id', 'error')
+            } else {
               await window.deleteArtist(artistId, artistName)
             }
           }
@@ -943,24 +945,35 @@ function initAdminFirebase() {
           if (trackDel) {
             const trackId = trackDel.dataset?.trackId || trackDel.closest('tr')?.dataset?.trackId
             console.log('[admin-firebase] Delegated track delete click:', trackId)
-            if (trackId) {
-              let ok = false
-              if (window.notifications && window.notifications.confirm) {
-                ok = await window.notifications.confirm('Are you sure you want to delete this track?', 'Delete Track', 'warning')
-              } else {
-                ok = confirm('Are you sure you want to delete this track?')
-              }
-              if (!ok) return
-              await deleteTrackFromFirestore(trackId)
-              if (typeof window.adminPanel?.loadTracks === 'function') {
-                await window.adminPanel.loadTracks()
-              }
+            if (!trackId) {
+              if (window.notifications) window.notifications.show('Delete failed: missing track id', 'error')
+              return
+            }
+
+            let ok = false
+            if (window.notifications && window.notifications.confirm) {
+              ok = await window.notifications.confirm('Are you sure you want to delete this track?', 'Delete Track', 'warning')
+            } else {
+              ok = confirm('Are you sure you want to delete this track?')
+            }
+            if (!ok) return
+
+            await deleteTrackFromFirestore(trackId)
+
+            if (typeof window.adminPanel?.loadTracks === 'function') {
+              await window.adminPanel.loadTracks()
+            }
+
+            if (window.notifications) {
+              window.notifications.show('Track deleted successfully!', 'success')
             }
           }
         } catch (err) {
           console.error('[admin-firebase] Delegated delete failed:', err)
           if (window.notifications) {
-            window.notifications.show('Delete failed. Please try again.', 'error')
+            const msg = err?.message ? String(err.message) : String(err)
+            const code = err?.code ? String(err.code) : ''
+            window.notifications.show(`Delete failed${code ? ` (${code})` : ''}: ${msg}`, 'error')
           }
         }
       },
