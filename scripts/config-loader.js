@@ -199,9 +199,9 @@ function populateContactAndSocialData() {
   if (footerLocation && contact.location) footerLocation.textContent = contact.location
 
   // Populate WhatsApp floating button
-  if (whatsappFloat && contact.whatsapp) {
+  if (whatsappFloat && social.whatsapp) {
     // Remove any non-digit characters for the WhatsApp API
-    const cleanNumber = contact.whatsapp.replace(/\D/g, '')
+    const cleanNumber = social.whatsapp.replace(/\D/g, '')
     whatsappFloat.href = `https://wa.me/${cleanNumber}`
   }
 

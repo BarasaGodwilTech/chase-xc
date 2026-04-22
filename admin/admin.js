@@ -1300,7 +1300,6 @@ class AdminPanel {
             applyValue('bankAccount', c.payment?.bank?.account);
             applyValue('bankAccountName', c.payment?.bank?.accountName);
             applyValue('supportPhone', c.payment?.supportPhone);
-            applyValue('whatsappNumber', c.contact?.whatsapp);
 
             applyValue('weeklyPrice', c.plans?.weekly?.price);
             applyValue('weeklyDescription', c.plans?.weekly?.description);
@@ -1341,6 +1340,7 @@ class AdminPanel {
             applyValue('socialTikTok', c.social?.tiktok);
             applyValue('socialTwitter', c.social?.twitter);
             applyValue('socialSpotify', c.social?.spotify);
+            applyValue('socialWhatsApp', c.social?.whatsapp);
         };
 
         const bindDirtyTracking = () => {
@@ -1394,8 +1394,6 @@ class AdminPanel {
                 base.payment.bank.accountName = read('bankAccountName').trim();
                 base.payment.supportPhone = read('supportPhone').trim();
 
-                base.contact.whatsapp = read('whatsappNumber').trim();
-
                 base.plans.weekly.price = readNum('weeklyPrice');
                 base.plans.weekly.description = read('weeklyDescription').trim();
                 base.plans.monthly.price = readNum('monthlyPrice');
@@ -1435,6 +1433,7 @@ class AdminPanel {
                 base.social.tiktok = read('socialTikTok').trim();
                 base.social.twitter = read('socialTwitter').trim();
                 base.social.spotify = read('socialSpotify').trim();
+                base.social.whatsapp = read('socialWhatsApp').trim();
 
                 try {
                     const mod = await import('../scripts/config-loader.js');
