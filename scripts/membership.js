@@ -8,20 +8,25 @@ class MembershipManager {
     constructor() {
         this.currentUser = null;
         this.currentPlan = null;
+        this.authInitialized = false;
         this.init();
     }
 
     async init() {
         // Initialize settings first to ensure config is loaded
         await initSettings();
-        
+
         onAuthStateChanged(auth, (user) => {
+            this.authInitialized = true;
             if (user) {
                 this.currentUser = user;
                 this.loadMembershipData();
                 this.setupEventListeners();
             } else {
-                window.location.href = 'auth.html';
+                // Only redirect if auth is initialized and user is not on auth page
+                if (!window.location.pathname.includes('auth.html')) {
+                    window.location.href = 'auth.html';
+                }
             }
         });
     }

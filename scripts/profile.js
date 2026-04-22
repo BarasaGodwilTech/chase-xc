@@ -6,22 +6,26 @@ class UserProfile {
     constructor() {
         this.currentUser = null;
         this.userProfile = null;
+        this.authInitialized = false;
         this.init();
     }
 
     async init() {
         // Initialize settings first to ensure config is loaded
         await initSettings();
-        
+
         // Check authentication
         onAuthStateChanged(auth, (user) => {
+            this.authInitialized = true;
             if (user) {
                 this.currentUser = user;
                 this.loadUserProfile();
                 this.setupEventListeners();
             } else {
-                // Redirect to auth if not logged in
-                window.location.href = 'auth.html';
+                // Only redirect if auth is initialized and user is not on auth page
+                if (!window.location.pathname.includes('auth.html')) {
+                    window.location.href = 'auth.html';
+                }
             }
         });
     }

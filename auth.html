@@ -166,5 +166,19 @@
     <script type="module" src="scripts/firebase-init.js"></script>
     <script type="module" src="scripts/notifications.js"></script>
     <script type="module" src="scripts/auth.js"></script>
+    <script type="module">
+        import { auth } from './scripts/firebase-init.js'
+        import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js'
+
+        // Redirect already-logged-in users away from auth page
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // User is already logged in, redirect to home or stored URL
+                const redirectUrl = sessionStorage.getItem('authRedirectUrl') || 'index.html'
+                sessionStorage.removeItem('authRedirectUrl')
+                window.location.href = redirectUrl
+            }
+        })
+    </script>
 </body>
 </html>

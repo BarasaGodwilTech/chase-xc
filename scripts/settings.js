@@ -6,13 +6,14 @@ class SettingsManager {
     constructor() {
         this.currentUser = null;
         this.userSettings = null;
+        this.authInitialized = false;
         this.init();
     }
 
     async init() {
         // Initialize settings first to ensure config is loaded
         await initSettings();
-        
+
         // Ensure modal is hidden on page load
         const deleteAccountModal = document.getElementById('deleteAccountModal');
         if (deleteAccountModal) {
@@ -20,13 +21,17 @@ class SettingsManager {
         }
 
         onAuthStateChanged(auth, (user) => {
+            this.authInitialized = true;
             if (user) {
                 this.currentUser = user;
                 this.loadUserSettings();
                 this.setupEventListeners();
                 this.loadProfileData();
             } else {
-                window.location.href = 'auth.html';
+                // Only redirect if auth is initialized and user is not on auth page
+                if (!window.location.pathname.includes('auth.html')) {
+                    window.location.href = 'auth.html';
+                }
             }
         });
     }
