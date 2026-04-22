@@ -226,6 +226,35 @@ class AdminPanel {
             this.applyPaymentFilters();
         });
 
+        // Audio URL link preview on input
+        const audioUrlInput = document.getElementById('audioUrl');
+        if (audioUrlInput) {
+            audioUrlInput.addEventListener('input', () => {
+                const url = audioUrlInput.value.trim();
+                if (url) {
+                    this.showLinkPreview(url);
+                } else {
+                    this.hideLinkPreview();
+                }
+            });
+            audioUrlInput.addEventListener('paste', () => {
+                setTimeout(() => {
+                    const url = audioUrlInput.value.trim();
+                    if (url) this.showLinkPreview(url);
+                }, 100);
+            });
+        }
+
+        // Test Link button
+        document.getElementById('testAudioUrlBtn')?.addEventListener('click', () => {
+            const url = document.getElementById('audioUrl')?.value?.trim();
+            if (url) {
+                window.open(url, '_blank', 'noopener,noreferrer');
+            } else {
+                this.showNotification('No URL to test', 'error');
+            }
+        });
+
         this.setupBasicMusicManagement();
         this.setupSpotifyImport();
 
@@ -1389,26 +1418,11 @@ class AdminPanel {
         } else {
             ok = confirm('Are you sure you want to delete this artist?');
         }
-        if (ok) {
-            try {
-                const artists = await window.fetchArtists();
-                const artist = (artists || []).find(a => a.id === artistId);
-                const name = artist?.name || 'Unknown';
-                await window.deleteArtist(artistId, name);
-                // Ensure the table in this script refreshes too
-                await this.loadArtists();
-            } catch (error) {
-                console.error('Error deleting artist:', error);
-                this.showNotification('Failed to delete artist: ' + error.message, 'error');
-            }
-            return;
-        }
-
-        // Fallback: direct Firestore delete if available
+        if (!ok) return;
         try {
-            await window.deleteArtistFromFirestore?.(artistId);
+            await window.deleteArtistFromFirestore(artistId);
             this.showNotification('Artist deleted successfully!', 'success');
-            this.loadArtists();
+            await this.loadArtists();
         } catch (error) {
             console.error('Error deleting artist:', error);
             this.showNotification('Failed to delete artist: ' + error.message, 'error');
@@ -1433,8 +1447,9 @@ class AdminPanel {
     openTrackEditForm(track) {
         // Navigate to music-management section and populate form
         this.showSection('music-management');
-        
-        setTimeout(() => {
+
+        // Use longer delay to ensure section is visible and form is rendered
+        const populateForm = () => {
             const titleInput = document.getElementById('trackTitle');
             const artistInput = document.getElementById('trackArtist');
             const genreInput = document.getElementById('trackGenre');
@@ -1442,30 +1457,43 @@ class AdminPanel {
             const releaseDateInput = document.getElementById('releaseDate');
             const descriptionInput = document.getElementById('trackDescription');
             const artworkPreview = document.getElementById('artworkPreview');
-            
+            const audioUrlInput = document.getElementById('audioUrl');
+
             if (titleInput) titleInput.value = track.title || '';
             if (artistInput) artistInput.value = track.artist || '';
             if (genreInput) genreInput.value = track.genre || '';
             if (durationInput) durationInput.value = track.duration || '';
             if (releaseDateInput) releaseDateInput.value = track.releaseDate || '';
             if (descriptionInput) descriptionInput.value = track.description || '';
-            
+
+            // Populate audio URL and show link preview
+            if (audioUrlInput) {
+                audioUrlInput.value = track.audioUrl || '';
+                if (track.audioUrl) {
+                    this.showLinkPreview(track.audioUrl);
+                    audioUrlInput.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            }
+
             if (track.artwork && artworkPreview) {
                 artworkPreview.classList.add('has-image');
-                artworkPreview.style.backgroundImage = `url('${track.artwork}')`;
+                artworkPreview.style.backgroundImage = `url(''${track.artwork}'')`;
             }
-            
+
             // Set editing state
             this.editingItem = { type: 'track', id: track.id, data: track };
-            
+
             // Change button text to indicate edit mode
             const submitBtn = document.querySelector('#audioUploadForm button[type="submit"]');
             if (submitBtn) {
                 submitBtn.innerHTML = '<i class="fas fa-save"></i> Save Track';
             }
-            
+
             this.showNotification('Editing track: ' + track.title, 'info');
-        }, 300);
+        };
+
+        // Wait for section to be visible, then populate
+        setTimeout(populateForm, 500);
     }
 
     async viewTrack(trackId) {
@@ -1506,6 +1534,40 @@ class AdminPanel {
         this.resetUploadForm();
     }
 
+    showLinkPreview(url) {
+        const preview = document.getElementById("audioUrlPreview");
+        const previewLink = document.getElementById("audioUrlPreviewLink");
+        const status = document.getElementById("audioUrlStatus");
+        if (!preview || !previewLink) return;
+
+        try {
+            new URL(url); // validate URL format
+            previewLink.href = url;
+            previewLink.textContent = url.length > 60 ? url.substring(0, 57) + "..." : url;
+            preview.style.display = "block";
+
+            if (status) {
+                const isHttp = url.startsWith("http://") || url.startsWith("https://");
+                status.textContent = isHttp ? "URL format looks valid" : "URL should start with http:// or https://";
+                status.className = "link-preview-status " + (isHttp ? "valid" : "invalid");
+            }
+        } catch (e) {
+            if (status) {
+                status.textContent = "Invalid URL format";
+                status.className = "link-preview-status invalid";
+            }
+            preview.style.display = "block";
+            previewLink.textContent = url;
+            previewLink.href = "#";
+        }
+    }
+
+    hideLinkPreview() {
+        const preview = document.getElementById("audioUrlPreview");
+        if (preview) preview.style.display = "none";
+    }
+
+
     resetUploadForm() {
         const form = document.getElementById('audioUploadForm');
         if (form) {
@@ -1528,6 +1590,9 @@ class AdminPanel {
         
         // Clear editing state
         this.editingItem = null;
+
+        // Hide link preview
+        this.hideLinkPreview();
         
         // Reset button text
         const submitBtn = document.querySelector('#audioUploadForm button[type="submit"]');

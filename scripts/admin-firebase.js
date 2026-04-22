@@ -468,6 +468,21 @@ async function handleAudioUploadSubmit(e) {
     return
   }
 
+  // Determine the actual URL that will be saved.
+  const effectiveAudioUrlForSave = audioUrlInput || existingTrack?.audioUrl || ''
+
+  // Ask for confirmation if the current audio link hasn't been tested in this session.
+  if (effectiveAudioUrlForSave && window.__lastTestedAudioUrl !== effectiveAudioUrlForSave) {
+    const msg = 'You have not tested the current audio link in this session. Open it in a new tab first (recommended) or continue anyway?'
+    let ok = false
+    if (window.notifications && window.notifications.confirm) {
+      ok = await window.notifications.confirm(msg, 'Link Not Tested', 'warning')
+    } else {
+      ok = confirm(msg)
+    }
+    if (!ok) return
+  }
+
   const now = Date.now()
   const artworkExt = artworkFile && artworkFile instanceof File ? safeFileExt(artworkFile.name) : ''
 
@@ -475,7 +490,7 @@ async function handleAudioUploadSubmit(e) {
     const artistName = await resolveArtistName(artistId)
 
     // Links-only: use input if provided, otherwise keep existing.
-    const audioUrl = audioUrlInput || existingTrack?.audioUrl || ''
+    const audioUrl = effectiveAudioUrlForSave
 
     // Handle artwork - either upload file or use Spotify URL
     let artworkUrl = existingTrack?.artwork || ''
@@ -775,6 +790,65 @@ function initAdminFirebase() {
       const f = artistImageInput.files && artistImageInput.files[0]
       setArtistImagePreview(f || null)
     })
+  }
+
+  // Track link test button - remember the last tested audio URL.
+  document.getElementById('testAudioUrlBtn')?.addEventListener('click', () => {
+    const url = document.getElementById('audioUrl')?.value?.trim()
+    if (url) window.__lastTestedAudioUrl = url
+  })
+
+  // Global delegated delete handling (covers both admin.js and admin-firebase rendered tables)
+  if (!window.__adminDeleteDelegationBound) {
+    window.__adminDeleteDelegationBound = true
+    document.addEventListener(
+      'click',
+      async (e) => {
+        const artistDel = e.target.closest('.js-delete-artist, .delete-artist-btn')
+        const trackDel = e.target.closest('.js-delete-track')
+
+        if (!artistDel && !trackDel) return
+
+        // Prevent duplicate handlers from firing in other scripts
+        e.preventDefault()
+        e.stopPropagation()
+
+        try {
+          if (artistDel) {
+            const artistId = artistDel.dataset?.artistId || artistDel.closest('tr')?.dataset?.artistId
+            const artistName = artistDel.closest('tr')?.dataset?.artistName || 'Unknown'
+            console.log('[admin-firebase] Delegated artist delete click:', artistId)
+            if (artistId) {
+              await window.deleteArtist(artistId, artistName)
+            }
+          }
+
+          if (trackDel) {
+            const trackId = trackDel.dataset?.trackId || trackDel.closest('tr')?.dataset?.trackId
+            console.log('[admin-firebase] Delegated track delete click:', trackId)
+            if (trackId) {
+              let ok = false
+              if (window.notifications && window.notifications.confirm) {
+                ok = await window.notifications.confirm('Are you sure you want to delete this track?', 'Delete Track', 'warning')
+              } else {
+                ok = confirm('Are you sure you want to delete this track?')
+              }
+              if (!ok) return
+              await deleteTrackFromFirestore(trackId)
+              if (typeof window.adminPanel?.loadTracks === 'function') {
+                await window.adminPanel.loadTracks()
+              }
+            }
+          }
+        } catch (err) {
+          console.error('[admin-firebase] Delegated delete failed:', err)
+          if (window.notifications) {
+            window.notifications.show('Delete failed. Please try again.', 'error')
+          }
+        }
+      },
+      true
+    )
   }
 
   const select = document.getElementById('trackArtist')

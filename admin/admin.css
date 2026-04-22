@@ -2286,3 +2286,60 @@ body.admin-page {
         grid-template-columns: 1fr;
     }
 }
+
+/* Link Preview */
+.link-preview {
+    margin-top: 0.75rem;
+    background: rgba(0, 212, 255, 0.05);
+    border: 1px solid rgba(0, 212, 255, 0.15);
+    border-radius: var(--radius);
+    padding: 0.75rem;
+}
+
+.link-preview-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--primary);
+    font-weight: 500;
+}
+
+.link-preview-content {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.link-preview-content a {
+    flex: 1;
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 0.85rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.link-preview-content a:hover {
+    color: var(--primary);
+}
+
+.link-preview-status {
+    margin-top: 0.5rem;
+    font-size: 0.8rem;
+}
+
+.link-preview-status.valid {
+    color: #10b981;
+}
+
+.link-preview-status.invalid {
+    color: var(--danger);
+}
+
+.btn-sm {
+    padding: 0.35rem 0.75rem;
+    font-size: 0.8rem;
+}

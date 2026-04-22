@@ -408,6 +408,18 @@
                             <div class="form-group">
                                 <label for="audioUrl">Audio Link (URL) *</label>
                                 <input type="url" id="audioUrl" name="audioUrl" required placeholder="https://... (direct audio link or platform link)">
+                                <div id="audioUrlPreview" class="link-preview" style="display:none;">
+                                    <div class="link-preview-header">
+                                        <i class="fas fa-link"></i> <span>Link Preview</span>
+                                    </div>
+                                    <div class="link-preview-content">
+                                        <a id="audioUrlPreviewLink" href="#" target="_blank" rel="noopener noreferrer"></a>
+                                        <button type="button" class="btn btn-sm btn-secondary" id="testAudioUrlBtn">
+                                            <i class="fas fa-external-link-alt"></i> Test Link
+                                        </button>
+                                    </div>
+                                    <div id="audioUrlStatus" class="link-preview-status"></div>
+                                </div>
                             </div>
 
                             <div class="form-row">
