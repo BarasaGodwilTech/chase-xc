@@ -1281,7 +1281,7 @@ class AdminPanel {
                 <td>${new Date(payment.timestamp).toLocaleDateString()}</td>
                 <td><span class="status-badge status-${payment.status}">${payment.status}</span></td>
                 <td>
-                    <button class="btn btn-primary btn-sm" onclick="adminPanel.viewPayment('${payment.id}')">
+                    <button class="btn btn-primary" onclick="adminPanel.viewPayment('${payment.id}')">
                         <i class="fas fa-eye"></i>
                     </button>
                 </td>
@@ -1290,7 +1290,195 @@ class AdminPanel {
     }
 
     async loadSettings() {
-        // Settings are auto-loaded by config-loader.js on page init
+        const applyValue = (id, value) => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            if (el.type === 'number') {
+                const n = Number(value);
+                el.value = Number.isFinite(n) ? String(n) : '';
+                return;
+            }
+            el.value = value == null ? '' : String(value);
+        };
+
+        const populateFromConfig = (config) => {
+            const c = config || window.studioConfig || {};
+
+            applyValue('mtnNumber', c.payment?.mtn);
+            applyValue('airtelNumber', c.payment?.airtel);
+            applyValue('bankName', c.payment?.bank?.name);
+            applyValue('bankAccount', c.payment?.bank?.account);
+            applyValue('bankAccountName', c.payment?.bank?.accountName);
+            applyValue('supportPhone', c.payment?.supportPhone);
+            applyValue('whatsappNumber', c.contact?.whatsapp);
+
+            applyValue('weeklyPrice', c.plans?.weekly?.price);
+            applyValue('weeklyDescription', c.plans?.weekly?.description);
+            applyValue('monthlyPrice', c.plans?.monthly?.price);
+            applyValue('monthlyDescription', c.plans?.monthly?.description);
+            applyValue('yearlyPrice', c.plans?.yearly?.price);
+            applyValue('yearlyDescription', c.plans?.yearly?.description);
+
+            applyValue('productionPrice', c.services?.production);
+            applyValue('mixingPrice', c.services?.mixing);
+            applyValue('masteringPrice', c.services?.mastering);
+            applyValue('vocalPrice', c.services?.vocal);
+            applyValue('hourlyRate', c.services?.hourlyRate);
+            applyValue('packagePrice', c.services?.packagePrice);
+            applyValue('songwritingPrice', c.services?.songwriting);
+            applyValue('restorationPrice', c.services?.restoration);
+            applyValue('sessionMusicianMin', c.services?.sessionMusicianMin);
+            applyValue('sessionMusicianMax', c.services?.sessionMusicianMax);
+
+            applyValue('budgetStandard', c.budgetTiers?.standard);
+            applyValue('budgetClassic', c.budgetTiers?.classic);
+            applyValue('budgetPremium', c.budgetTiers?.premium);
+            applyValue('budgetDeluxe', c.budgetTiers?.deluxe);
+
+            applyValue('contactPhone', c.contact?.phone);
+            applyValue('contactEmail', c.contact?.email);
+            applyValue('contactLocation', c.contact?.location);
+
+            applyValue('monthlySavings', c.planSavings?.monthly);
+            applyValue('yearlySavings', c.planSavings?.yearly);
+
+            applyValue('statProjects', c.about?.projects);
+            applyValue('statArtists', c.about?.artists);
+            applyValue('statStreams', c.about?.streams);
+
+            applyValue('socialInstagram', c.social?.instagram);
+            applyValue('socialYouTube', c.social?.youtube);
+            applyValue('socialTikTok', c.social?.tiktok);
+            applyValue('socialTwitter', c.social?.twitter);
+            applyValue('socialSpotify', c.social?.spotify);
+        };
+
+        const bindDirtyTracking = () => {
+            if (this.settingsDirtyBound) return;
+            this.settingsDirtyBound = true;
+            const container = document.getElementById('settings');
+            if (!container) return;
+            container.addEventListener('input', (e) => {
+                const t = e.target;
+                if (!t) return;
+                if (t.closest('form')) {
+                    this.settingsDirty = true;
+                }
+            });
+        };
+
+        const bindSaveButton = () => {
+            const btn = document.getElementById('saveSettings');
+            if (!btn || btn.dataset.bound === '1') return;
+            btn.dataset.bound = '1';
+
+            btn.addEventListener('click', async (e) => {
+                e.preventDefault();
+
+                const read = (id) => document.getElementById(id)?.value ?? '';
+                const readNum = (id) => {
+                    const v = String(read(id)).trim();
+                    if (!v) return 0;
+                    const n = Number(v);
+                    return Number.isFinite(n) ? n : 0;
+                };
+
+                const base = window.studioConfig ? JSON.parse(JSON.stringify(window.studioConfig)) : {};
+                base.payment = base.payment || {};
+                base.payment.bank = base.payment.bank || {};
+                base.plans = base.plans || { weekly: {}, monthly: {}, yearly: {} };
+                base.plans.weekly = base.plans.weekly || {};
+                base.plans.monthly = base.plans.monthly || {};
+                base.plans.yearly = base.plans.yearly || {};
+                base.services = base.services || {};
+                base.budgetTiers = base.budgetTiers || {};
+                base.contact = base.contact || {};
+                base.social = base.social || {};
+                base.about = base.about || {};
+                base.planSavings = base.planSavings || {};
+
+                base.payment.mtn = read('mtnNumber').trim();
+                base.payment.airtel = read('airtelNumber').trim();
+                base.payment.bank.name = read('bankName').trim();
+                base.payment.bank.account = read('bankAccount').trim();
+                base.payment.bank.accountName = read('bankAccountName').trim();
+                base.payment.supportPhone = read('supportPhone').trim();
+
+                base.contact.whatsapp = read('whatsappNumber').trim();
+
+                base.plans.weekly.price = readNum('weeklyPrice');
+                base.plans.weekly.description = read('weeklyDescription').trim();
+                base.plans.monthly.price = readNum('monthlyPrice');
+                base.plans.monthly.description = read('monthlyDescription').trim();
+                base.plans.yearly.price = readNum('yearlyPrice');
+                base.plans.yearly.description = read('yearlyDescription').trim();
+
+                base.services.production = readNum('productionPrice');
+                base.services.mixing = readNum('mixingPrice');
+                base.services.mastering = readNum('masteringPrice');
+                base.services.vocal = readNum('vocalPrice');
+                base.services.hourlyRate = readNum('hourlyRate');
+                base.services.packagePrice = readNum('packagePrice');
+                base.services.songwriting = readNum('songwritingPrice');
+                base.services.restoration = readNum('restorationPrice');
+                base.services.sessionMusicianMin = readNum('sessionMusicianMin');
+                base.services.sessionMusicianMax = readNum('sessionMusicianMax');
+
+                base.budgetTiers.standard = readNum('budgetStandard');
+                base.budgetTiers.classic = readNum('budgetClassic');
+                base.budgetTiers.premium = readNum('budgetPremium');
+                base.budgetTiers.deluxe = readNum('budgetDeluxe');
+
+                base.contact.phone = read('contactPhone').trim();
+                base.contact.email = read('contactEmail').trim();
+                base.contact.location = read('contactLocation').trim();
+
+                base.planSavings.monthly = read('monthlySavings').trim();
+                base.planSavings.yearly = read('yearlySavings').trim();
+
+                base.about.projects = read('statProjects').trim();
+                base.about.artists = read('statArtists').trim();
+                base.about.streams = read('statStreams').trim();
+
+                base.social.instagram = read('socialInstagram').trim();
+                base.social.youtube = read('socialYouTube').trim();
+                base.social.tiktok = read('socialTikTok').trim();
+                base.social.twitter = read('socialTwitter').trim();
+                base.social.spotify = read('socialSpotify').trim();
+
+                try {
+                    const mod = await import('../scripts/config-loader.js');
+                    const ok = await mod.saveSettings(base);
+                    if (ok) {
+                        window.studioConfig = base;
+                        this.settingsDirty = false;
+                        this.showNotification('Settings saved successfully!', 'success');
+                    } else {
+                        this.showNotification('Failed to save settings. Please try again.', 'error');
+                    }
+                } catch (err) {
+                    console.error('Error saving settings:', err);
+                    this.showNotification('Error saving settings: ' + (err?.message || String(err)), 'error');
+                }
+            });
+        };
+
+        bindDirtyTracking();
+        bindSaveButton();
+
+        const cfg = window.studioConfig;
+        if (cfg) {
+            populateFromConfig(cfg);
+        }
+
+        if (!window.__adminSettingsUpdatedBound) {
+            window.__adminSettingsUpdatedBound = true;
+            window.addEventListener('settingsUpdated', (e) => {
+                if (this.currentSection !== 'settings') return;
+                if (this.settingsDirty) return;
+                populateFromConfig(e.detail);
+            });
+        }
     }
 
     async loadTeam() {
@@ -1334,10 +1522,10 @@ class AdminPanel {
                     <td><span class="status-badge status-${member.status || 'active'}">${member.status || 'active'}</span></td>
                     <td>
                         <div class="action-buttons">
-                            <button class="btn btn-primary btn-sm" onclick="adminPanel.editTeamMember('${member.id}')">
+                            <button class="btn btn-primary" onclick="adminPanel.editTeamMember('${member.id}')">
                                 <i class="fas fa-edit"></i>
                             </button>
-                            <button class="btn btn-danger btn-sm" onclick="adminPanel.deleteTeamMember('${member.id}')">
+                            <button class="btn btn-danger" onclick="adminPanel.deleteTeamMember('${member.id}')">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </div>
@@ -1468,16 +1656,17 @@ class AdminPanel {
 
             // Populate audio URL and show link preview
             if (audioUrlInput) {
-                audioUrlInput.value = track.audioUrl || '';
-                if (track.audioUrl) {
-                    this.showLinkPreview(track.audioUrl);
+                const existingUrl = track.audioUrl || track.audioLink || track.url || track.link || '';
+                audioUrlInput.value = existingUrl;
+                if (existingUrl) {
+                    this.showLinkPreview(existingUrl);
                     audioUrlInput.dispatchEvent(new Event('input', { bubbles: true }));
                 }
             }
 
             if (track.artwork && artworkPreview) {
                 artworkPreview.classList.add('has-image');
-                artworkPreview.style.backgroundImage = `url(''${track.artwork}'')`;
+                artworkPreview.style.backgroundImage = `url('${track.artwork}')`;
             }
 
             // Set editing state
