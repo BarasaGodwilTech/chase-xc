@@ -93,6 +93,11 @@ body {
 @media (max-width: 768px) {
   .header {
     position: fixed;
+    pointer-events: none;
+  }
+
+  .header-container {
+    pointer-events: auto;
   }
 }
 
