@@ -243,6 +243,13 @@ body {
   transition: var(--transition);
   font-size: 0.9rem;
   cursor: pointer;
+  width: 100%;
+}
+
+button.profile-menu-item {
+  background: none;
+  border: none;
+  text-align: left;
 }
 
 .profile-menu-item:hover {
@@ -272,12 +279,16 @@ body {
   font-weight: 600;
   color: var(--text-primary);
   font-size: 0.95rem;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .profile-user-email {
   font-size: 0.8rem;
   color: var(--text-secondary);
   margin-top: 0.25rem;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .hamburger {
@@ -1266,7 +1277,13 @@ section {
   }
 
   .nav-profile {
-    margin-left: auto;
+    margin-left: 0;
+    align-self: flex-end;
+  }
+
+  .profile-btn {
+    font-size: 1.75rem;
+    padding: 0.75rem;
   }
 
   .profile-dropdown {
@@ -1280,6 +1297,10 @@ section {
     border-radius: 16px 16px 0 0;
     transform: translateY(100%);
     padding: var(--spacing-lg);
+    padding-bottom: calc(var(--spacing-lg) + env(safe-area-inset-bottom));
+    max-height: 75vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .profile-dropdown.active {
