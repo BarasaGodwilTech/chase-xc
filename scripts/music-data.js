@@ -218,8 +218,60 @@ class MusicDataRenderer {
     }
 
     handleAddToPlaylistAfterLogin(trackData) {
-        // TODO: Call your backend API to add track to playlist
         console.log('[MusicData] Added to playlist after login:', trackData.title);
+
+        const uid = window.userAuth?.getCurrentUser?.()?.uid;
+        if (!uid) return;
+
+        this.addToPlaylistFlow(uid, trackData).catch((e) => {
+            console.error('[MusicData] Failed to add to playlist:', e);
+            this.showNotification('Error adding to playlist.', 'error');
+        });
+    }
+
+    async addToPlaylistFlow(uid, track) {
+        const { getPlaylists, createPlaylist, addTrackToPlaylist } = await import('./user-data.js');
+
+        const playlists = await getPlaylists(uid, 50);
+        let playlistId = null;
+
+        if (!playlists || playlists.length === 0) {
+            const name = await this.promptForText('No playlists found. Enter a name to create one:');
+            if (!name) return;
+            playlistId = await createPlaylist(uid, name);
+            if (!playlistId) return;
+        } else {
+            const listText = playlists
+                .map((p, idx) => `${idx + 1}) ${p.name} (${p.trackCount || (p.tracks?.length || 0)} tracks)`)
+                .join('\n');
+
+            const choice = await this.promptForText(`Add to which playlist?\n\n${listText}\n\nType a number, or type NEW to create a playlist:`);
+            if (!choice) return;
+
+            if (choice.trim().toLowerCase() === 'new') {
+                const name = await this.promptForText('Enter new playlist name:');
+                if (!name) return;
+                playlistId = await createPlaylist(uid, name);
+                if (!playlistId) return;
+            } else {
+                const n = Number.parseInt(choice, 10);
+                if (!Number.isFinite(n) || n < 1 || n > playlists.length) {
+                    this.showNotification('Invalid playlist selection.', 'error');
+                    return;
+                }
+                playlistId = playlists[n - 1].id;
+            }
+        }
+
+        await addTrackToPlaylist(uid, playlistId, track);
+        this.showNotification('Added to playlist!', 'success');
+    }
+
+    async promptForText(message) {
+        if (window.notifications?.prompt) {
+            return await window.notifications.prompt(message);
+        }
+        return prompt(message);
     }
 
     showNotification(message, type = 'info') {

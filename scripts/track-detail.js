@@ -314,8 +314,84 @@ function handleAddToPlaylist() {
     redirectToAuth()
     return
   }
-  
-  console.log('[TrackDetail] User authenticated, proceeding with add to playlist action')
+
+  const uid = window.userAuth?.getCurrentUser?.()?.uid
+  if (!uid) return
+
+  addToPlaylistFlow(uid, currentTrack).catch((e) => {
+    console.error('[TrackDetail] Failed to add to playlist:', e)
+    if (window.notifications) window.notifications.show('Error adding to playlist.', 'error')
+  })
+}
+
+async function addToPlaylistFlow(uid, track) {
+  const { getPlaylists, createPlaylist, addTrackToPlaylist } = await import('./user-data.js')
+
+  const playlists = await getPlaylists(uid, 50)
+  let playlistId = null
+
+  if (!playlists || playlists.length === 0) {
+    const name = await promptForText('No playlists found. Enter a name to create one:')
+    if (!name) return
+    playlistId = await createPlaylist(uid, name)
+    if (!playlistId) return
+  } else {
+    const listText = playlists
+      .map((p, idx) => `${idx + 1}) ${p.name} (${p.trackCount || (p.tracks?.length || 0)} tracks)`)
+      .join('\n')
+
+    const choice = await promptForText(`Add to which playlist?\n\n${listText}\n\nType a number, or type NEW to create a playlist:`)
+    if (!choice) return
+
+    if (choice.trim().toLowerCase() === 'new') {
+      const name = await promptForText('Enter new playlist name:')
+      if (!name) return
+      playlistId = await createPlaylist(uid, name)
+      if (!playlistId) return
+    } else {
+      const n = Number.parseInt(choice, 10)
+      if (!Number.isFinite(n) || n < 1 || n > playlists.length) {
+        if (window.notifications) window.notifications.show('Invalid playlist selection.', 'error')
+        return
+      }
+      playlistId = playlists[n - 1].id
+    }
+  }
+
+  await addTrackToPlaylist(uid, playlistId, track)
+  if (window.notifications) window.notifications.show('Added to playlist!', 'success')
+}
+
+async function promptForText(message) {
+  if (window.notifications?.prompt) {
+    return await window.notifications.prompt(message)
+  }
+  return prompt(message)
+}
+
+function executePendingAction() {
+  const pendingActionStr = sessionStorage.getItem('pendingAction')
+  if (!pendingActionStr) return
+
+  try {
+    const pendingAction = JSON.parse(pendingActionStr)
+
+    if (pendingAction.type === 'addToPlaylist') {
+      // Use stored trackData if present, otherwise use currentTrack
+      const t = pendingAction.data?.trackData || currentTrack
+      if (t) {
+        const uid = window.userAuth?.getCurrentUser?.()?.uid
+        if (uid) {
+          addToPlaylistFlow(uid, t)
+        }
+      }
+    }
+
+    sessionStorage.removeItem('pendingAction')
+  } catch (e) {
+    console.error('[TrackDetail] Error executing pending action:', e)
+    sessionStorage.removeItem('pendingAction')
+  }
 }
 
 // Handle share track
@@ -570,3 +646,9 @@ document.addEventListener('DOMContentLoaded', () => {
 })
 
 document.addEventListener('includes:loaded', loadTrackData)
+
+document.addEventListener('DOMContentLoaded', () => {
+  // If auth.js is on the page, it will hydrate window.userAuth
+  // Execute pending actions after a small delay
+  setTimeout(executePendingAction, 700)
+})

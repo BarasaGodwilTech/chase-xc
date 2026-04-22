@@ -702,12 +702,59 @@ function handleAddToPlaylist(track) {
     return
   }
 
-  // User is authenticated, proceed with add to playlist action
-  // This would typically make an API call to your backend
-  // TODO: Call your backend API to add track to playlist
-  // Only show success message after API call succeeds
-  console.log('[MusicPage] User authenticated, proceeding with add to playlist action')
-  // showNotification('Successfully added to playlist!', 'success') // Uncomment after implementing backend API
+  const uid = window.userAuth?.getCurrentUser?.()?.uid
+  if (!uid) return
+
+  addToPlaylistFlow(uid, track).catch((e) => {
+    console.error('[MusicPage] Failed to add to playlist:', e)
+    showNotification('Error adding to playlist.', 'error')
+  })
+}
+
+async function addToPlaylistFlow(uid, track) {
+  const { getPlaylists, createPlaylist, addTrackToPlaylist } = await import('./user-data.js')
+
+  const playlists = await getPlaylists(uid, 50)
+
+  let playlistId = null
+
+  if (!playlists || playlists.length === 0) {
+    const name = await promptForText('No playlists found. Enter a name to create one:')
+    if (!name) return
+    playlistId = await createPlaylist(uid, name)
+    if (!playlistId) return
+  } else {
+    const listText = playlists
+      .map((p, idx) => `${idx + 1}) ${p.name} (${p.trackCount || (p.tracks?.length || 0)} tracks)`)
+      .join('\n')
+
+    const choice = await promptForText(`Add to which playlist?\n\n${listText}\n\nType a number, or type NEW to create a playlist:`)
+    if (!choice) return
+
+    if (choice.trim().toLowerCase() === 'new') {
+      const name = await promptForText('Enter new playlist name:')
+      if (!name) return
+      playlistId = await createPlaylist(uid, name)
+      if (!playlistId) return
+    } else {
+      const n = Number.parseInt(choice, 10)
+      if (!Number.isFinite(n) || n < 1 || n > playlists.length) {
+        showNotification('Invalid playlist selection.', 'error')
+        return
+      }
+      playlistId = playlists[n - 1].id
+    }
+  }
+
+  await addTrackToPlaylist(uid, playlistId, track)
+  showNotification('Added to playlist!', 'success')
+}
+
+async function promptForText(message) {
+  if (window.notifications?.prompt) {
+    return await window.notifications.prompt(message)
+  }
+  return prompt(message)
 }
 
 // Helper function to check if user is authenticated
@@ -804,10 +851,8 @@ function handleLikeAfterLogin(trackId) {
 }
 
 function handleAddToPlaylistAfterLogin(trackData) {
-  // TODO: Call your backend API to add track to playlist
-  // Only show success message after API call succeeds
   console.log('[MusicPage] Added to playlist after login:', trackData.title)
-  // showNotification('Successfully added to playlist!', 'success') // Uncomment after implementing backend API
+  handleAddToPlaylist(trackData)
 }
 
 // Helper function to show notifications
