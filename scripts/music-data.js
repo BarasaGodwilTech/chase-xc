@@ -127,13 +127,34 @@ class MusicDataRenderer {
         if (btn) {
             this.toggleLikeButton(btn);
         }
-        // Also update the data model
-        const track = this.dataManager.getTrack(trackId);
-        if (track) {
-            track.likes = (track.likes || 0) + 1;
-            this.dataManager.saveTrack(track);
-            this.renderMusicGrid();
-        }
+
+        const uid = window.userAuth?.getCurrentUser?.()?.uid
+        if (!uid) return
+
+        const track = this.dataManager?.getTrack?.(trackId) || (window.__tracks || []).find(t => t.id === trackId) || { id: trackId }
+
+        import('./user-data.js').then(async ({ toggleFavorite }) => {
+            try {
+                const result = await toggleFavorite(uid, track)
+                // Ensure button state matches final result
+                if (btn) {
+                    const icon = btn.querySelector('i')
+                    if (result.liked) {
+                        icon?.classList.remove('far')
+                        icon?.classList.add('fas')
+                        btn.classList.add('liked')
+                    } else {
+                        icon?.classList.remove('fas')
+                        icon?.classList.add('far')
+                        btn.classList.remove('liked')
+                    }
+                }
+            } catch (e) {
+                console.error('[MusicData] Failed to toggle favorite:', e)
+                if (btn) this.toggleLikeButton(btn)
+                this.showNotification('Error saving favorite.', 'error')
+            }
+        })
     }
 
     toggleLikeButton(btn) {

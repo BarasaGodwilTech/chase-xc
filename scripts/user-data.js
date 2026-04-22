@@ -4,6 +4,7 @@ import {
   getDoc,
   setDoc,
   updateDoc,
+  deleteDoc,
   collection,
   addDoc,
   serverTimestamp,
@@ -12,7 +13,9 @@ import {
   orderBy,
   limit,
   getDocs,
-  writeBatch
+  writeBatch,
+  arrayUnion,
+  arrayRemove
 } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js'
 
 function userDocRef(uid) {
@@ -99,6 +102,120 @@ export async function seedDefaultNotifications(uid) {
   })
 
   await batch.commit()
+}
+
+function favoriteDocRef(uid, trackId) {
+  return doc(db, 'users', uid, 'favorites', trackId)
+}
+
+export async function isFavorite(uid, trackId) {
+  if (!uid || !trackId) return false
+  const snap = await getDoc(favoriteDocRef(uid, trackId))
+  return snap.exists()
+}
+
+export async function getFavorites(uid, max = 100) {
+  if (!uid) return []
+  const col = collection(db, 'users', uid, 'favorites')
+  const q = query(col, orderBy('updatedAt', 'desc'), limit(max))
+  const snap = await getDocs(q)
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+}
+
+export async function toggleFavorite(uid, track, { force } = {}) {
+  if (!uid || !track?.id) return { liked: false }
+
+  const ref = favoriteDocRef(uid, track.id)
+  const snap = await getDoc(ref)
+  const currentlyLiked = snap.exists()
+
+  const shouldLike = typeof force === 'boolean' ? force : !currentlyLiked
+
+  if (shouldLike) {
+    await setDoc(ref, {
+      trackId: track.id,
+      title: track.title || '',
+      artistName: track.artistName || track.artist || '',
+      artwork: track.artwork || track.cover || '',
+      audioUrl: track.audioUrl || null,
+      platformLinks: track.platformLinks || {},
+      createdAt: snap.exists() ? snap.data()?.createdAt || serverTimestamp() : serverTimestamp(),
+      updatedAt: serverTimestamp()
+    }, { merge: true })
+    await incrementUserStats(uid, { favoritesDelta: currentlyLiked ? 0 : 1 })
+    return { liked: true }
+  }
+
+  if (currentlyLiked) {
+    await deleteDoc(ref)
+    await incrementUserStats(uid, { favoritesDelta: -1 })
+  }
+  return { liked: false }
+}
+
+function playlistsColRef(uid) {
+  return collection(db, 'users', uid, 'playlists')
+}
+
+function playlistDocRef(uid, playlistId) {
+  return doc(db, 'users', uid, 'playlists', playlistId)
+}
+
+export async function createPlaylist(uid, name) {
+  if (!uid) return null
+  const trimmed = (name || '').trim()
+  if (!trimmed) return null
+
+  const ref = doc(playlistsColRef(uid))
+  await setDoc(ref, {
+    name: trimmed,
+    tracks: [],
+    trackCount: 0,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp()
+  })
+  return ref.id
+}
+
+export async function getPlaylists(uid, max = 50) {
+  if (!uid) return []
+  const q = query(playlistsColRef(uid), orderBy('updatedAt', 'desc'), limit(max))
+  const snap = await getDocs(q)
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+}
+
+export async function addTrackToPlaylist(uid, playlistId, track) {
+  if (!uid || !playlistId || !track?.id) return
+  const ref = playlistDocRef(uid, playlistId)
+  const snap = await getDoc(ref)
+  if (!snap.exists()) return
+
+  const data = snap.data() || {}
+  const existing = Array.isArray(data.tracks) ? data.tracks : []
+  const already = existing.includes(track.id)
+
+  await updateDoc(ref, {
+    tracks: arrayUnion(track.id),
+    trackCount: already ? safeNumber(data.trackCount) : safeNumber(data.trackCount) + 1,
+    updatedAt: serverTimestamp()
+  })
+}
+
+export async function removeTrackFromPlaylist(uid, playlistId, trackId) {
+  if (!uid || !playlistId || !trackId) return
+  const ref = playlistDocRef(uid, playlistId)
+  const snap = await getDoc(ref)
+  if (!snap.exists()) return
+
+  const data = snap.data() || {}
+  const existing = Array.isArray(data.tracks) ? data.tracks : []
+  const had = existing.includes(trackId)
+
+  await updateDoc(ref, {
+    tracks: arrayRemove(trackId),
+    trackCount: had ? Math.max(0, safeNumber(data.trackCount) - 1) : safeNumber(data.trackCount),
+    updatedAt: serverTimestamp()
+  })
 }
 
 export async function logListeningEvent(uid, track, meta = {}) {

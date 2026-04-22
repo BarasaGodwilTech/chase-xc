@@ -258,7 +258,10 @@ function handleLikeTrack(btn) {
     return
   }
   
-  // Toggle like state
+  const uid = window.userAuth?.getCurrentUser?.()?.uid
+  if (!uid) return
+
+  // Optimistic UI
   const icon = btn.querySelector('i')
   if (icon.classList.contains('far')) {
     icon.classList.remove('far')
@@ -269,8 +272,34 @@ function handleLikeTrack(btn) {
     icon.classList.add('far')
     btn.classList.remove('liked')
   }
-  
-  console.log('[TrackDetail] User authenticated, proceeding with like action')
+
+  import('./user-data.js').then(async ({ toggleFavorite }) => {
+    try {
+      const result = await toggleFavorite(uid, currentTrack)
+      if (result.liked) {
+        icon?.classList.remove('far')
+        icon?.classList.add('fas')
+        btn.classList.add('liked')
+      } else {
+        icon?.classList.remove('fas')
+        icon?.classList.add('far')
+        btn.classList.remove('liked')
+      }
+    } catch (e) {
+      console.error('[TrackDetail] Failed to toggle favorite:', e)
+      // rollback
+      if (icon.classList.contains('far')) {
+        icon.classList.remove('far')
+        icon.classList.add('fas')
+        btn.classList.add('liked')
+      } else {
+        icon.classList.remove('fas')
+        icon.classList.add('far')
+        btn.classList.remove('liked')
+      }
+      if (window.notifications) window.notifications.show('Error saving favorite.', 'error')
+    }
+  })
 }
 
 // Handle add to playlist

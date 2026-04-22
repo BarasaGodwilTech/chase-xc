@@ -8,7 +8,10 @@ import {
     getTopTracks,
     getNotifications,
     markAllNotificationsRead,
-    getWeeklyListeningActivity
+    getWeeklyListeningActivity,
+    getFavorites,
+    getPlaylists,
+    createPlaylist
 } from './user-data.js'
 
 class UserProfile {
@@ -274,34 +277,36 @@ class UserProfile {
         const favoritesGrid = document.getElementById('favoritesGrid');
         if (!favoritesGrid) return;
 
-        const favorites = JSON.parse(localStorage.getItem(`favorites_${this.currentUser.uid}`) || '[]');
+        getFavorites(this.currentUser.uid, 50).then((favorites) => {
+            if (!favorites || favorites.length === 0) {
+                favoritesGrid.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-heart"></i>
+                        <h3>No favorites yet</h3>
+                        <p>Start exploring and add tracks to your favorites</p>
+                        <a href="music.html" class="btn btn-primary">Browse Music</a>
+                    </div>
+                `;
+                return;
+            }
 
-        if (favorites.length === 0) {
-            favoritesGrid.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-heart"></i>
-                    <h3>No favorites yet</h3>
-                    <p>Start exploring and add tracks to your favorites</p>
-                    <a href="music.html" class="btn btn-primary">Browse Music</a>
+            favoritesGrid.innerHTML = favorites.map((track, index) => `
+                <div class="track-card" data-track="${index}" data-track-id="${track.trackId}">
+                    <div class="track-artwork">
+                        <img src="${track.artwork || 'public/player-cover-1.jpg'}" alt="${track.title}">
+                        <button class="track-play-btn" type="button">
+                            <i class="fas fa-play"></i>
+                        </button>
+                    </div>
+                    <div class="track-content">
+                        <h4 class="track-title">${track.title}</h4>
+                        <p class="track-artist">${track.artistName}</p>
+                    </div>
                 </div>
-            `;
-            return;
-        }
-
-        favoritesGrid.innerHTML = favorites.map((track, index) => `
-            <div class="track-card" data-track="${index}">
-                <div class="track-artwork">
-                    <img src="${track.artwork || 'public/player-cover-1.jpg'}" alt="${track.title}">
-                    <button class="track-play-btn">
-                        <i class="fas fa-play"></i>
-                    </button>
-                </div>
-                <div class="track-content">
-                    <h4 class="track-title">${track.title}</h4>
-                    <p class="track-artist">${track.artist}</p>
-                </div>
-            </div>
-        `).join('');
+            `).join('');
+        }).catch((e) => {
+            console.error('Error loading favorites:', e)
+        })
     }
 
     loadHistory() {
@@ -465,55 +470,53 @@ class UserProfile {
         const playlistsGrid = document.getElementById('playlistsGrid');
         if (!playlistsGrid) return;
 
-        const playlists = JSON.parse(localStorage.getItem(`playlists_${this.currentUser.uid}`) || '[]');
-
-        if (playlists.length === 0) {
-            playlistsGrid.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-list"></i>
-                    <h3>No playlists yet</h3>
-                    <p>Create your first playlist to organize your music</p>
-                    <button class="btn btn-primary" id="createFirstPlaylist">
-                        <i class="fas fa-plus"></i> Create Playlist
-                    </button>
-                </div>
-            `;
-            // Re-attach event listener for the new button
-            const createFirstPlaylist = document.getElementById('createFirstPlaylist');
-            if (createFirstPlaylist) {
-                createFirstPlaylist.addEventListener('click', () => this.createPlaylist());
+        getPlaylists(this.currentUser.uid, 50).then((playlists) => {
+            if (!playlists || playlists.length === 0) {
+                playlistsGrid.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-list"></i>
+                        <h3>No playlists yet</h3>
+                        <p>Create your first playlist to organize your music</p>
+                        <button class="btn btn-primary" id="createFirstPlaylist">
+                            <i class="fas fa-plus"></i> Create Playlist
+                        </button>
+                    </div>
+                `;
+                const createFirstPlaylist = document.getElementById('createFirstPlaylist');
+                if (createFirstPlaylist) {
+                    createFirstPlaylist.addEventListener('click', () => this.createPlaylist());
+                }
+                return;
             }
-            return;
-        }
 
-        playlistsGrid.innerHTML = playlists.map(playlist => `
-            <div class="playlist-card">
-                <div class="playlist-artwork">
-                    <i class="fas fa-music"></i>
+            playlistsGrid.innerHTML = playlists.map(playlist => `
+                <div class="playlist-card" data-playlist-id="${playlist.id}">
+                    <div class="playlist-artwork">
+                        <i class="fas fa-music"></i>
+                    </div>
+                    <div class="playlist-content">
+                        <h4>${playlist.name}</h4>
+                        <p>${playlist.trackCount || (playlist.tracks?.length || 0)} tracks</p>
+                    </div>
                 </div>
-                <div class="playlist-content">
-                    <h4>${playlist.name}</h4>
-                    <p>${playlist.tracks.length} tracks</p>
-                </div>
-            </div>
-        `).join('');
+            `).join('');
+        }).catch((e) => {
+            console.error('Error loading playlists:', e)
+        })
     }
 
-    createPlaylist() {
+    async createPlaylist() {
         const playlistName = prompt('Enter playlist name:');
         if (!playlistName || !playlistName.trim()) return;
 
-        const playlists = JSON.parse(localStorage.getItem(`playlists_${this.currentUser.uid}`) || '[]');
-        playlists.push({
-            id: `playlist_${Date.now()}`,
-            name: playlistName.trim(),
-            tracks: [],
-            createdAt: new Date().toISOString()
-        });
-
-        localStorage.setItem(`playlists_${this.currentUser.uid}`, JSON.stringify(playlists));
-        this.loadPlaylists();
-        this.showNotification('Playlist created successfully', 'success');
+        try {
+            await createPlaylist(this.currentUser.uid, playlistName.trim())
+            this.loadPlaylists()
+            this.showNotification('Playlist created successfully', 'success')
+        } catch (e) {
+            console.error('Error creating playlist:', e)
+            this.showNotification('Error creating playlist', 'error')
+        }
     }
 
     formatTimeAgo(timestamp) {

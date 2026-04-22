@@ -638,10 +638,35 @@ function handleLikeTrack(trackId, btn) {
   }
   
   // User is authenticated, proceed with like action
-  // This would typically make an API call to your backend
+  const uid = window.userAuth?.getCurrentUser?.()?.uid
+  if (!uid) return
+
+  // Optimistic UI
   toggleLikeButton(btn)
-  // TODO: Call your backend API to like/unlike the track
-  console.log('[MusicPage] User authenticated, proceeding with like action')
+
+  import('./user-data.js').then(async ({ toggleFavorite }) => {
+    try {
+      const track = (window.__tracks || []).find(t => t.id === trackId) || { id: trackId }
+      const result = await toggleFavorite(uid, track)
+
+      // Ensure UI matches final state
+      const icon = btn.querySelector('i')
+      if (result.liked) {
+        icon?.classList.remove('far')
+        icon?.classList.add('fas')
+        btn.classList.add('liked')
+      } else {
+        icon?.classList.remove('fas')
+        icon?.classList.add('far')
+        btn.classList.remove('liked')
+      }
+    } catch (e) {
+      console.error('[MusicPage] Failed to toggle favorite:', e)
+      // Rollback on error
+      toggleLikeButton(btn)
+      if (window.notifications) window.notifications.show('Error saving favorite.', 'error')
+    }
+  })
 }
 
 function handleShareTrack(track) {
