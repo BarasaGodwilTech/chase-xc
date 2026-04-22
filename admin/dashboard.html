@@ -283,6 +283,62 @@
                     </tbody>
                 </table>
             </div>
+
+            <!-- Artist Management Form (inline, like music-management) -->
+            <div class="management-form" id="artistManagementForm" style="display: none;">
+                <div class="form-card">
+                    <div class="form-card-header">
+                        <h3 id="artistFormTitle">Add New Artist</h3>
+                        <button type="button" class="btn btn-icon" id="closeArtistForm">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <form id="artistForm">
+                        <div class="form-group">
+                            <label for="artistImage">Artist Photo</label>
+                            <div class="artwork-upload">
+                                <div class="artwork-preview" id="artistImagePreview">
+                                    <i class="fas fa-user"></i>
+                                    <span>No photo selected</span>
+                                </div>
+                                <button type="button" class="btn btn-secondary" id="uploadArtistImageBtn">
+                                    <i class="fas fa-upload"></i> Upload Photo
+                                </button>
+                                <input type="file" id="artistImageInput" name="artistImage" accept="image/*" hidden>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="artistName">Artist Name *</label>
+                                <input type="text" id="artistName" name="name" required placeholder="Enter artist name">
+                            </div>
+                            <div class="form-group">
+                                <label for="artistGenre">Genre</label>
+                                <input type="text" id="artistGenre" name="genre" placeholder="e.g. Afrobeat, R&B">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="artistStatus">Status</label>
+                                <select id="artistStatus" name="status">
+                                    <option value="active">Active</option>
+                                    <option value="inactive">Inactive</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="artistBio">Bio</label>
+                            <textarea id="artistBio" name="bio" rows="3" placeholder="Short artist bio..."></textarea>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary" id="cancelArtistForm">Cancel</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Save Artist
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </section>
 
         <!-- Tracks Section -->
@@ -547,7 +603,7 @@
             <div class="section-header">
                 <h2>Team Management</h2>
                 <div class="section-actions">
-                    <button class="btn btn-primary" onclick="adminPanel.addNewTeamMember()" type="button">
+                    <button class="btn btn-primary" id="addTeamMemberBtn" onclick="adminPanel.addNewTeamMember()" type="button">
                         <i class="fas fa-plus"></i> Add Team Member
                     </button>
                 </div>
@@ -568,6 +624,70 @@
                         <!-- Team members will be loaded here -->
                     </tbody>
                 </table>
+            </div>
+
+            <!-- Team Management Form (inline, like music-management) -->
+            <div class="management-form" id="teamManagementForm" style="display: none;">
+                <div class="form-card">
+                    <div class="form-card-header">
+                        <h3 id="teamFormTitle">Add Team Member</h3>
+                        <button type="button" class="btn btn-icon" id="closeTeamForm">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <form id="teamForm">
+                        <div class="form-group">
+                            <label for="teamMemberPhoto">Member Photo</label>
+                            <div class="artwork-upload">
+                                <div class="artwork-preview" id="teamMemberPhotoPreview">
+                                    <i class="fas fa-user"></i>
+                                    <span>No photo selected</span>
+                                </div>
+                                <button type="button" class="btn btn-secondary" id="uploadTeamPhotoBtn">
+                                    <i class="fas fa-upload"></i> Upload Photo
+                                </button>
+                                <input type="file" id="teamMemberPhotoInput" name="teamPhoto" accept="image/*" hidden>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="teamMemberNameInput">Full Name *</label>
+                                <input type="text" id="teamMemberNameInput" name="name" required placeholder="Enter full name">
+                            </div>
+                            <div class="form-group">
+                                <label for="teamMemberRoleInput">Role *</label>
+                                <input type="text" id="teamMemberRoleInput" name="role" required placeholder="e.g. Producer, Engineer">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="teamMemberBadgeInput">Badge / Title</label>
+                                <input type="text" id="teamMemberBadgeInput" name="badge" placeholder="e.g. Senior, Lead">
+                            </div>
+                            <div class="form-group">
+                                <label for="teamMemberStatusInput">Status</label>
+                                <select id="teamMemberStatusInput" name="status">
+                                    <option value="active">Active</option>
+                                    <option value="inactive">Inactive</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="teamMemberSkillsInput">Skills (comma-separated)</label>
+                            <input type="text" id="teamMemberSkillsInput" name="skills" placeholder="e.g. Mixing, Mastering, Production">
+                        </div>
+                        <div class="form-group">
+                            <label for="teamMemberBioInput">Bio</label>
+                            <textarea id="teamMemberBioInput" name="bio" rows="3" placeholder="Short bio..."></textarea>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary" id="cancelTeamForm">Cancel</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Save Member
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </section>
 
@@ -1026,94 +1146,6 @@
             </div>
         </section>
 
-        <!-- Add Artist Modal -->
-        <div class="modal" id="addArtistModal" aria-hidden="true">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3>Add New Artist</h3>
-                    <button type="button" class="modal-close" id="closeAddArtistModal">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                <form id="addArtistForm">
-                    <div class="form-group">
-                        <label for="artistName">Artist Name *</label>
-                        <input type="text" id="artistName" name="artistName" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="artistGenre">Genre</label>
-                        <input type="text" id="artistGenre" name="artistGenre" placeholder="e.g. Afrobeat">
-                    </div>
-                    <div class="form-group">
-                        <label for="artistBio">Bio</label>
-                        <textarea id="artistBio" name="artistBio" rows="3" placeholder="Short artist bio..."></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="artistImage">Artist Image</label>
-                        <div class="artist-image-preview" id="artistImagePreview" aria-hidden="true"></div>
-                        <input type="file" id="artistImage" name="artistImage" accept="image/*">
-                    </div>
-                    <div class="form-actions">
-                        <button type="button" class="btn btn-secondary" id="cancelAddArtist">Cancel</button>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save"></i> Save Artist
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- Add Team Member Modal -->
-        <div class="modal" id="addTeamMemberModal" aria-hidden="true">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3 id="teamModalTitle">Add New Team Member</h3>
-                    <button type="button" class="modal-close" id="closeTeamMemberModal">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                <form id="addTeamMemberForm">
-                    <div class="form-group">
-                        <label for="teamMemberName">Name *</label>
-                        <input type="text" id="teamMemberName" name="teamMemberName" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="teamMemberRole">Role *</label>
-                        <input type="text" id="teamMemberRole" name="teamMemberRole" required placeholder="e.g. Producer, Engineer">
-                    </div>
-                    <div class="form-group">
-                        <label for="teamMemberBadge">Badge</label>
-                        <input type="text" id="teamMemberBadge" name="teamMemberBadge" placeholder="e.g. Founder, Engineer">
-                    </div>
-                    <div class="form-group">
-                        <label for="teamMemberBio">Bio</label>
-                        <textarea id="teamMemberBio" name="teamMemberBio" rows="3" placeholder="Short bio..."></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="teamMemberSkills">Skills (comma-separated)</label>
-                        <input type="text" id="teamMemberSkills" name="teamMemberSkills" placeholder="e.g. Production, Mixing, Mastering">
-                    </div>
-                    <div class="form-group">
-                        <label for="teamMemberImage">Photo</label>
-                        <div class="artist-image-preview" id="teamMemberImagePreview" aria-hidden="true"></div>
-                        <input type="file" id="teamMemberImage" name="teamMemberImage" accept="image/*">
-                    </div>
-                    <div class="form-group">
-                        <label for="teamMemberStatus">Status</label>
-                        <select id="teamMemberStatus" name="teamMemberStatus">
-                            <option value="active">Active</option>
-                            <option value="inactive">Inactive</option>
-                        </select>
-                    </div>
-                    <div class="form-actions">
-                        <button type="button" class="btn btn-secondary" id="cancelTeamMember">Cancel</button>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save"></i> Save Team Member
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
     </main>
 
     <!-- Notifications Panel -->
@@ -1134,114 +1166,6 @@
         <div class="loading-spinner">
             <i class="fas fa-compact-disc fa-spin"></i>
             <p>Loading...</p>
-        </div>
-    </div>
-
-    <!-- View Artist Detail Modal -->
-    <div class="modal" id="viewArtistModal" aria-hidden="true">
-        <div class="modal-overlay"></div>
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Artist Details</h3>
-                <button class="btn btn-icon" id="closeViewArtistModal">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-body">
-                <div class="artist-detail-header">
-                    <img id="viewArtistImage" src="" alt="" class="artist-detail-avatar">
-                    <div class="artist-detail-info">
-                        <h2 id="viewArtistName"></h2>
-                        <p id="viewArtistGenre" class="artist-detail-genre"></p>
-                    </div>
-                </div>
-                <div class="artist-detail-stats">
-                    <div class="stat-item">
-                        <span class="stat-label">Tracks</span>
-                        <span class="stat-value" id="viewArtistTracks">0</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Streams</span>
-                        <span class="stat-value" id="viewArtistStreams">0</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Status</span>
-                        <span class="stat-value" id="viewArtistStatus"></span>
-                    </div>
-                </div>
-                <div class="artist-detail-bio">
-                    <h4>Bio</h4>
-                    <p id="viewArtistBio"></p>
-                </div>
-                <div class="artist-detail-tracks">
-                    <h4>Tracks</h4>
-                    <div id="viewArtistTracksList" class="tracks-list">
-                        <!-- Tracks will be loaded here -->
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" id="closeViewArtistModalBtn">Close</button>
-                <button class="btn btn-secondary" id="cancelEditFromViewArtist" style="display:none">Cancel</button>
-                <button class="btn btn-primary" id="editFromViewArtist">Edit Artist</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- View Track Detail Modal -->
-    <div class="modal" id="viewTrackModal" aria-hidden="true">
-        <div class="modal-overlay"></div>
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Track Details</h3>
-                <button class="btn btn-icon" id="closeViewTrackModal">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-body">
-                <div class="track-detail-header">
-                    <img id="viewTrackArtwork" src="" alt="" class="track-detail-artwork">
-                    <div class="track-detail-info">
-                        <h2 id="viewTrackTitle"></h2>
-                        <p id="viewTrackArtist" class="track-detail-artist"></p>
-                        <p id="viewTrackGenre" class="track-detail-genre"></p>
-                    </div>
-                </div>
-                <div class="track-detail-stats">
-                    <div class="stat-item">
-                        <span class="stat-label">Streams</span>
-                        <span class="stat-value" id="viewTrackStreams">0</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Duration</span>
-                        <span class="stat-value" id="viewTrackDuration"></span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Status</span>
-                        <span class="stat-value" id="viewTrackStatus"></span>
-                    </div>
-                </div>
-                <div class="track-detail-meta">
-                    <div class="meta-item">
-                        <span class="meta-label">Release Date:</span>
-                        <span class="meta-value" id="viewTrackReleaseDate"></span>
-                    </div>
-                </div>
-                <div class="track-detail-description">
-                    <h4>Description</h4>
-                    <p id="viewTrackDescription"></p>
-                </div>
-                <div class="track-detail-links">
-                    <h4>Platform Links</h4>
-                    <div id="viewTrackPlatformLinks" class="platform-links">
-                        <!-- Platform links will be loaded here -->
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" id="closeViewTrackModalBtn">Close</button>
-                <button class="btn btn-primary" id="editFromViewTrack">Edit Track</button>
-            </div>
         </div>
     </div>
 

@@ -7,8 +7,6 @@ class AdminPanel {
         this.settingsDirty = false;
         this.settingsDirtyBound = false;
         this.searchBound = false;
-        this.artistModalMode = 'view';
-        this.artistModalSnapshot = null;
 
         this.init();
     }
@@ -16,7 +14,7 @@ class AdminPanel {
     init() {
         console.log('AdminPanel initializing...');
 
-        // Ensure we have a reliable focus target outside modals (prevents aria-hidden focus warnings)
+        // Ensure we have a reliable focus target for keyboard navigation
         const adminNav = document.getElementById('adminNav');
         if (adminNav && !adminNav.hasAttribute('tabindex')) {
             adminNav.setAttribute('tabindex', '-1');
@@ -140,108 +138,8 @@ class AdminPanel {
             this.addNewTrack();
         });
 
-        // Add team member modal event listeners
-        const closeTeamMemberModal = document.getElementById('closeTeamMemberModal');
-        const cancelTeamMember = document.getElementById('cancelTeamMember');
-        const addTeamMemberForm = document.getElementById('addTeamMemberForm');
-
-        if (closeTeamMemberModal) {
-            closeTeamMemberModal.addEventListener('click', () => this.closeTeamMemberModal());
-        }
-        if (cancelTeamMember) {
-            cancelTeamMember.addEventListener('click', () => this.closeTeamMemberModal());
-        }
-        if (addTeamMemberForm) {
-            addTeamMemberForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                this.saveTeamMember();
-            });
-        }
-
-        // Artist modal + image preview are handled by admin-firebase.js
-
-        // View artist modal event listeners
-        const closeViewArtistModal = document.getElementById('closeViewArtistModal');
-        const closeViewArtistModalBtn = document.getElementById('closeViewArtistModalBtn');
-        const editFromViewArtist = document.getElementById('editFromViewArtist');
-        const viewArtistModalCancelEdit = document.getElementById('cancelEditFromViewArtist');
-        const viewArtistModal = document.getElementById('viewArtistModal');
-
-        const closeViewModalSafe = (modalEl) => {
-            if (!modalEl) return;
-            let focusSink = document.getElementById('modalFocusSink');
-            if (!focusSink) {
-                focusSink = document.createElement('div');
-                focusSink.id = 'modalFocusSink';
-                focusSink.tabIndex = -1;
-                focusSink.style.position = 'fixed';
-                focusSink.style.width = '1px';
-                focusSink.style.height = '1px';
-                focusSink.style.left = '-9999px';
-                focusSink.style.top = '0';
-                document.body.appendChild(focusSink);
-            }
-            if (modalEl.contains(document.activeElement)) {
-                document.getElementById('adminNav')?.focus?.();
-                focusSink.focus();
-            }
-            modalEl.classList.remove('active');
-            modalEl.setAttribute('aria-hidden', 'true');
-        };
-
-        if (closeViewArtistModal) {
-            closeViewArtistModal.addEventListener('click', () => {
-                closeViewModalSafe(viewArtistModal);
-            });
-        }
-        if (closeViewArtistModalBtn) {
-            closeViewArtistModalBtn.addEventListener('click', () => {
-                closeViewModalSafe(viewArtistModal);
-            });
-        }
-        if (editFromViewArtist) {
-            editFromViewArtist.addEventListener('click', () => {
-                const artistId = viewArtistModal.dataset.artistId;
-                if (!artistId) return;
-                if (this.artistModalMode === 'view') {
-                    this.enterArtistEditMode();
-                } else {
-                    this.saveArtistFromViewModal();
-                }
-            });
-        }
-
-        if (viewArtistModalCancelEdit) {
-            viewArtistModalCancelEdit.addEventListener('click', () => {
-                this.exitArtistEditMode();
-            });
-        }
-
-        // View track modal event listeners
-        const closeViewTrackModal = document.getElementById('closeViewTrackModal');
-        const closeViewTrackModalBtn = document.getElementById('closeViewTrackModalBtn');
-        const editFromViewTrack = document.getElementById('editFromViewTrack');
-        const viewTrackModal = document.getElementById('viewTrackModal');
-
-        if (closeViewTrackModal) {
-            closeViewTrackModal.addEventListener('click', () => {
-                closeViewModalSafe(viewTrackModal);
-            });
-        }
-        if (closeViewTrackModalBtn) {
-            closeViewTrackModalBtn.addEventListener('click', () => {
-                closeViewModalSafe(viewTrackModal);
-            });
-        }
-        if (editFromViewTrack) {
-            editFromViewTrack.addEventListener('click', () => {
-                const trackId = viewTrackModal.dataset.trackId;
-                closeViewModalSafe(viewTrackModal);
-                if (trackId) {
-                    this.editTrack(trackId);
-                }
-            });
-        }
+        // Inline form event listeners
+        this.setupInlineFormListeners();
 
         // Music management form handlers - audioUploadForm is handled by admin-firebase.js
         document.getElementById('cancelUpload')?.addEventListener('click', () => {
@@ -1420,11 +1318,10 @@ class AdminPanel {
     }
 
     addNewTeamMember() {
-        this.openTeamMemberModal();
+        this.openTeamForm(null);
     }
 
     editTeamMember(memberId) {
-        // Fetch team member data and populate modal
         this.loadTeamMemberForEdit(memberId);
     }
 
@@ -1438,121 +1335,13 @@ class AdminPanel {
             
             if (docSnap.exists()) {
                 const member = { id: docSnap.id, ...docSnap.data() };
-                this.openTeamMemberModal(member);
+                this.openTeamForm(member);
             } else {
                 this.showNotification('Team member not found', 'error');
             }
         } catch (error) {
             console.error('Error loading team member:', error);
             this.showNotification('Error loading team member: ' + error.message, 'error');
-        }
-    }
-
-    openTeamMemberModal(member = null) {
-        const modal = document.getElementById('addTeamMemberModal');
-        const form = document.getElementById('addTeamMemberForm');
-        const modalTitle = document.getElementById('teamModalTitle');
-        
-        if (!modal || !form) return;
-
-        // Reset form
-        form.reset();
-        document.getElementById('teamMemberImagePreview').classList.remove('is-visible');
-        document.getElementById('teamMemberImagePreview').style.backgroundImage = '';
-
-        if (member) {
-            // Edit mode
-            modalTitle.textContent = 'Edit Team Member';
-            document.getElementById('teamMemberName').value = member.name || '';
-            document.getElementById('teamMemberRole').value = member.role || '';
-            document.getElementById('teamMemberBadge').value = member.badge || '';
-            document.getElementById('teamMemberBio').value = member.bio || '';
-            document.getElementById('teamMemberSkills').value = (member.skills || []).join(', ');
-            document.getElementById('teamMemberStatus').value = member.status || 'active';
-            
-            if (member.image) {
-                const preview = document.getElementById('teamMemberImagePreview');
-                preview.classList.add('is-visible');
-                preview.style.backgroundImage = `url('${member.image}')`;
-            }
-            
-            this.editingItem = { type: 'team', id: member.id, data: member };
-        } else {
-            // Add mode
-            modalTitle.textContent = 'Add New Team Member';
-            this.editingItem = null;
-        }
-
-        modal.classList.add('active');
-        modal.setAttribute('aria-hidden', 'false');
-    }
-
-    closeTeamMemberModal() {
-        const modal = document.getElementById('addTeamMemberModal');
-        if (modal) {
-            modal.classList.remove('active');
-            modal.setAttribute('aria-hidden', 'true');
-        }
-        this.editingItem = null;
-    }
-
-    async saveTeamMember() {
-        const form = document.getElementById('addTeamMemberForm');
-        const name = document.getElementById('teamMemberName').value.trim();
-        const role = document.getElementById('teamMemberRole').value.trim();
-        const badge = document.getElementById('teamMemberBadge').value.trim();
-        const bio = document.getElementById('teamMemberBio').value.trim();
-        const skills = document.getElementById('teamMemberSkills').value.split(',').map(s => s.trim()).filter(s => s);
-        const status = document.getElementById('teamMemberStatus').value;
-        const imageInput = document.getElementById('teamMemberImage');
-
-        if (!name || !role) {
-            this.showNotification('Name and role are required', 'error');
-            return;
-        }
-
-        try {
-            let imageUrl = '';
-            
-            // Handle image upload if file selected
-            if (imageInput.files && imageInput.files[0]) {
-                imageUrl = await this.handleImageUpload(imageInput.files[0]);
-            } else if (this.editingItem && this.editingItem.data.image) {
-                imageUrl = this.editingItem.data.image;
-            }
-
-            const memberData = {
-                name,
-                role,
-                badge,
-                bio,
-                skills,
-                status,
-                image: imageUrl || 'https://via.placeholder.com/250',
-                createdAt: new Date().toISOString()
-            };
-
-            const { db } = await import('../scripts/firebase-init.js');
-            const { collection, addDoc, doc, updateDoc } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
-
-            if (this.editingItem && this.editingItem.id) {
-                // Update existing team member
-                const docRef = doc(db, 'team', this.editingItem.id);
-                delete memberData.createdAt; // Don't update creation time
-                memberData.updatedAt = new Date().toISOString();
-                await updateDoc(docRef, memberData);
-                this.showNotification('Team member updated successfully!', 'success');
-            } else {
-                // Add new team member
-                await addDoc(collection(db, 'team'), memberData);
-                this.showNotification('Team member added successfully!', 'success');
-            }
-
-            this.closeTeamMemberModal();
-            this.loadTeam();
-        } catch (error) {
-            console.error('Error saving team member:', error);
-            this.showNotification('Error saving team member: ' + error.message, 'error');
         }
     }
 
@@ -1578,20 +1367,6 @@ class AdminPanel {
         }
     }
 
-    async editArtist(artistId) {
-        // Always use the View Artist modal for editing (single-modal UX)
-        try {
-            await this.viewArtist(artistId);
-            // Wait a tick to ensure the modal has rendered its DOM content
-            setTimeout(() => {
-                this.enterArtistEditMode();
-            }, 0);
-        } catch (error) {
-            console.error('Error opening artist editor:', error);
-            this.showNotification('Failed to open artist editor: ' + error.message, 'error');
-        }
-    }
-
     async handleImageUpload(file) {
         // For demo purposes, convert to data URL
         // In production, upload to Firebase Storage
@@ -1601,215 +1376,6 @@ class AdminPanel {
             reader.onerror = reject;
             reader.readAsDataURL(file);
         });
-    }
-
-    async viewArtist(artistId) {
-        try {
-            const artists = await window.fetchArtists();
-            const tracks = await window.fetchTracks();
-            const artist = (artists || []).find(a => a.id === artistId);
-            if (!artist) {
-                this.showNotification('Artist not found', 'error');
-                return;
-            }
-
-            const artistTracks = (tracks || []).filter(t => String(t.artist || '') === String(artistId));
-            const totalStreams = artistTracks.reduce((sum, t) => sum + (t.streams || 0), 0);
-
-            // Populate artist detail modal
-            const modal = document.getElementById('viewArtistModal');
-            const image = document.getElementById('viewArtistImage');
-            const name = document.getElementById('viewArtistName');
-            const genre = document.getElementById('viewArtistGenre');
-            const tracksCount = document.getElementById('viewArtistTracks');
-            const streams = document.getElementById('viewArtistStreams');
-            const status = document.getElementById('viewArtistStatus');
-            const bio = document.getElementById('viewArtistBio');
-            const tracksList = document.getElementById('viewArtistTracksList');
-
-            image.src = artist.image || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="150" height="150" viewBox="0 0 150 150"%3E%3Crect width="150" height="150" fill="%23667eea"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="Arial" font-size="60" fill="white"%3E%3F%3C/text%3E%3C/svg%3E';
-            image.alt = artist.name || 'Artist';
-            name.textContent = artist.name || 'Unnamed';
-            genre.textContent = artist.genre || 'No genre';
-            tracksCount.textContent = artistTracks.length;
-            streams.textContent = totalStreams.toLocaleString();
-            status.textContent = artist.status || 'active';
-            bio.textContent = artist.bio || 'No bio available';
-
-            // Populate tracks list
-            if (artistTracks.length > 0) {
-                const maxItems = 4;
-                const visibleTracks = artistTracks.slice(0, maxItems);
-                const remaining = Math.max(artistTracks.length - visibleTracks.length, 0);
-
-                tracksList.innerHTML = visibleTracks.map(track => `
-                    <div class="track-list-item">
-                        <div class="track-list-item-image" style="${track.artwork ? `background-image: url('${track.artwork}')` : 'background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%)'}"></div>
-                        <div class="track-list-item-info">
-                            <div class="track-list-item-title">${track.title || 'Untitled'}</div>
-                            <div class="track-list-item-meta">${track.genre || 'No genre'} • ${track.duration || '0:00'}</div>
-                        </div>
-                    </div>
-                `).join('') + (remaining > 0 ? `<div class="track-list-item-meta" style="padding-top: 0.5rem;">And ${remaining} more...</div>` : '');
-            } else {
-                tracksList.innerHTML = '<p style="color: var(--text-secondary);">No tracks yet</p>';
-            }
-
-            // Show modal
-            modal.classList.add('active');
-            modal.setAttribute('aria-hidden', 'false');
-
-            // Store artist ID for edit button
-            modal.dataset.artistId = artistId;
-
-            // Ensure view mode each time we open
-            this.artistModalSnapshot = {
-                name: artist.name || '',
-                genre: artist.genre || '',
-                bio: artist.bio || '',
-                status: artist.status || 'active'
-            };
-            this.artistModalMode = 'view';
-            this.applyArtistModalMode();
-        } catch (error) {
-            console.error('Error viewing artist:', error);
-            this.showNotification('Error loading artist: ' + error.message, 'error');
-        }
-    }
-
-    applyArtistModalMode() {
-        const modal = document.getElementById('viewArtistModal');
-        if (!modal) return;
-
-        const editBtn = document.getElementById('editFromViewArtist');
-        const cancelBtn = document.getElementById('cancelEditFromViewArtist');
-
-        const isEdit = this.artistModalMode === 'edit';
-        modal.classList.toggle('is-editing', isEdit);
-
-        if (editBtn) {
-            editBtn.innerHTML = isEdit ? '<i class="fas fa-save"></i> Save Changes' : 'Edit Artist';
-        }
-        if (cancelBtn) {
-            cancelBtn.style.display = isEdit ? '' : 'none';
-        }
-    }
-
-    enterArtistEditMode() {
-        if (this.artistModalMode === 'edit') return;
-
-        const modal = document.getElementById('viewArtistModal');
-        if (!modal) return;
-
-        const nameEl = document.getElementById('viewArtistName');
-        const genreEl = document.getElementById('viewArtistGenre');
-        const bioEl = document.getElementById('viewArtistBio');
-        const statusEl = document.getElementById('viewArtistStatus');
-
-        const snap = this.artistModalSnapshot || {
-            name: nameEl?.textContent || '',
-            genre: genreEl?.textContent || '',
-            bio: bioEl?.textContent || '',
-            status: statusEl?.textContent || 'active'
-        };
-        this.artistModalSnapshot = snap;
-
-        if (nameEl) {
-            nameEl.innerHTML = `<input id="viewArtistNameInput" type="text" value="${this.escapeHtml(snap.name)}" class="modal-inline-input" />`;
-        }
-        if (genreEl) {
-            genreEl.innerHTML = `<input id="viewArtistGenreInput" type="text" value="${this.escapeHtml(snap.genre)}" class="modal-inline-input" placeholder="Genre" />`;
-        }
-        if (bioEl) {
-            bioEl.innerHTML = `<textarea id="viewArtistBioInput" class="modal-inline-textarea" rows="4" placeholder="Bio">${this.escapeHtml(snap.bio)}</textarea>`;
-        }
-        if (statusEl) {
-            const cur = String(snap.status || 'active');
-            statusEl.innerHTML = `
-                <select id="viewArtistStatusInput" class="modal-inline-select">
-                    <option value="active" ${cur === 'active' ? 'selected' : ''}>active</option>
-                    <option value="inactive" ${cur === 'inactive' ? 'selected' : ''}>inactive</option>
-                </select>
-            `;
-        }
-
-        this.artistModalMode = 'edit';
-        this.applyArtistModalMode();
-    }
-
-    exitArtistEditMode() {
-        if (this.artistModalMode !== 'edit') return;
-
-        const snap = this.artistModalSnapshot;
-        if (!snap) {
-            this.artistModalMode = 'view';
-            this.applyArtistModalMode();
-            return;
-        }
-
-        const nameEl = document.getElementById('viewArtistName');
-        const genreEl = document.getElementById('viewArtistGenre');
-        const bioEl = document.getElementById('viewArtistBio');
-        const statusEl = document.getElementById('viewArtistStatus');
-
-        if (nameEl) nameEl.textContent = snap.name;
-        if (genreEl) genreEl.textContent = snap.genre;
-        if (bioEl) bioEl.textContent = snap.bio || 'No bio available';
-        if (statusEl) statusEl.textContent = snap.status;
-
-        this.artistModalMode = 'view';
-        this.applyArtistModalMode();
-    }
-
-    async saveArtistFromViewModal() {
-        const modal = document.getElementById('viewArtistModal');
-        const artistId = modal?.dataset?.artistId;
-        if (!artistId) return;
-
-        const name = document.getElementById('viewArtistNameInput')?.value?.trim() || '';
-        const genre = document.getElementById('viewArtistGenreInput')?.value?.trim() || '';
-        const bio = document.getElementById('viewArtistBioInput')?.value?.trim() || '';
-        const status = document.getElementById('viewArtistStatusInput')?.value || 'active';
-
-        if (!name) {
-            this.showNotification('Artist name is required', 'error');
-            return;
-        }
-
-        try {
-            if (typeof window.updateArtistInFirestore !== 'function') {
-                throw new Error('updateArtistInFirestore is not available');
-            }
-
-            await window.updateArtistInFirestore(artistId, {
-                name,
-                genre,
-                bio,
-                status
-            });
-
-            this.artistModalSnapshot = { name, genre, bio, status };
-            this.showNotification('Artist updated successfully', 'success');
-
-            if (typeof window.renderArtistsTable === 'function') {
-                await window.renderArtistsTable();
-            }
-            await this.loadArtists();
-            await this.viewArtist(artistId);
-        } catch (error) {
-            console.error('Error saving artist:', error);
-            this.showNotification('Failed to save artist: ' + error.message, 'error');
-        }
-    }
-
-    escapeHtml(input) {
-        const str = String(input ?? '');
-        return str
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;');
     }
 
     async deleteArtist(artistId) {
@@ -1853,14 +1419,14 @@ class AdminPanel {
                 this.showNotification('Track not found', 'error');
                 return;
             }
-            this.openTrackEditModal(track);
+            this.openTrackEditForm(track);
         } catch (error) {
             console.error('Error fetching track:', error);
             this.showNotification('Error loading track: ' + error.message, 'error');
         }
     }
 
-    openTrackEditModal(track) {
+    openTrackEditForm(track) {
         // Navigate to music-management section and populate form
         this.showSection('music-management');
         
@@ -1899,73 +1465,8 @@ class AdminPanel {
     }
 
     async viewTrack(trackId) {
-        try {
-            const tracks = await window.fetchTracks();
-            const track = tracks.find(t => t.id === trackId);
-            if (!track) {
-                this.showNotification('Track not found', 'error');
-                return;
-            }
-
-            const artists = await window.fetchArtists();
-            const artist = artists.find(a => a.id === track.artist);
-
-            // Populate track detail modal
-            const modal = document.getElementById('viewTrackModal');
-            const artwork = document.getElementById('viewTrackArtwork');
-            const title = document.getElementById('viewTrackTitle');
-            const artistName = document.getElementById('viewTrackArtist');
-            const genre = document.getElementById('viewTrackGenre');
-            const streams = document.getElementById('viewTrackStreams');
-            const duration = document.getElementById('viewTrackDuration');
-            const status = document.getElementById('viewTrackStatus');
-            const releaseDate = document.getElementById('viewTrackReleaseDate');
-            const description = document.getElementById('viewTrackDescription');
-            const platformLinks = document.getElementById('viewTrackPlatformLinks');
-
-            artwork.src = track.artwork || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="180" height="180" viewBox="0 0 180 180"%3E%3Crect width="180" height="180" fill="%23f093fb"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="Arial" font-size="60" fill="white"%3E%26%239835%3B%3C/text%3E%3C/svg%3E';
-            artwork.alt = track.title || 'Track';
-            title.textContent = track.title || 'Untitled';
-            artistName.textContent = artist?.name || 'Unknown Artist';
-            genre.textContent = track.genre || 'No genre';
-            streams.textContent = (track.streams || 0).toLocaleString();
-            duration.textContent = track.duration || '0:00';
-            status.textContent = track.status || 'published';
-            releaseDate.textContent = track.releaseDate || 'Not set';
-            description.textContent = track.description || 'No description available';
-
-            // Populate platform links
-            const links = track.platformLinks || {};
-            const platforms = [
-                { key: 'spotify', name: 'Spotify', icon: 'fa-spotify' },
-                { key: 'appleMusic', name: 'Apple Music', icon: 'fa-apple' },
-                { key: 'youtube', name: 'YouTube', icon: 'fa-youtube' },
-                { key: 'soundcloud', name: 'SoundCloud', icon: 'fa-soundcloud' },
-                { key: 'tidal', name: 'Tidal', icon: 'fa-music' },
-                { key: 'amazon', name: 'Amazon Music', icon: 'fa-amazon' },
-            ];
-
-            const validLinks = platforms
-                .filter(p => links[p.key])
-                .map(p => `
-                    <a href="${links[p.key]}" target="_blank" rel="noopener noreferrer" class="platform-link">
-                        <i class="fab ${p.icon}"></i>
-                        ${p.name}
-                    </a>
-                `).join('');
-
-            platformLinks.innerHTML = validLinks || '<p style="color: var(--text-secondary);">No platform links available</p>';
-
-            // Show modal
-            modal.classList.add('active');
-            modal.setAttribute('aria-hidden', 'false');
-
-            // Store track ID for edit button
-            modal.dataset.trackId = trackId;
-        } catch (error) {
-            console.error('Error fetching track:', error);
-            this.showNotification('Error loading track: ' + error.message, 'error');
-        }
+        // View redirects to edit (same as edit track pattern)
+        await this.editTrack(trackId);
     }
 
     async deleteTrack(trackId) {
@@ -1994,11 +1495,6 @@ class AdminPanel {
         } else {
             console.log(message);
         }
-    }
-
-    addNewArtist() {
-        // Add artist modal is managed by admin-firebase.js
-        document.getElementById('addArtistBtn')?.click();
     }
 
     addNewTrack() {
@@ -2704,16 +2200,6 @@ class AdminPanel {
         alert(msg);
     }
 
-    getNotificationIcon(type) {
-        const icons = {
-            success: 'check-circle',
-            error: 'exclamation-circle',
-            warning: 'exclamation-triangle',
-            info: 'info-circle'
-        };
-        return icons[type] || 'info-circle';
-    }
-
     showError(message) {
         const errorDiv = document.createElement('div');
         errorDiv.className = 'error-message';
@@ -2769,6 +2255,312 @@ class AdminPanel {
             sessionStorage.removeItem('adminToken');
             window.location.href = 'index.html';
         }
+    }
+
+    // --- Inline Form Listeners & Handlers ---
+
+    setupInlineFormListeners() {
+        // Add Artist button
+        document.getElementById('addArtistBtn')?.addEventListener('click', () => {
+            this.openArtistForm(null);
+        });
+
+        // Close / Cancel artist form
+        document.getElementById('closeArtistForm')?.addEventListener('click', () => {
+            this.closeArtistForm();
+        });
+        document.getElementById('cancelArtistForm')?.addEventListener('click', () => {
+            this.closeArtistForm();
+        });
+
+        // Artist form submit
+        document.getElementById('artistForm')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.saveArtistForm();
+        });
+
+        // Artist image upload
+        document.getElementById('uploadArtistImageBtn')?.addEventListener('click', () => {
+            document.getElementById('artistImageInput')?.click();
+        });
+        document.getElementById('artistImageInput')?.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const preview = document.getElementById('artistImagePreview');
+                if (preview) {
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                        preview.style.backgroundImage = `url('${ev.target.result}')`;
+                        preview.classList.add('has-image');
+                        preview.querySelector('i')?.remove();
+                        preview.querySelector('span')?.remove();
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
+        });
+
+        // Add Team Member button
+        document.getElementById('addTeamMemberBtn')?.addEventListener('click', () => {
+            this.openTeamForm(null);
+        });
+
+        // Close / Cancel team form
+        document.getElementById('closeTeamForm')?.addEventListener('click', () => {
+            this.closeTeamForm();
+        });
+        document.getElementById('cancelTeamForm')?.addEventListener('click', () => {
+            this.closeTeamForm();
+        });
+
+        // Team form submit
+        document.getElementById('teamForm')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.saveTeamForm();
+        });
+
+        // Team photo upload
+        document.getElementById('uploadTeamPhotoBtn')?.addEventListener('click', () => {
+            document.getElementById('teamMemberPhotoInput')?.click();
+        });
+        document.getElementById('teamMemberPhotoInput')?.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const preview = document.getElementById('teamMemberPhotoPreview');
+                if (preview) {
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                        preview.style.backgroundImage = `url('${ev.target.result}')`;
+                        preview.classList.add('has-image');
+                        preview.querySelector('i')?.remove();
+                        preview.querySelector('span')?.remove();
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
+        });
+    }
+
+    openArtistForm(artist = null) {
+        const formContainer = document.getElementById('artistManagementForm');
+        const formTitle = document.getElementById('artistFormTitle');
+        const form = document.getElementById('artistForm');
+        if (!formContainer || !form) return;
+
+        // Reset form
+        form.reset();
+        const preview = document.getElementById('artistImagePreview');
+        if (preview) {
+            preview.style.backgroundImage = '';
+            preview.classList.remove('has-image');
+            if (!preview.querySelector('i')) {
+                preview.innerHTML = '<i class="fas fa-user"></i><span>No photo selected</span>';
+            }
+        }
+
+        if (artist) {
+            formTitle.textContent = 'Edit Artist';
+            document.getElementById('artistName').value = artist.name || '';
+            document.getElementById('artistGenre').value = artist.genre || '';
+            document.getElementById('artistStatus').value = artist.status || 'active';
+            document.getElementById('artistBio').value = artist.bio || '';
+            if (artist.image) {
+                const imgPreview = document.getElementById('artistImagePreview');
+                if (imgPreview) {
+                    imgPreview.style.backgroundImage = `url('${artist.image}')`;
+                    imgPreview.classList.add('has-image');
+                    imgPreview.querySelector('i')?.remove();
+                    imgPreview.querySelector('span')?.remove();
+                }
+            }
+            this.editingItem = { type: 'artist', id: artist.id, data: artist };
+        } else {
+            formTitle.textContent = 'Add New Artist';
+            this.editingItem = null;
+        }
+
+        formContainer.style.display = '';
+        formContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    closeArtistForm() {
+        const formContainer = document.getElementById('artistManagementForm');
+        const form = document.getElementById('artistForm');
+        if (formContainer) formContainer.style.display = 'none';
+        if (form) form.reset();
+        this.editingItem = null;
+    }
+
+    async saveArtistForm() {
+        const name = document.getElementById('artistName')?.value?.trim();
+        const genre = document.getElementById('artistGenre')?.value?.trim();
+        const status = document.getElementById('artistStatus')?.value || 'active';
+        const bio = document.getElementById('artistBio')?.value?.trim();
+        const imageInput = document.getElementById('artistImageInput');
+
+        if (!name) {
+            this.showNotification('Artist name is required', 'error');
+            return;
+        }
+
+        try {
+            let imageUrl = '';
+            if (imageInput?.files?.[0]) {
+                imageUrl = await this.handleImageUpload(imageInput.files[0]);
+            } else if (this.editingItem?.data?.image) {
+                imageUrl = this.editingItem.data.image;
+            }
+
+            const artistData = { name, genre, status, bio, image: imageUrl };
+
+            if (this.editingItem?.id) {
+                if (typeof window.updateArtistInFirestore === 'function') {
+                    await window.updateArtistInFirestore(this.editingItem.id, artistData);
+                } else {
+                    const { db } = await import('../scripts/firebase-init.js');
+                    const { doc, updateDoc } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
+                    await updateDoc(doc(db, 'artists', this.editingItem.id), artistData);
+                }
+                this.showNotification('Artist updated successfully!', 'success');
+            } else {
+                if (typeof window.saveArtistToFirestore === 'function') {
+                    await window.saveArtistToFirestore(artistData);
+                } else {
+                    const { db } = await import('../scripts/firebase-init.js');
+                    const { collection, addDoc } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
+                    artistData.createdAt = new Date().toISOString();
+                    await addDoc(collection(db, 'artists'), artistData);
+                }
+                this.showNotification('Artist added successfully!', 'success');
+            }
+
+            this.closeArtistForm();
+            this.loadArtists();
+        } catch (error) {
+            console.error('Error saving artist:', error);
+            this.showNotification('Failed to save artist: ' + error.message, 'error');
+        }
+    }
+
+    openTeamForm(member = null) {
+        const formContainer = document.getElementById('teamManagementForm');
+        const formTitle = document.getElementById('teamFormTitle');
+        const form = document.getElementById('teamForm');
+        if (!formContainer || !form) return;
+
+        // Reset form
+        form.reset();
+        const preview = document.getElementById('teamMemberPhotoPreview');
+        if (preview) {
+            preview.style.backgroundImage = '';
+            preview.classList.remove('has-image');
+            if (!preview.querySelector('i')) {
+                preview.innerHTML = '<i class="fas fa-user"></i><span>No photo selected</span>';
+            }
+        }
+
+        if (member) {
+            formTitle.textContent = 'Edit Team Member';
+            document.getElementById('teamMemberNameInput').value = member.name || '';
+            document.getElementById('teamMemberRoleInput').value = member.role || '';
+            document.getElementById('teamMemberBadgeInput').value = member.badge || '';
+            document.getElementById('teamMemberStatusInput').value = member.status || 'active';
+            document.getElementById('teamMemberSkillsInput').value = (member.skills || []).join(', ');
+            document.getElementById('teamMemberBioInput').value = member.bio || '';
+            if (member.image) {
+                const imgPreview = document.getElementById('teamMemberPhotoPreview');
+                if (imgPreview) {
+                    imgPreview.style.backgroundImage = `url('${member.image}')`;
+                    imgPreview.classList.add('has-image');
+                    imgPreview.querySelector('i')?.remove();
+                    imgPreview.querySelector('span')?.remove();
+                }
+            }
+            this.editingItem = { type: 'team', id: member.id, data: member };
+        } else {
+            formTitle.textContent = 'Add Team Member';
+            this.editingItem = null;
+        }
+
+        formContainer.style.display = '';
+        formContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    closeTeamForm() {
+        const formContainer = document.getElementById('teamManagementForm');
+        const form = document.getElementById('teamForm');
+        if (formContainer) formContainer.style.display = 'none';
+        if (form) form.reset();
+        this.editingItem = null;
+    }
+
+    async saveTeamForm() {
+        const name = document.getElementById('teamMemberNameInput')?.value?.trim();
+        const role = document.getElementById('teamMemberRoleInput')?.value?.trim();
+        const badge = document.getElementById('teamMemberBadgeInput')?.value?.trim();
+        const status = document.getElementById('teamMemberStatusInput')?.value || 'active';
+        const skillsRaw = document.getElementById('teamMemberSkillsInput')?.value?.trim() || '';
+        const skills = skillsRaw ? skillsRaw.split(',').map(s => s.trim()).filter(Boolean) : [];
+        const bio = document.getElementById('teamMemberBioInput')?.value?.trim();
+        const imageInput = document.getElementById('teamMemberPhotoInput');
+
+        if (!name || !role) {
+            this.showNotification('Name and role are required', 'error');
+            return;
+        }
+
+        try {
+            let imageUrl = '';
+            if (imageInput?.files?.[0]) {
+                imageUrl = await this.handleImageUpload(imageInput.files[0]);
+            } else if (this.editingItem?.data?.image) {
+                imageUrl = this.editingItem.data.image;
+            }
+
+            const memberData = { name, role, badge, status, skills, bio, image: imageUrl };
+
+            if (this.editingItem?.id) {
+                const { db } = await import('../scripts/firebase-init.js');
+                const { doc, updateDoc } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
+                await updateDoc(doc(db, 'team', this.editingItem.id), memberData);
+                this.showNotification('Team member updated successfully!', 'success');
+            } else {
+                const { db } = await import('../scripts/firebase-init.js');
+                const { collection, addDoc } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
+                memberData.createdAt = new Date().toISOString();
+                await addDoc(collection(db, 'team'), memberData);
+                this.showNotification('Team member added successfully!', 'success');
+            }
+
+            this.loadTeam();
+            this.closeTeamForm();
+        } catch (error) {
+            console.error('Error saving team member:', error);
+            this.showNotification('Failed to save team member: ' + error.message, 'error');
+        }
+    }
+    addNewArtist() {
+        this.openArtistForm(null);
+    }
+
+    async editArtist(artistId) {
+        try {
+            const artists = await window.fetchArtists?.() || [];
+            const artist = artists.find(a => a.id === artistId);
+            if (artist) {
+                this.openArtistForm(artist);
+            } else {
+                this.showNotification('Artist not found', 'error');
+            }
+        } catch (error) {
+            console.error('Error loading artist:', error);
+            this.showNotification('Error loading artist: ' + error.message, 'error');
+        }
+    }
+
+    async viewArtist(artistId) {
+        // View redirects to edit form (same as edit track pattern)
+        await this.editArtist(artistId);
     }
 }
 
