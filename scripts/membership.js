@@ -1,5 +1,6 @@
 import { auth } from './firebase-init.js'
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js'
+import { initSettings, getConfig } from './config-loader.js'
 
 class MembershipManager {
     constructor() {
@@ -8,7 +9,10 @@ class MembershipManager {
         this.init();
     }
 
-    init() {
+    async init() {
+        // Initialize settings first to ensure config is loaded
+        await initSettings();
+        
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 this.currentUser = user;
@@ -99,6 +103,9 @@ class MembershipManager {
     }
 
     getPlanConfig(plan) {
+        const config = getConfig();
+        const planData = config.plans?.[plan];
+        
         const configs = {
             free: {
                 name: 'Free Plan',
@@ -113,7 +120,7 @@ class MembershipManager {
             },
             weekly: {
                 name: 'Weekly Pass',
-                description: '10 hours of studio time per week',
+                description: planData?.description || '10 hours of studio time per week',
                 icon: 'fas fa-calendar-week',
                 features: [
                     '10 hours studio time',
@@ -124,7 +131,7 @@ class MembershipManager {
             },
             monthly: {
                 name: 'Monthly Pro',
-                description: '50 hours of studio time per month',
+                description: planData?.description || '50 hours of studio time per month',
                 icon: 'fas fa-crown',
                 features: [
                     '50 hours studio time',
@@ -137,7 +144,7 @@ class MembershipManager {
             },
             yearly: {
                 name: 'Yearly Elite',
-                description: '600 hours of studio time per year',
+                description: planData?.description || '600 hours of studio time per year',
                 icon: 'fas fa-gem',
                 features: [
                     '600 hours studio time',
@@ -229,19 +236,20 @@ class MembershipManager {
     }
 
     updatePlanPrices() {
-        if (window.studioConfig && window.studioConfig.plans) {
+        const config = getConfig();
+        if (config && config.plans) {
             const weeklyPrice = document.getElementById('weeklyPrice');
             const monthlyPrice = document.getElementById('monthlyPrice');
             const yearlyPrice = document.getElementById('yearlyPrice');
 
-            if (weeklyPrice && window.studioConfig.plans.weekly) {
-                weeklyPrice.textContent = `UGX ${window.studioConfig.plans.weekly.price.toLocaleString()}`;
+            if (weeklyPrice && config.plans.weekly) {
+                weeklyPrice.textContent = `UGX ${config.plans.weekly.price.toLocaleString()}`;
             }
-            if (monthlyPrice && window.studioConfig.plans.monthly) {
-                monthlyPrice.textContent = `UGX ${window.studioConfig.plans.monthly.price.toLocaleString()}`;
+            if (monthlyPrice && config.plans.monthly) {
+                monthlyPrice.textContent = `UGX ${config.plans.monthly.price.toLocaleString()}`;
             }
-            if (yearlyPrice && window.studioConfig.plans.yearly) {
-                yearlyPrice.textContent = `UGX ${window.studioConfig.plans.yearly.price.toLocaleString()}`;
+            if (yearlyPrice && config.plans.yearly) {
+                yearlyPrice.textContent = `UGX ${config.plans.yearly.price.toLocaleString()}`;
             }
         }
     }
@@ -370,7 +378,9 @@ class MembershipManager {
 
         // Listen for config updates
         window.addEventListener('settingsUpdated', (event) => {
+            const config = event.detail;
             this.updatePlanPrices();
+            this.updateUI(); // Re-render plan descriptions when config changes
         });
     }
 

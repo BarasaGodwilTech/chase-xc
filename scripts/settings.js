@@ -1,5 +1,6 @@
 import { auth } from './firebase-init.js'
 import { updateProfile, updatePassword, reauthenticateWithCredential, EmailAuthProvider, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js'
+import { initSettings, getConfig } from './config-loader.js'
 
 class SettingsManager {
     constructor() {
@@ -8,7 +9,10 @@ class SettingsManager {
         this.init();
     }
 
-    init() {
+    async init() {
+        // Initialize settings first to ensure config is loaded
+        await initSettings();
+        
         // Ensure modal is hidden on page load
         const deleteAccountModal = document.getElementById('deleteAccountModal');
         if (deleteAccountModal) {

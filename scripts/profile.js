@@ -1,5 +1,6 @@
 import { auth } from './firebase-init.js'
 import { updateProfile, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js'
+import { initSettings, getConfig } from './config-loader.js'
 
 class UserProfile {
     constructor() {
@@ -8,7 +9,10 @@ class UserProfile {
         this.init();
     }
 
-    init() {
+    async init() {
+        // Initialize settings first to ensure config is loaded
+        await initSettings();
+        
         // Check authentication
         onAuthStateChanged(auth, (user) => {
             if (user) {
