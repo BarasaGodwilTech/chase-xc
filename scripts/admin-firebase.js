@@ -801,26 +801,13 @@ function initAdminFirebase() {
     const updatePreview = () => {
       const raw = String(audioUrlInput.value || '').trim()
       const url = raw && !/^https?:\/\//i.test(raw) ? `https://${raw}` : raw
-      const previewWrap = document.getElementById('audioUrlPreview')
-      const previewLink = document.getElementById('audioUrlPreviewLink')
-      const status = document.getElementById('audioUrlStatus')
       const inline = document.getElementById('audioUrlInlinePreview')
 
-      if (!previewWrap || !previewLink || !status || !inline) return
+      if (!inline) return
 
-      // Never navigate out of admin when clicking the preview link.
-      if (!previewLink.dataset.noNavigateBound) {
-        previewLink.dataset.noNavigateBound = 'true'
-        previewLink.addEventListener('click', (e) => {
-          e.preventDefault()
-        })
-        previewLink.removeAttribute('target')
-        previewLink.removeAttribute('rel')
-      }
+      inline.innerHTML = ''
 
       if (!url) {
-        previewWrap.style.display = 'none'
-        inline.innerHTML = ''
         return
       }
 
@@ -829,21 +816,12 @@ function initAdminFirebase() {
       try {
         parsed = new URL(url)
       } catch {
-        previewWrap.style.display = 'block'
-        previewLink.textContent = url
-        previewLink.href = '#'
-        status.textContent = 'Invalid URL format'
-        status.className = 'link-preview-status invalid'
-        inline.innerHTML = ''
+        const note = document.createElement('div')
+        note.className = 'audio-inline-note'
+        note.textContent = 'Invalid link format. Please paste a full URL.'
+        inline.appendChild(note)
         return
       }
-
-      previewWrap.style.display = 'block'
-      previewLink.href = url
-      previewLink.textContent = url.length > 60 ? url.slice(0, 57) + '...' : url
-      status.textContent = 'Preview generated below. If it plays here, it will play on the website.'
-      status.className = 'link-preview-status valid'
-      inline.innerHTML = ''
 
       const host = parsed.hostname.replace(/^www\./, '')
       const path = parsed.pathname || ''
@@ -863,8 +841,13 @@ function initAdminFirebase() {
         return
       }
 
-      // YouTube
-      if (host === 'youtube.com' || host === 'm.youtube.com' || host === 'youtu.be') {
+      // YouTube (including YouTube Music)
+      if (
+        host === 'youtube.com' ||
+        host === 'm.youtube.com' ||
+        host === 'music.youtube.com' ||
+        host === 'youtu.be'
+      ) {
         let videoId = ''
         if (host === 'youtu.be') {
           videoId = path.split('/').filter(Boolean)[0] || ''
@@ -908,9 +891,22 @@ function initAdminFirebase() {
         }
       }
 
+      // Apple Music (best-effort embed)
+      if (host === 'music.apple.com' || host === 'itunes.apple.com') {
+        const embedUrl = url.replace(/^https:\/\/music\.apple\.com\//i, 'https://embed.music.apple.com/')
+        const iframe = document.createElement('iframe')
+        iframe.src = embedUrl
+        iframe.allow = 'autoplay *; encrypted-media *; fullscreen *; clipboard-write'
+        inline.appendChild(iframe)
+        window.__lastTestedAudioUrl = url
+        return
+      }
+
       // Fallback
-      status.textContent = 'Link looks valid, but this platform cannot be previewed inline. The website will open it as a link.'
-      status.className = 'link-preview-status valid'
+      const note = document.createElement('div')
+      note.className = 'audio-inline-note'
+      note.textContent = 'This link cannot be tested inline in admin. If it plays on the website, it will still work there.'
+      inline.appendChild(note)
     }
 
     audioUrlInput.addEventListener('input', updatePreview)

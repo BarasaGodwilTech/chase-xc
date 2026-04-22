@@ -387,12 +387,12 @@
             <div class="upload-methods">
                 <div class="method-tabs">
                     <button class="method-tab active" data-method="upload" type="button">
-                        <i class="fas fa-upload"></i>
-                        Upload Audio File
+                        <i class="fas fa-link"></i>
+                        Audio Link
                     </button>
                     <button class="method-tab" data-method="spotify" type="button">
                         <i class="fab fa-spotify"></i>
-                        Import from Spotify
+                        Spotify Import
                     </button>
                     <button class="method-tab" data-method="external" type="button">
                         <i class="fas fa-link"></i>
@@ -408,16 +408,7 @@
                             <div class="form-group">
                                 <label for="audioUrl">Audio Link (URL) *</label>
                                 <input type="url" id="audioUrl" name="audioUrl" required placeholder="https://... (direct audio link or platform link)">
-                                <div id="audioUrlPreview" class="link-preview" style="display:none;">
-                                    <div class="link-preview-header">
-                                        <i class="fas fa-link"></i> <span>Link Preview</span>
-                                    </div>
-                                    <div class="link-preview-content">
-                                        <a id="audioUrlPreviewLink" href="#" target="_blank" rel="noopener noreferrer"></a>
-                                    </div>
-                                    <div id="audioUrlStatus" class="link-preview-status"></div>
-                                    <div id="audioUrlInlinePreview" class="audio-inline-preview"></div>
-                                </div>
+                                <div id="audioUrlInlinePreview" class="audio-inline-preview"></div>
                             </div>
 
                             <div class="form-row">

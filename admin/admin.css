@@ -2340,7 +2340,7 @@ body.admin-page {
 }
 
 .audio-inline-preview {
-    margin-top: 0.75rem;
+    margin-top: 1.5rem;
 }
 
 .audio-inline-preview audio {
@@ -2353,6 +2353,15 @@ body.admin-page {
     border: 0;
     border-radius: 12px;
     background: rgba(0, 0, 0, 0.2);
+}
+
+.audio-inline-note {
+    color: rgba(226, 232, 240, 0.85);
+    font-size: 0.9rem;
+    padding: 10px 12px;
+    border: 1px dashed rgba(148, 163, 184, 0.35);
+    border-radius: 10px;
+    background: rgba(15, 23, 42, 0.45);
 }
 
 .btn-sm {
