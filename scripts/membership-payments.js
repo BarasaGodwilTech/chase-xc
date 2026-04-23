@@ -589,6 +589,11 @@ let membershipPaymentManager;
 
 function initializeMembershipPaymentManager() {
     console.log('🔍 Looking for membership elements...');
+
+    if (window.__membershipModalController === 'main') {
+        console.log('🛑 Skipping Membership Payment Manager: modal is controlled by main.js');
+        return;
+    }
     
     const membershipSection = document.getElementById('membership');
     const membershipModal = document.getElementById('membershipModal');

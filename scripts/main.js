@@ -537,6 +537,8 @@ function initMembership() {
 
     if (!membershipModal || planSelectButtons.length === 0 || !membershipForm) return
 
+    window.__membershipModalController = 'main'
+
     const selectedPlanName = document.getElementById('selectedPlanName')
     const selectedPlanPrice = document.getElementById('selectedPlanPrice')
     const selectedPlanDescription = document.getElementById('selectedPlanDescription')
