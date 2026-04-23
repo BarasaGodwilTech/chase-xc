@@ -387,6 +387,11 @@ class MembershipManager {
         selectPlanBtns.forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const plan = e.currentTarget.dataset.plan;
+                const unifiedModal = document.getElementById('membershipModal')
+                if (unifiedModal && typeof window.openMembershipModal === 'function') {
+                    window.openMembershipModal(plan)
+                    return
+                }
                 this.openUpgradeModal(plan);
             });
         });

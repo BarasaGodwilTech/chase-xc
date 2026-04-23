@@ -549,6 +549,31 @@ function initMembership() {
     const transactionInput = document.getElementById('transactionInput')
     const transactionId = document.getElementById('transactionId')
 
+    function prefillContactFields() {
+        const fullNameEl = document.getElementById('fullName')
+        const emailEl = document.getElementById('email')
+        const phoneEl = document.getElementById('phone')
+
+        const user = window.userAuth?.getCurrentUser?.() || null
+        if (!user) return
+
+        let cachedProfile = null
+        try {
+            const raw = localStorage.getItem(`userProfile_${user.uid}`)
+            cachedProfile = raw ? JSON.parse(raw) : null
+        } catch (_) {
+            cachedProfile = null
+        }
+
+        const displayName = cachedProfile?.displayName || user.displayName || ''
+        const email = cachedProfile?.email || user.email || ''
+        const phone = cachedProfile?.phone || user.phoneNumber || ''
+
+        if (fullNameEl && !fullNameEl.value.trim() && displayName) fullNameEl.value = displayName
+        if (emailEl && !emailEl.value.trim() && email) emailEl.value = email
+        if (phoneEl && !phoneEl.value.trim() && phone) phoneEl.value = phone
+    }
+
     // Load plans from Firebase config
     const plans = {
         weekly: {
@@ -642,16 +667,16 @@ function initMembership() {
         updateHomepagePlanCards(window.studioConfig)
     }
 
-    function openMembershipModal(planType) {
+    function renderSelectedPlan(planType, { openModal } = { openModal: false }) {
         // Always use latest config if available, otherwise fall back to local plans
         let plan
         if (window.studioConfig && window.studioConfig.plans && window.studioConfig.plans[planType]) {
             const configPlan = window.studioConfig.plans[planType]
             plan = {
-                name: plans[planType].name,
+                name: plans[planType]?.name || plans.monthly.name,
                 price: `UGX ${configPlan.price.toLocaleString()}`,
-                period: plans[planType].period,
-                description: configPlan.description || plans[planType].description
+                period: plans[planType]?.period || plans.monthly.period,
+                description: configPlan.description || plans[planType]?.description || plans.monthly.description
             }
         } else {
             plan = plans[planType] || plans.monthly
@@ -662,8 +687,29 @@ function initMembership() {
         if (selectedPlanDescription) selectedPlanDescription.textContent = plan.description
         if (billingCycle) billingCycle.value = planType
 
-        membershipModal.classList.add('active')
-        document.body.style.overflow = 'hidden'
+        const method = getSelectedPaymentMethod()
+        if (method) {
+            const amountText = (selectedPlanPrice?.textContent || '').split('/')[0].trim() || 'the amount'
+            updatePaymentInstructions(method, amountText)
+        }
+
+        if (openModal) {
+            prefillContactFields()
+            membershipModal.classList.add('active')
+            document.body.style.overflow = 'hidden'
+        }
+    }
+
+    function openMembershipModal(planType) {
+        renderSelectedPlan(planType, { openModal: true })
+    }
+
+    window.openMembershipModal = openMembershipModal
+
+    if (billingCycle) {
+        billingCycle.addEventListener('change', function () {
+            renderSelectedPlan(this.value || 'monthly')
+        })
     }
 
     function closeMembershipModal() {

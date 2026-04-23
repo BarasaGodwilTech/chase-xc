@@ -139,7 +139,7 @@
                         </ul>
                     </div>
                     <div class="plan-card-footer">
-                        <button class="btn btn-outline select-plan-btn" data-plan="weekly">
+                        <button class="btn btn-outline select-plan-btn plan-select" data-plan="weekly">
                             Select Plan
                         </button>
                     </div>
@@ -168,7 +168,7 @@
                         </ul>
                     </div>
                     <div class="plan-card-footer">
-                        <button class="btn btn-primary select-plan-btn" data-plan="monthly">
+                        <button class="btn btn-primary select-plan-btn plan-select" data-plan="monthly">
                             Select Plan
                         </button>
                     </div>
@@ -196,7 +196,7 @@
                         </ul>
                     </div>
                     <div class="plan-card-footer">
-                        <button class="btn btn-outline select-plan-btn" data-plan="yearly">
+                        <button class="btn btn-outline select-plan-btn plan-select" data-plan="yearly">
                             Select Plan
                         </button>
                     </div>
@@ -271,46 +271,79 @@
         </div>
     </section>
 
-    <!-- Upgrade Modal -->
-    <div class="modal" id="upgradeModal">
+    <!-- Payment Modal -->
+    <div class="membership-modal" id="membershipModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Upgrade Your Plan</h3>
-                <button class="modal-close" id="closeUpgradeModal">&times;</button>
+                <h3>Complete Your Membership</h3>
+                <button class="modal-close">&times;</button>
             </div>
             <div class="modal-body">
-                <div class="selected-plan-summary" id="selectedPlanSummary">
-                    <div class="summary-icon">
-                        <i class="fas fa-crown"></i>
-                    </div>
-                    <div class="summary-info">
-                        <h4 id="selectedPlanName">Monthly Pro</h4>
-                        <p id="selectedPlanPrice">UGX 500,000 / month</p>
-                    </div>
+                <div class="plan-summary">
+                    <h4 id="selectedPlanName"></h4>
+                    <p id="selectedPlanPrice"></p>
+                    <p id="selectedPlanDescription"></p>
                 </div>
-                <form id="upgradeForm">
+                
+                <form class="membership-form" id="membershipForm">
                     <div class="form-group">
-                        <label for="upgradePhone">Phone Number</label>
-                        <input type="tel" id="upgradePhone" name="phone" placeholder="Enter your phone number" required>
+                        <label for="fullName">Full Name *</label>
+                        <input type="text" id="fullName" name="fullName" required>
                     </div>
+                    
                     <div class="form-group">
-                        <label for="upgradePaymentMethod">Payment Method</label>
-                        <select id="upgradePaymentMethod" name="paymentMethod" required>
-                            <option value="">Select payment method</option>
-                            <option value="mtn">MTN Mobile Money</option>
-                            <option value="airtel">Airtel Money</option>
-                            <option value="bank">Bank Transfer</option>
+                        <label for="email">Email Address *</label>
+                        <input type="email" id="email" name="email" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="phone">Phone Number *</label>
+                        <input type="tel" id="phone" name="phone" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="billingCycle">Billing Cycle *</label>
+                        <select id="billingCycle" name="billingCycle" required>
+                            <option value="weekly" id="billing-weekly">Weekly</option>
+                            <option value="monthly" selected id="billing-monthly">Monthly</option>
+                            <option value="yearly" id="billing-yearly">Yearly</option>
                         </select>
                     </div>
-                    <div class="payment-info" id="paymentInfo" style="display: none;">
-                        <p id="paymentInstructions"></p>
+                    
+                    <div class="payment-section">
+                        <h4>Payment Method</h4>
+                        <div class="payment-options">
+                            <div class="payment-option" data-method="mtn">
+                                <i class="fas fa-mobile-alt"></i>
+                                <span>MTN Mobile Money</span>
+                            </div>
+                            <div class="payment-option" data-method="airtel">
+                                <i class="fas fa-wallet"></i>
+                                <span>Airtel Money</span>
+                            </div>
+                            <div class="payment-option" data-method="card">
+                                <i class="fas fa-credit-card"></i>
+                                <span>Credit/Debit Card</span>
+                            </div>
+                            <div class="payment-option" data-method="bank">
+                                <i class="fas fa-university"></i>
+                                <span>Bank Transfer</span>
+                            </div>
+                        </div>
+                        
+                        <div class="payment-instructions" id="paymentInstructions" style="display: none;">
+                            <h5 id="instructionsTitle">Payment Instructions</h5>
+                            <p id="instructionsText"></p>
+                            <div class="transaction-input" id="transactionInput" style="display: none;">
+                                <label for="transactionId">Transaction ID/Reference *</label>
+                                <input type="text" id="transactionId" name="transactionId" 
+                                       placeholder="Enter transaction ID from your payment">
+                            </div>
+                        </div>
                     </div>
-                    <div class="form-group" id="transactionIdGroup" style="display: none;">
-                        <label for="transactionId">Transaction ID</label>
-                        <input type="text" id="transactionId" name="transactionId" placeholder="Enter transaction ID">
-                    </div>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-lock"></i> Complete Upgrade
+                    
+                    <button type="submit" class="btn btn-primary submit-btn">
+                        <i class="fas fa-lock"></i> Complete Subscription
                     </button>
                 </form>
             </div>
