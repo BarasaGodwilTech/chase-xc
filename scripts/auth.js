@@ -13,6 +13,8 @@ class UserAuth {
     constructor() {
         this.currentUser = null;
         this.redirectUrl = null;
+        this._domListenersBound = false;
+        this._documentClickBound = false;
         this.init();
     }
 
@@ -47,6 +49,13 @@ class UserAuth {
         // This ensures the loading message is removed even before auth state is determined
         this.updateProfileUI();
 
+        // If the header is injected via includes.js, DOM elements like #profileBtn won't
+        // exist yet when this module runs. Re-bind listeners once includes are loaded.
+        document.addEventListener('includes:loaded', () => {
+            this.setupEventListeners();
+            this.updateProfileUI();
+        });
+
         // Check if there's a redirect URL stored from previous attempt
         const storedRedirect = sessionStorage.getItem('authRedirectUrl');
         if (storedRedirect) {
@@ -67,18 +76,25 @@ class UserAuth {
     }
 
     setupEventListeners() {
+        // This method can be called multiple times (e.g., after includes:loaded).
+        // Make bindings idempotent.
         // Profile button
         const profileBtn = document.getElementById('profileBtn');
         if (profileBtn) {
-            profileBtn.addEventListener('click', (e) => {
+            if (!profileBtn.dataset.authBound) {
+                profileBtn.dataset.authBound = '1';
+                profileBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 this.handleProfileButtonClick();
-            });
+                });
+            }
         }
 
         // Close dropdown when clicking outside (only when open)
-        document.addEventListener('click', (e) => {
+        if (!this._documentClickBound) {
+            this._documentClickBound = true;
+            document.addEventListener('click', (e) => {
             const dropdown = document.getElementById('profileDropdown');
             const btn = document.getElementById('profileBtn');
             if (!dropdown || !btn) return;
@@ -87,18 +103,25 @@ class UserAuth {
             if (!dropdown.contains(e.target) && !btn.contains(e.target)) {
                 this.closeProfileDropdown();
             }
-        });
+            });
+        }
 
         // Login form
         const loginForm = document.getElementById('loginForm');
         if (loginForm) {
-            loginForm.addEventListener('submit', (e) => this.handleLogin(e));
+            if (!loginForm.dataset.authBound) {
+                loginForm.dataset.authBound = '1';
+                loginForm.addEventListener('submit', (e) => this.handleLogin(e));
+            }
         }
 
         // Signup form
         const signupForm = document.getElementById('signupForm');
         if (signupForm) {
-            signupForm.addEventListener('submit', (e) => this.handleSignup(e));
+            if (!signupForm.dataset.authBound) {
+                signupForm.dataset.authBound = '1';
+                signupForm.addEventListener('submit', (e) => this.handleSignup(e));
+            }
         }
 
         // Toggle between login and signup
