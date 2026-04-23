@@ -1469,32 +1469,39 @@
 
 /* Playlist Modal Styles */
 .playlist-modal-content {
-    max-width: 500px;
+    max-width: 520px;
     width: 90%;
+    background: linear-gradient(135deg, rgba(20, 25, 45, 0.95), rgba(30, 35, 60, 0.95));
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 40px rgba(0, 212, 255, 0.1);
 }
 
 .playlist-modal-track-info {
     display: flex;
     align-items: center;
     gap: 1rem;
-    padding: 1rem;
-    background: rgba(255, 255, 255, 0.03);
+    padding: 1.25rem;
+    background: linear-gradient(135deg, rgba(0, 212, 255, 0.08), rgba(168, 85, 247, 0.08));
     border-radius: 12px;
-    margin-bottom: 1rem;
+    margin-bottom: 1.25rem;
+    border: 1px solid rgba(0, 212, 255, 0.15);
 }
 
 .playlist-modal-track-info img {
-    width: 60px;
-    height: 60px;
-    border-radius: 8px;
+    width: 64px;
+    height: 64px;
+    border-radius: 10px;
     object-fit: cover;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .playlist-modal-track-details h4 {
     color: var(--text-primary);
     margin: 0 0 0.25rem 0;
-    font-size: 1rem;
+    font-size: 1.05rem;
     font-weight: 600;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .playlist-modal-track-details p {
@@ -1505,91 +1512,135 @@
 
 .playlist-modal-search {
     margin-bottom: 1rem;
+    position: relative;
 }
 
 .playlist-modal-search input {
     width: 100%;
     background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--border);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     color: var(--text-primary);
-    padding: 0.75rem 1rem;
-    border-radius: 8px;
+    padding: 0.85rem 1rem 0.85rem 2.75rem;
+    border-radius: 10px;
     font-size: 0.95rem;
     transition: all 0.3s ease;
+}
+
+.playlist-modal-search input::placeholder {
+    color: var(--text-tertiary);
 }
 
 .playlist-modal-search input:focus {
     outline: none;
     border-color: var(--primary);
-    background: rgba(0, 212, 255, 0.05);
+    background: rgba(0, 212, 255, 0.08);
+    box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+}
+
+.playlist-modal-search::before {
+    content: '\f002';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-tertiary);
+    font-size: 0.9rem;
 }
 
 .playlist-modal-list {
-    max-height: 300px;
+    max-height: 320px;
     overflow-y: auto;
     margin-bottom: 1rem;
     padding-right: 0.5rem;
 }
 
 .playlist-modal-list::-webkit-scrollbar {
-    width: 6px;
+    width: 8px;
 }
 
 .playlist-modal-list::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 4px;
 }
 
 .playlist-modal-list::-webkit-scrollbar-thumb {
-    background: var(--border);
-    border-radius: 3px;
+    background: linear-gradient(180deg, var(--primary), var(--secondary));
+    border-radius: 4px;
 }
 
 .playlist-modal-list::-webkit-scrollbar-thumb:hover {
-    background: var(--primary);
+    background: linear-gradient(180deg, #00d4ff, #a855f7);
 }
 
 .playlist-modal-item {
     display: flex;
     align-items: center;
     gap: 1rem;
-    padding: 0.85rem 1rem;
+    padding: 1rem;
     background: rgba(255, 255, 255, 0.03);
-    border: 1px solid var(--border);
-    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
     margin-bottom: 0.5rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.playlist-modal-item::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 3px;
+    height: 100%;
+    background: linear-gradient(180deg, var(--primary), var(--secondary));
+    opacity: 0;
+    transition: opacity 0.3s ease;
 }
 
 .playlist-modal-item:hover {
-    background: rgba(0, 212, 255, 0.08);
+    background: rgba(0, 212, 255, 0.1);
     border-color: rgba(0, 212, 255, 0.3);
-    transform: translateX(4px);
+    transform: translateX(6px);
+    box-shadow: 0 4px 12px rgba(0, 212, 255, 0.15);
+}
+
+.playlist-modal-item:hover::before {
+    opacity: 1;
 }
 
 .playlist-modal-item.duplicate {
-    opacity: 0.6;
+    opacity: 0.5;
     cursor: not-allowed;
+    background: rgba(255, 255, 255, 0.02);
 }
 
 .playlist-modal-item.duplicate:hover {
     transform: none;
-    background: rgba(255, 255, 255, 0.03);
-    border-color: var(--border);
+    background: rgba(255, 255, 255, 0.02);
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: none;
+}
+
+.playlist-modal-item.duplicate::before {
+    background: var(--secondary);
 }
 
 .playlist-modal-item-icon {
-    width: 40px;
-    height: 40px;
-    background: rgba(0, 212, 255, 0.1);
-    border-radius: 8px;
+    width: 44px;
+    height: 44px;
+    background: linear-gradient(135deg, rgba(0, 212, 255, 0.15), rgba(168, 85, 247, 0.15));
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
     color: var(--primary);
-    font-size: 1rem;
+    font-size: 1.1rem;
     flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(0, 212, 255, 0.2);
 }
 
 .playlist-modal-item-info {
@@ -1614,32 +1665,51 @@
 }
 
 .playlist-modal-item-status {
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
     color: var(--primary);
-    font-size: 1rem;
+    font-size: 1.1rem;
     flex-shrink: 0;
+    background: rgba(0, 212, 255, 0.1);
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+.playlist-modal-item:hover .playlist-modal-item-status {
+    background: var(--primary);
+    color: var(--background);
+    transform: scale(1.1);
 }
 
 .playlist-modal-item.duplicate .playlist-modal-item-status {
     color: var(--secondary);
+    background: rgba(168, 85, 247, 0.1);
+}
+
+.playlist-modal-item.duplicate:hover .playlist-modal-item-status {
+    background: var(--secondary);
+    color: var(--background);
 }
 
 .playlist-modal-empty,
 .playlist-modal-error {
     text-align: center;
-    padding: 2rem;
+    padding: 2.5rem 2rem;
     color: var(--text-secondary);
 }
 
 .playlist-modal-empty i,
 .playlist-modal-error i {
-    font-size: 2rem;
-    margin-bottom: 0.75rem;
-    opacity: 0.5;
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    opacity: 0.4;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 .playlist-modal-empty p,
@@ -1653,7 +1723,10 @@
 }
 
 .playlist-modal-error i {
-    color: var(--accent);
+    background: var(--accent);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 .playlist-modal-create {
