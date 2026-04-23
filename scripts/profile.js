@@ -290,20 +290,36 @@ class UserProfile {
                 return;
             }
 
-            favoritesGrid.innerHTML = favorites.map((track, index) => `
-                <div class="track-card" data-track="${index}" data-track-id="${track.trackId}">
+            // Store tracks for event handlers
+            window.__profileTracks = favorites;
+
+            favoritesGrid.innerHTML = favorites.map((track, index) => {
+                const spotifyUrl = track.spotifyUrl || track.platformLinks?.spotify || '';
+                return `
+                <div class="track-card" data-track="${index}" data-track-id="${track.trackId}" data-spotify-url="${spotifyUrl}">
                     <div class="track-artwork">
                         <img src="${track.artwork || 'public/player-cover-1.jpg'}" alt="${track.title}">
-                        <button class="track-play-btn" type="button">
+                        ${spotifyUrl ? '<div class="spotify-indicator" title="Listen on Spotify"><i class="fab fa-spotify"></i></div>' : ''}
+                        <button class="track-play-btn" type="button" aria-label="Play ${track.title}">
                             <i class="fas fa-play"></i>
                         </button>
                     </div>
                     <div class="track-content">
-                        <h4 class="track-title">${track.title}</h4>
-                        <p class="track-artist">${track.artistName}</p>
+                        <div class="track-header">
+                            <div class="track-info">
+                                <h4 class="track-title">${track.title}</h4>
+                                <p class="track-artist">${track.artistName}</p>
+                            </div>
+                            <button class="like-btn-mini" title="Like" data-like-track-id="${track.trackId}" type="button">
+                                <i class="fas fa-heart"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
-            `).join('');
+            `}).join('');
+
+            // Setup event listeners after rendering
+            this.setupTrackCardListeners();
         }).catch((e) => {
             console.error('Error loading favorites:', e)
         })
@@ -489,17 +505,34 @@ class UserProfile {
                 return;
             }
 
+            // Store playlists for event handlers
+            window.__profilePlaylists = playlists;
+
             playlistsGrid.innerHTML = playlists.map(playlist => `
                 <div class="playlist-card" data-playlist-id="${playlist.id}">
                     <div class="playlist-artwork">
                         <i class="fas fa-music"></i>
+                        <button class="playlist-play-btn" type="button" aria-label="Play ${playlist.name}">
+                            <i class="fas fa-play"></i>
+                        </button>
                     </div>
                     <div class="playlist-content">
                         <h4>${playlist.name}</h4>
                         <p>${playlist.trackCount || (playlist.tracks?.length || 0)} tracks</p>
                     </div>
+                    <div class="playlist-actions">
+                        <button class="playlist-action-btn" data-action="edit" title="Edit playlist">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="playlist-action-btn" data-action="delete" title="Delete playlist">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
                 </div>
             `).join('');
+
+            // Setup playlist card listeners
+            this.setupPlaylistCardListeners();
         }).catch((e) => {
             console.error('Error loading playlists:', e)
         })
@@ -532,6 +565,196 @@ class UserProfile {
         if (diffHours < 24) return `${diffHours}h ago`;
         if (diffDays < 7) return `${diffDays}d ago`;
         return past.toLocaleDateString();
+    }
+
+    setupTrackCardListeners() {
+        // Play button listeners
+        document.querySelectorAll('#favoritesGrid .track-play-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const card = btn.closest('.track-card');
+                const trackIndex = parseInt(card.dataset.track);
+                const track = window.__profileTracks[trackIndex];
+                
+                if (track && window.persistentPlayer) {
+                    window.persistentPlayer.loadTrack(track);
+                    window.persistentPlayer.play();
+                }
+            });
+        });
+
+        // Like button listeners (already liked, so remove from favorites)
+        document.querySelectorAll('#favoritesGrid .like-btn-mini').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const trackId = btn.dataset.likeTrackId;
+                this.handleUnlikeTrack(trackId, btn);
+            });
+        });
+
+        // Card click - navigate to track detail
+        document.querySelectorAll('#favoritesGrid .track-card').forEach(card => {
+            card.addEventListener('click', (e) => {
+                if (e.target.closest('.track-play-btn') || 
+                    e.target.closest('.like-btn-mini') || 
+                    e.target.closest('.spotify-indicator')) {
+                    return;
+                }
+                const trackId = card.dataset.trackId;
+                if (trackId) {
+                    window.location.href = `track-detail.html?id=${trackId}`;
+                }
+            });
+        });
+
+        // Spotify indicator click
+        document.querySelectorAll('#favoritesGrid .spotify-indicator').forEach(indicator => {
+            indicator.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const card = indicator.closest('.track-card');
+                const spotifyUrl = card.dataset.spotifyUrl;
+                if (spotifyUrl) {
+                    window.open(spotifyUrl, '_blank');
+                }
+            });
+        });
+    }
+
+    setupPlaylistCardListeners() {
+        // Play button on playlist card
+        document.querySelectorAll('#playlistsGrid .playlist-play-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const card = btn.closest('.playlist-card');
+                const playlistId = card.dataset.playlistId;
+                const playlist = window.__profilePlaylists?.find(p => p.id === playlistId);
+                
+                if (playlist && playlist.tracks && playlist.tracks.length > 0) {
+                    // Play first track in playlist
+                    const firstTrack = playlist.tracks[0];
+                    if (window.persistentPlayer) {
+                        window.persistentPlayer.loadTrack(firstTrack);
+                        window.persistentPlayer.play();
+                        this.showNotification(`Playing ${playlist.name}`, 'success');
+                    }
+                } else {
+                    this.showNotification('Playlist is empty', 'info');
+                }
+            });
+        });
+
+        // Edit button
+        document.querySelectorAll('#playlistsGrid .playlist-action-btn[data-action="edit"]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const card = btn.closest('.playlist-card');
+                const playlistId = card.dataset.playlistId;
+                const playlist = window.__profilePlaylists?.find(p => p.id === playlistId);
+                
+                if (playlist) {
+                    const newName = prompt('Edit playlist name:', playlist.name);
+                    if (newName && newName.trim()) {
+                        this.updatePlaylistName(playlistId, newName.trim());
+                    }
+                }
+            });
+        });
+
+        // Delete button
+        document.querySelectorAll('#playlistsGrid .playlist-action-btn[data-action="delete"]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const card = btn.closest('.playlist-card');
+                const playlistId = card.dataset.playlistId;
+                
+                if (confirm('Are you sure you want to delete this playlist?')) {
+                    this.deletePlaylist(playlistId);
+                }
+            });
+        });
+
+        // Card click - navigate to playlist detail (or could open edit modal)
+        document.querySelectorAll('#playlistsGrid .playlist-card').forEach(card => {
+            card.addEventListener('click', (e) => {
+                if (e.target.closest('.playlist-play-btn') || 
+                    e.target.closest('.playlist-action-btn')) {
+                    return;
+                }
+                const playlistId = card.dataset.playlistId;
+                // For now, open edit modal on card click
+                const playlist = window.__profilePlaylists?.find(p => p.id === playlistId);
+                if (playlist) {
+                    const newName = prompt('Edit playlist name:', playlist.name);
+                    if (newName && newName.trim()) {
+                        this.updatePlaylistName(playlistId, newName.trim());
+                    }
+                }
+            });
+        });
+    }
+
+    async handleUnlikeTrack(trackId, btn) {
+        if (!this.currentUser?.uid) return;
+        
+        try {
+            // Remove from favorites in Firestore
+            const { doc, deleteDoc, getFirestore } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
+            const db = getFirestore();
+            const favoriteRef = doc(db, 'users', this.currentUser.uid, 'favorites', trackId);
+            await deleteDoc(favoriteRef);
+            
+            // Remove card from DOM with animation
+            const card = btn.closest('.track-card');
+            card.style.opacity = '0';
+            card.style.transform = 'scale(0.9)';
+            setTimeout(() => {
+                card.remove();
+                // Check if empty
+                const grid = document.getElementById('favoritesGrid');
+                if (grid && grid.children.length === 0) {
+                    this.loadFavorites(); // Reload to show empty state
+                }
+            }, 300);
+            
+            this.showNotification('Removed from favorites', 'success');
+        } catch (e) {
+            console.error('Error removing from favorites:', e);
+            this.showNotification('Error removing from favorites', 'error');
+        }
+    }
+
+    async updatePlaylistName(playlistId, newName) {
+        if (!this.currentUser?.uid) return;
+        
+        try {
+            const { doc, updateDoc, getFirestore } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
+            const db = getFirestore();
+            const playlistRef = doc(db, 'users', this.currentUser.uid, 'playlists', playlistId);
+            await updateDoc(playlistRef, { name: newName });
+            
+            this.loadPlaylists();
+            this.showNotification('Playlist updated', 'success');
+        } catch (e) {
+            console.error('Error updating playlist:', e);
+            this.showNotification('Error updating playlist', 'error');
+        }
+    }
+
+    async deletePlaylist(playlistId) {
+        if (!this.currentUser?.uid) return;
+        
+        try {
+            const { doc, deleteDoc, getFirestore } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
+            const db = getFirestore();
+            const playlistRef = doc(db, 'users', this.currentUser.uid, 'playlists', playlistId);
+            await deleteDoc(playlistRef);
+            
+            this.loadPlaylists();
+            this.showNotification('Playlist deleted', 'success');
+        } catch (e) {
+            console.error('Error deleting playlist:', e);
+            this.showNotification('Error deleting playlist', 'error');
+        }
     }
 
     showNotification(message, type = 'info') {

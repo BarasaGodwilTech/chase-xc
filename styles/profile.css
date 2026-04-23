@@ -588,6 +588,122 @@
     gap: 1.5rem;
 }
 
+/* Playlist Cards */
+.playlist-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    overflow: hidden;
+    transition: var(--transition);
+    cursor: pointer;
+    position: relative;
+}
+
+.playlist-card:hover {
+    transform: translateY(-5px);
+    border-color: var(--primary);
+    box-shadow: 0 8px 24px rgba(0, 212, 255, 0.1);
+}
+
+.playlist-artwork {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1;
+    background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(168, 85, 247, 0.1));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    color: var(--primary);
+}
+
+.playlist-play-btn {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.8);
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: var(--primary);
+    border: none;
+    color: var(--background);
+    font-size: 1.5rem;
+    cursor: pointer;
+    opacity: 0;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.playlist-card:hover .playlist-play-btn {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.playlist-play-btn:hover {
+    background: var(--secondary);
+    transform: translate(-50%, -50%) scale(1.1);
+}
+
+.playlist-content {
+    padding: 1rem;
+}
+
+.playlist-content h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 0.25rem 0;
+}
+
+.playlist-content p {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.playlist-actions {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    display: flex;
+    gap: 0.5rem;
+    opacity: 0;
+    transition: var(--transition);
+}
+
+.playlist-card:hover .playlist-actions {
+    opacity: 1;
+}
+
+.playlist-action-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    transition: var(--transition);
+}
+
+.playlist-action-btn:hover {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: var(--background);
+}
+
+.playlist-action-btn[data-action="delete"]:hover {
+    background: #ef4444;
+    border-color: #ef4444;
+}
+
 /* History List */
 .history-list {
     display: flex;
