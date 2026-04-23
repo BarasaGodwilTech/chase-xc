@@ -97,6 +97,10 @@ function initNavigation() {
     // Handle profile button click on mobile
     if (profileBtn) {
         profileBtn.addEventListener("click", (e) => {
+            // Let auth.js own the actual profile behavior (navigate on mobile, dropdown on desktop).
+            // Here we only manage the mobile menu container.
+            e.stopPropagation()
+
             // On mobile, if nav is open, close it first
             if (nav && nav.classList.contains("active")) {
                 if (hamburger) hamburger.classList.remove("active")

@@ -17,6 +17,17 @@ class UserAuth {
     }
 
     init() {
+        // Support auth.html?redirect=... deep-link redirects
+        try {
+            const params = new URLSearchParams(window.location.search);
+            const redirectParam = params.get('redirect');
+            if (redirectParam && !sessionStorage.getItem('authRedirectUrl')) {
+                sessionStorage.setItem('authRedirectUrl', redirectParam);
+            }
+        } catch (_) {
+            // Ignore URL parsing errors
+        }
+
         // Listen for auth state changes
         onAuthStateChanged(auth, (user) => {
             this.currentUser = user;
@@ -56,24 +67,25 @@ class UserAuth {
     }
 
     setupEventListeners() {
-        // Profile button - toggle dropdown
+        // Profile button
         const profileBtn = document.getElementById('profileBtn');
         if (profileBtn) {
             profileBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                this.toggleProfileDropdown();
+                this.handleProfileButtonClick();
             });
         }
 
-        // Close dropdown when clicking outside
+        // Close dropdown when clicking outside (only when open)
         document.addEventListener('click', (e) => {
             const dropdown = document.getElementById('profileDropdown');
-            const profileBtn = document.getElementById('profileBtn');
-            if (dropdown && profileBtn) {
-                if (!dropdown.contains(e.target) && !profileBtn.contains(e.target)) {
-                    this.closeProfileDropdown();
-                }
+            const btn = document.getElementById('profileBtn');
+            if (!dropdown || !btn) return;
+
+            if (!dropdown.classList.contains('active')) return;
+            if (!dropdown.contains(e.target) && !btn.contains(e.target)) {
+                this.closeProfileDropdown();
             }
         });
 
@@ -129,26 +141,16 @@ class UserAuth {
         passwordToggles.forEach(toggle => {
             toggle.addEventListener('click', (e) => this.togglePasswordVisibility(e));
         });
+    }
 
-        // Profile dropdown toggle - wait for includes to load
-        const setupProfileBtn = () => {
-            const profileBtn = document.getElementById('profileBtn');
-            if (profileBtn) {
-                profileBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    this.toggleProfileDropdown();
-                });
-            }
-        };
+    handleProfileButtonClick() {
+        // On mobile, profile icon should behave like a direct navigation entry.
+        if (window.innerWidth <= 768) {
+            window.location.href = this.getCurrentUser() ? 'profile.html' : 'auth.html';
+            return;
+        }
 
-        // Try immediately, then wait for includes:loaded event
-        setupProfileBtn();
-        document.addEventListener('includes:loaded', setupProfileBtn);
-
-        // Close dropdown when clicking outside
-        document.addEventListener('click', () => {
-            this.closeProfileDropdown();
-        });
+        this.toggleProfileDropdown();
     }
 
     async handleLogin(e) {
@@ -350,12 +352,12 @@ class UserAuth {
 
     // Check if user is logged in
     isLoggedIn() {
-        return this.currentUser !== null;
+        return (this.currentUser !== null) || (auth.currentUser !== null);
     }
 
     // Get current user
     getCurrentUser() {
-        return this.currentUser;
+        return this.currentUser || auth.currentUser;
     }
 
     // Require authentication - redirect to login if not authenticated
@@ -430,7 +432,7 @@ class UserAuth {
 
     toggleProfileDropdown() {
         // If user is not logged in, redirect directly to auth.html
-        if (!this.currentUser) {
+        if (!this.getCurrentUser()) {
             window.location.href = 'auth.html';
             return;
         }
@@ -461,10 +463,12 @@ class UserAuth {
         const dropdown = document.getElementById('profileDropdown');
         if (!dropdown) return;
 
-        if (this.currentUser) {
+        const user = this.getCurrentUser();
+
+        if (user) {
             // User is logged in - show profile menu
-            const displayName = this.currentUser.displayName || 'User';
-            const email = this.currentUser.email;
+            const displayName = user.displayName || 'User';
+            const email = user.email;
 
             dropdown.innerHTML = `
                 <div class="profile-user-info">
