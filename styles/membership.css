@@ -49,6 +49,28 @@
     flex-shrink: 0;
 }
 
+/* Prevent accidental overflow/cutoff on small devices */
+.membership-page-header,
+.current-plan-section,
+.available-plans-section,
+.billing-history-section,
+.payment-methods-section {
+    max-width: 100%;
+}
+
+.current-plan-card,
+.billing-table-wrapper,
+.membership-modal .modal-content {
+    max-width: 100%;
+}
+
+.membership-page-header .btn,
+.current-plan-section .btn,
+.available-plans-section .btn,
+.payment-methods-section .btn {
+    margin-top: 0;
+}
+
 /* Current Plan Section */
 .current-plan-section {
     padding: 3rem 0;
@@ -606,19 +628,9 @@
         padding: 0.75rem 1rem;
     }
     
-    .billing-table-wrapper {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-    }
-    
-    .billing-table-wrapper::-webkit-scrollbar {
-        display: none;
-    }
-    
     .payment-method-card {
         flex-direction: column;
         text-align: center;
-        overflow-x: hidden;
     }
     
     /* Mobile-optimized buttons */
@@ -642,11 +654,6 @@
         padding: 0.4rem 0.8rem;
         font-size: 0.8rem;
     }
-    
-    /* Container padding for mobile */
-    .container {
-        padding: 0 1rem;
-    }
 }
 
 @media (max-width: 480px) {
@@ -654,78 +661,41 @@
         padding: 80px 0 30px;
     }
     
-    .membership-content {
-        padding: 1.5rem 0;
-    }
-    
-    .container {
-        padding: 0 1rem;
-    }
-    
     .membership-title {
-        font-size: 1.4rem;
-        word-wrap: break-word;
-        overflow-wrap: break-word;
-    }
-    
-    .membership-subtitle {
-        font-size: 0.9rem;
+        font-size: 1.5rem;
     }
     
     .current-plan-card {
-        border-radius: 8px;
+        border-radius: 12px;
     }
     
     .plan-card-header,
     .plan-card-body,
     .plan-card-footer {
-        padding: 1.25rem;
+        padding: 1.5rem;
     }
     
     .plan-icon-wrapper {
-        width: 44px;
-        height: 44px;
-        font-size: 1.3rem;
+        width: 50px;
+        height: 50px;
+        font-size: 1.5rem;
     }
     
     .plan-header-info h2 {
-        font-size: 1.2rem;
-        word-wrap: break-word;
-    }
-    
-    .plan-header-info p {
-        font-size: 0.85rem;
-    }
-    
-    .usage-stat-item {
-        padding: 0.75rem;
-    }
-    
-    .usage-stat-value {
-        font-size: 1.3rem;
-    }
-    
-    .usage-stat-label {
-        font-size: 0.75rem;
+        font-size: 1.4rem;
     }
     
     .billing-table-wrapper {
         border-radius: 8px;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-    }
-    
-    .billing-table-wrapper::-webkit-scrollbar {
-        display: none;
     }
     
     .billing-table {
-        font-size: 0.75rem;
+        font-size: 0.8rem;
     }
     
     .billing-table th,
     .billing-table td {
-        padding: 0.5rem 0.625rem;
+        padding: 0.5rem 0.75rem;
     }
     
     .billing-table th:nth-child(4),
@@ -735,31 +705,10 @@
         display: none;
     }
     
-    .billing-table th:nth-child(3),
-    .billing-table td:nth-child(3) {
-        display: none;
-    }
-    
-    .section-header {
-        flex-direction: column;
-        gap: 0.75rem;
-        text-align: center;
-    }
-    
-    .section-header h2 {
-        font-size: 1.3rem;
-        word-wrap: break-word;
-    }
-    
-    .section-header p {
-        font-size: 0.85rem;
-    }
-    
     /* Extra small button optimizations for mobile */
     .membership-header-right .btn {
         padding: 0.5rem 1rem;
         font-size: 0.8rem;
-        width: 100%;
     }
     
     .plan-actions .btn {
@@ -770,13 +719,11 @@
     .section-header .btn {
         padding: 0.4rem 0.8rem;
         font-size: 0.8rem;
-        width: 100%;
     }
     
     .plan-card .plan-card-footer .btn {
         padding: 0.5rem 1rem;
         font-size: 0.8rem;
-        width: 100%;
     }
     
     /* Two buttons per row for plan actions */
@@ -784,62 +731,14 @@
         display: grid;
         grid-template-columns: repeat(2, 1fr);
         gap: 0.5rem;
-        width: 100%;
     }
     
     .plan-actions .btn {
         width: 100%;
     }
     
-    .payment-method-card {
-        padding: 1rem;
-        border-radius: 8px;
-    }
-    
-    .payment-method-card h4 {
-        font-size: 0.9rem;
-    }
-    
-    .payment-method-card p {
-        font-size: 0.8rem;
-    }
-    
     .payment-method-card .btn-text {
         padding: 0.35rem 0.7rem;
         font-size: 0.75rem;
-    }
-    
-    /* Modal improvements */
-    .modal-content {
-        width: 95%;
-        margin: 1rem;
-        padding: 1rem;
-    }
-    
-    .modal-header {
-        padding: 1rem;
-    }
-    
-    .modal-header h3 {
-        font-size: 1.1rem;
-    }
-    
-    .modal-body {
-        padding: 1rem;
-    }
-    
-    .modal-body button[type="submit"] {
-        padding: 0.5rem 1rem;
-        font-size: 0.8rem;
-        width: 100%;
-    }
-    
-    /* Plan features list mobile */
-    .plan-features-list ul {
-        grid-template-columns: 1fr;
-    }
-    
-    .plan-features-list li {
-        font-size: 0.85rem;
     }
 }
