@@ -209,6 +209,75 @@
   gap: 1.5rem;
 }
 
+.account-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.03);
+  width: fit-content;
+  max-width: 100%;
+}
+
+.account-nav a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.9rem;
+  border-radius: 12px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+  line-height: 1;
+  border: 1px solid transparent;
+  transition: var(--transition);
+  white-space: nowrap;
+}
+
+.account-nav a:hover {
+  color: var(--primary);
+  background: rgba(0, 212, 255, 0.06);
+  border-color: rgba(0, 212, 255, 0.15);
+}
+
+.account-nav a.active {
+  color: var(--background);
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.account-nav a i {
+  font-size: 0.95rem;
+}
+
+@media (max-width: 768px) {
+  .account-nav {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .account-nav::-webkit-scrollbar {
+    height: 0;
+  }
+
+  .account-nav a {
+    flex: 0 0 auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .account-nav a {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+  }
+}
+
 .form-group {
   display: flex;
   flex-direction: column;
