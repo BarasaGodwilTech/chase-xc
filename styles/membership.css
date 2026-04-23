@@ -49,6 +49,19 @@
     flex-shrink: 0;
 }
 
+.membership-account-nav {
+    padding: 1rem 0 0;
+}
+
+.membership-account-nav .account-nav-container {
+    display: flex;
+    justify-content: center;
+}
+
+.membership-account-nav .account-nav {
+    width: 100%;
+}
+
 /* Prevent accidental overflow/cutoff on small devices */
 .membership-page-header,
 .current-plan-section,
@@ -631,6 +644,10 @@
     .payment-method-card {
         flex-direction: column;
         text-align: center;
+    }
+
+    .membership-account-nav {
+        padding: 0.75rem 0 0;
     }
     
     /* Mobile-optimized buttons */

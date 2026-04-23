@@ -584,18 +584,27 @@
         height: 100%;
         pointer-events: none;
         z-index: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 0.9rem;
+        color: rgba(255, 255, 255, 0.65);
+        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
     }
 
     .settings-nav::before {
         left: 0;
         margin-left: -1.25rem;
         background: linear-gradient(90deg, rgba(10, 16, 33, 1), rgba(10, 16, 33, 0));
+        content: "‹";
     }
 
     .settings-nav::after {
         right: 0;
         margin-right: -1.25rem;
         background: linear-gradient(270deg, rgba(10, 16, 33, 1), rgba(10, 16, 33, 0));
+        content: "›";
     }
     
     .settings-section {
