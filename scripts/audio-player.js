@@ -265,19 +265,35 @@ class AudioPlayer {
     }
   }
 
-  incrementLikes() {
+  async incrementLikes() {
     const currentTrack = this.getCurrentOriginalTrack();
-    if (currentTrack && this.dataManager) {
+    if (currentTrack) {
+      // Update local state
       currentTrack.likes = (currentTrack.likes || 0) + 1;
-      this.dataManager.saveTrack(currentTrack);
+      
+      // Also update Firestore
+      try {
+        const { incrementTrackLikes } = await import('./user-data.js');
+        await incrementTrackLikes(currentTrack.id, 1);
+      } catch (error) {
+        console.error('[AudioPlayer] Error incrementing likes in Firestore:', error);
+      }
     }
   }
 
-  decrementLikes() {
+  async decrementLikes() {
     const currentTrack = this.getCurrentOriginalTrack();
-    if (currentTrack && this.dataManager) {
+    if (currentTrack) {
+      // Update local state
       currentTrack.likes = Math.max(0, (currentTrack.likes || 0) - 1);
-      this.dataManager.saveTrack(currentTrack);
+      
+      // Also update Firestore
+      try {
+        const { incrementTrackLikes } = await import('./user-data.js');
+        await incrementTrackLikes(currentTrack.id, -1);
+      } catch (error) {
+        console.error('[AudioPlayer] Error decrementing likes in Firestore:', error);
+      }
     }
   }
 
@@ -350,11 +366,19 @@ class AudioPlayer {
     }
   }
 
-  incrementStreams() {
+  async incrementStreams() {
     const currentTrack = this.getCurrentOriginalTrack();
-    if (currentTrack && this.dataManager) {
+    if (currentTrack) {
+      // Update local state
       currentTrack.streams = (currentTrack.streams || 0) + 1;
-      this.dataManager.saveTrack(currentTrack);
+      
+      // Also update Firestore
+      try {
+        const { incrementTrackStreams } = await import('./user-data.js');
+        await incrementTrackStreams(currentTrack.id, 1);
+      } catch (error) {
+        console.error('[AudioPlayer] Error incrementing streams in Firestore:', error);
+      }
     }
   }
 

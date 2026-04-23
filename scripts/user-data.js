@@ -15,7 +15,8 @@ import {
   getDocs,
   writeBatch,
   arrayUnion,
-  arrayRemove
+  arrayRemove,
+  increment
 } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js'
 
 function userDocRef(uid) {
@@ -24,6 +25,27 @@ function userDocRef(uid) {
 
 function safeNumber(value, fallback = 0) {
   return Number.isFinite(Number(value)) ? Number(value) : fallback
+}
+
+// Track stats functions for likes and streams
+function trackDocRef(trackId) {
+  return doc(db, 'tracks', trackId)
+}
+
+export async function incrementTrackLikes(trackId, delta = 1) {
+  if (!trackId) return
+  const ref = trackDocRef(trackId)
+  await updateDoc(ref, {
+    likes: increment(delta)
+  })
+}
+
+export async function incrementTrackStreams(trackId, delta = 1) {
+  if (!trackId) return
+  const ref = trackDocRef(trackId)
+  await updateDoc(ref, {
+    streams: increment(delta)
+  })
 }
 
 export async function ensureUserProfileDoc(user) {
@@ -143,12 +165,21 @@ export async function toggleFavorite(uid, track, { force } = {}) {
       updatedAt: serverTimestamp()
     }, { merge: true })
     await incrementUserStats(uid, { favoritesDelta: currentlyLiked ? 0 : 1 })
+    
+    // Increment track likes count in tracks collection
+    if (!currentlyLiked) {
+      await incrementTrackLikes(track.id, 1)
+    }
+    
     return { liked: true }
   }
 
   if (currentlyLiked) {
     await deleteDoc(ref)
     await incrementUserStats(uid, { favoritesDelta: -1 })
+    
+    // Decrement track likes count in tracks collection
+    await incrementTrackLikes(track.id, -1)
   }
   return { liked: false }
 }
