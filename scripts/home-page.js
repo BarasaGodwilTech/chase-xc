@@ -1,4 +1,5 @@
 import { fetchArtists } from './data/content-repo.js'
+import { likedTracksManager } from './liked-tracks-manager.js'
 
 function formatNumber(num) {
   if (typeof num !== 'number') return '0'
@@ -146,6 +147,7 @@ async function loadFeaturedTracks() {
                    (releaseDate && releaseDate > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)) ? 'New' : ''
 
       const spotifyUrl = track.spotifyUrl || (track.platformLinks?.spotify) || ''
+      const isLiked = likedTracksManager.isTrackLiked(track.id)
 
       return `
         <div class="track-card" data-track="${index}" data-category="${categories.join(' ')}" data-spotify-url="${spotifyUrl}" data-track-id="${track.id || ''}">
@@ -163,8 +165,8 @@ async function loadFeaturedTracks() {
                 <h4 class="track-title">${escapeHtml(track.title || '')}</h4>
                 <p class="track-artist">${escapeHtml(track.artistName || 'Unknown Artist')}</p>
               </div>
-              <button class="like-btn-mini" title="Like" data-like-track-id="${track.id}" type="button">
-                <i class="far fa-heart"></i>
+              <button class="like-btn-mini ${isLiked ? 'liked' : ''}" title="Like" data-like-track-id="${track.id}" type="button">
+                <i class="${isLiked ? 'fas' : 'far'} fa-heart"></i>
               </button>
             </div>
           </div>
@@ -312,9 +314,13 @@ function handleLikeTrack(trackId, btn) {
     return
   }
 
-  // User is authenticated, proceed with like action
-  toggleLikeButton(btn)
-  console.log('[HomePage] User authenticated, proceeding with like action')
+  // Use centralized liked tracks manager
+  const track = (window.__tracks || []).find(t => t.id === trackId) || { id: trackId }
+  likedTracksManager.toggleLike(track, btn).then(result => {
+    if (result.error) {
+      if (window.notifications) window.notifications.show('Error saving favorite.', 'error')
+    }
+  })
 }
 
 function handleShareTrack(track) {
@@ -502,6 +508,16 @@ async function boot() {
   } catch (error) {
     console.error('[HomePage] Boot error:', error)
   }
+  
+  // Listen for liked tracks updates to refresh UI
+  document.addEventListener('likedTracksUpdated', (e) => {
+    const { trackId, isLiked } = e.detail
+    if (trackId && isLiked !== undefined) {
+      likedTracksManager.updateTrackHeartIcons(trackId, isLiked)
+    } else {
+      likedTracksManager.updateAllHeartIcons()
+    }
+  })
 }
 
 document.addEventListener('DOMContentLoaded', () => {

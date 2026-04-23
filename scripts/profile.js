@@ -13,6 +13,7 @@ import {
     getPlaylists,
     createPlaylist
 } from './user-data.js'
+import { likedTracksManager } from './liked-tracks-manager.js'
 
 class UserProfile {
     constructor() {
@@ -38,6 +39,16 @@ class UserProfile {
                 if (!window.location.pathname.includes('auth.html')) {
                     window.location.href = 'auth.html';
                 }
+            }
+        });
+        
+        // Listen for liked tracks updates to refresh UI
+        document.addEventListener('likedTracksUpdated', (e) => {
+            const { trackId, isLiked } = e.detail;
+            if (trackId && isLiked !== undefined) {
+                likedTracksManager.updateTrackHeartIcons(trackId, isLiked);
+            } else {
+                likedTracksManager.updateAllHeartIcons();
             }
         });
     }
@@ -295,6 +306,7 @@ class UserProfile {
 
             favoritesGrid.innerHTML = favorites.map((track, index) => {
                 const spotifyUrl = track.spotifyUrl || track.platformLinks?.spotify || '';
+                const isLiked = likedTracksManager.isTrackLiked(track.trackId);
                 return `
                 <div class="track-card" data-track="${index}" data-track-id="${track.trackId}" data-spotify-url="${spotifyUrl}">
                     <div class="track-artwork">
@@ -310,8 +322,8 @@ class UserProfile {
                                 <h4 class="track-title">${track.title}</h4>
                                 <p class="track-artist">${track.artistName}</p>
                             </div>
-                            <button class="like-btn-mini" title="Like" data-like-track-id="${track.trackId}" type="button">
-                                <i class="fas fa-heart"></i>
+                            <button class="like-btn-mini ${isLiked ? 'liked' : ''}" title="Like" data-like-track-id="${track.trackId}" type="button">
+                                <i class="${isLiked ? 'fas' : 'far'} fa-heart"></i>
                             </button>
                         </div>
                     </div>
@@ -696,31 +708,29 @@ class UserProfile {
     async handleUnlikeTrack(trackId, btn) {
         if (!this.currentUser?.uid) return;
         
-        try {
-            // Remove from favorites in Firestore
-            const { doc, deleteDoc, getFirestore } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
-            const db = getFirestore();
-            const favoriteRef = doc(db, 'users', this.currentUser.uid, 'favorites', trackId);
-            await deleteDoc(favoriteRef);
-            
-            // Remove card from DOM with animation
-            const card = btn.closest('.track-card');
-            card.style.opacity = '0';
-            card.style.transform = 'scale(0.9)';
-            setTimeout(() => {
-                card.remove();
-                // Check if empty
-                const grid = document.getElementById('favoritesGrid');
-                if (grid && grid.children.length === 0) {
-                    this.loadFavorites(); // Reload to show empty state
-                }
-            }, 300);
-            
-            this.showNotification('Removed from favorites', 'success');
-        } catch (e) {
-            console.error('Error removing from favorites:', e);
-            this.showNotification('Error removing from favorites', 'error');
+        // Use centralized liked tracks manager
+        const track = window.__profileTracks?.find(t => t.trackId === trackId) || { id: trackId, trackId: trackId };
+        const result = await likedTracksManager.toggleLike(track, btn);
+        
+        if (result.error) {
+            this.showNotification('Error removing favorite', 'error');
+            return;
         }
+        
+        // Remove card from DOM with animation
+        const card = btn.closest('.track-card');
+        card.style.opacity = '0';
+        card.style.transform = 'scale(0.9)';
+        setTimeout(() => {
+            card.remove();
+            // Check if empty
+            const grid = document.getElementById('favoritesGrid');
+            if (grid && grid.children.length === 0) {
+                this.loadFavorites(); // Reload to show empty state
+            }
+        }, 300);
+        
+        this.showNotification('Removed from favorites', 'success');
     }
 
     async updatePlaylistName(playlistId, newName) {

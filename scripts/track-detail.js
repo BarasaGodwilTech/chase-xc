@@ -1,4 +1,5 @@
 import { fetchPublishedTracks, fetchArtistById, fetchTrackById } from './data/content-repo.js'
+import { likedTracksManager } from './liked-tracks-manager.js'
 
 // Track detail page functionality
 let currentTrack = null
@@ -87,6 +88,7 @@ function renderTrackDetails() {
   const badge = document.getElementById('trackBadge')
   const spotifyBtn = document.getElementById('spotifyBtn')
   const artistSocials = document.getElementById('artistSocials')
+  const likeBtn = document.getElementById('likeBtn')
   
   // Set artwork
   if (artwork) {
@@ -143,6 +145,23 @@ function renderTrackDetails() {
         ${socials.twitter ? `<a href="${socials.twitter}" target="_blank" title="Twitter"><i class="fab fa-twitter"></i></a>` : ''}
       </div>
     `
+  }
+  
+  // Update like button state
+  if (likeBtn && currentTrack.id) {
+    const isLiked = likedTracksManager.isTrackLiked(currentTrack.id)
+    const icon = likeBtn.querySelector('i')
+    if (icon) {
+      if (isLiked) {
+        icon.classList.remove('far')
+        icon.classList.add('fas')
+        likeBtn.classList.add('liked')
+      } else {
+        icon.classList.remove('fas')
+        icon.classList.add('far')
+        likeBtn.classList.remove('liked')
+      }
+    }
   }
 }
 
@@ -258,45 +277,9 @@ function handleLikeTrack(btn) {
     return
   }
   
-  const uid = window.userAuth?.getCurrentUser?.()?.uid
-  if (!uid) return
-
-  // Optimistic UI
-  const icon = btn.querySelector('i')
-  if (icon.classList.contains('far')) {
-    icon.classList.remove('far')
-    icon.classList.add('fas')
-    btn.classList.add('liked')
-  } else {
-    icon.classList.remove('fas')
-    icon.classList.add('far')
-    btn.classList.remove('liked')
-  }
-
-  import('./user-data.js').then(async ({ toggleFavorite }) => {
-    try {
-      const result = await toggleFavorite(uid, currentTrack)
-      if (result.liked) {
-        icon?.classList.remove('far')
-        icon?.classList.add('fas')
-        btn.classList.add('liked')
-      } else {
-        icon?.classList.remove('fas')
-        icon?.classList.add('far')
-        btn.classList.remove('liked')
-      }
-    } catch (e) {
-      console.error('[TrackDetail] Failed to toggle favorite:', e)
-      // rollback
-      if (icon.classList.contains('far')) {
-        icon.classList.remove('far')
-        icon.classList.add('fas')
-        btn.classList.add('liked')
-      } else {
-        icon.classList.remove('fas')
-        icon.classList.add('far')
-        btn.classList.remove('liked')
-      }
+  // Use centralized liked tracks manager
+  likedTracksManager.toggleLike(currentTrack, btn).then(result => {
+    if (result.error) {
       if (window.notifications) window.notifications.show('Error saving favorite.', 'error')
     }
   })
@@ -643,6 +626,39 @@ function showError(message) {
 document.addEventListener('DOMContentLoaded', () => {
   if (document.querySelector('[data-include]')) return
   loadTrackData()
+  
+  // Listen for liked tracks updates to refresh UI
+  document.addEventListener('likedTracksUpdated', (e) => {
+    const { trackId, isLiked } = e.detail
+    if (currentTrack && (trackId === currentTrack.id || trackId === null)) {
+      const likeBtn = document.getElementById('likeBtn')
+      if (likeBtn) {
+        const shouldUpdate = trackId === null || trackId === currentTrack.id
+        if (shouldUpdate) {
+          const newIsLiked = trackId === null ? likedTracksManager.isTrackLiked(currentTrack.id) : isLiked
+          const icon = likeBtn.querySelector('i')
+          if (icon) {
+            if (newIsLiked) {
+              icon.classList.remove('far')
+              icon.classList.add('fas')
+              likeBtn.classList.add('liked')
+            } else {
+              icon.classList.remove('fas')
+              icon.classList.add('far')
+              likeBtn.classList.remove('liked')
+            }
+          }
+        }
+      }
+    }
+    
+    // Update heart icons in "More from Artist" section
+    if (trackId && isLiked !== undefined) {
+      likedTracksManager.updateTrackHeartIcons(trackId, isLiked)
+    } else {
+      likedTracksManager.updateAllHeartIcons()
+    }
+  })
 })
 
 document.addEventListener('includes:loaded', loadTrackData)

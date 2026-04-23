@@ -37,6 +37,11 @@ class UserAuth {
             // Update profile UI based on auth state
             this.updateProfileUI();
 
+            // Dispatch auth state change event for other modules
+            document.dispatchEvent(new CustomEvent('authStateChanged', {
+                detail: { user }
+            }));
+
             // If user is logged in and there's a redirect URL, redirect them
             if (user && this.redirectUrl) {
                 const redirectTarget = this.redirectUrl;

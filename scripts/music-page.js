@@ -1,4 +1,5 @@
 import { fetchPublishedTracks, fetchArtistById, fetchArtists } from './data/content-repo.js'
+import { likedTracksManager } from './liked-tracks-manager.js'
 
 function formatNumber(num) {
   if (typeof num !== 'number') return '0'
@@ -124,6 +125,7 @@ function renderTrackCard(track, index, artistName, artistSocials = {}) {
   const categories = getTrackCategories(track)
   const badge = getTrackBadge(track)
   const spotifyUrl = track.spotifyUrl || (track.platformLinks?.spotify) || ''
+  const isLiked = likedTracksManager.isTrackLiked(track.id)
 
   return `
     <div class="track-card" data-track="${index}" data-category="${categories.join(' ')}" data-spotify-url="${spotifyUrl}" data-track-id="${track.id || ''}">
@@ -141,8 +143,8 @@ function renderTrackCard(track, index, artistName, artistSocials = {}) {
             <h4 class="track-title">${escapeHtml(track.title || '')}</h4>
             <p class="track-artist">${escapeHtml(artistName || track.artistName || 'Unknown Artist')}</p>
           </div>
-          <button class="like-btn-mini" title="Like" data-like-track-id="${track.id}" type="button">
-            <i class="far fa-heart"></i>
+          <button class="like-btn-mini ${isLiked ? 'liked' : ''}" title="Like" data-like-track-id="${track.id}" type="button">
+            <i class="${isLiked ? 'fas' : 'far'} fa-heart"></i>
           </button>
         </div>
       </div>
@@ -637,33 +639,10 @@ function handleLikeTrack(trackId, btn) {
     return
   }
   
-  // User is authenticated, proceed with like action
-  const uid = window.userAuth?.getCurrentUser?.()?.uid
-  if (!uid) return
-
-  // Optimistic UI
-  toggleLikeButton(btn)
-
-  import('./user-data.js').then(async ({ toggleFavorite }) => {
-    try {
-      const track = (window.__tracks || []).find(t => t.id === trackId) || { id: trackId }
-      const result = await toggleFavorite(uid, track)
-
-      // Ensure UI matches final state
-      const icon = btn.querySelector('i')
-      if (result.liked) {
-        icon?.classList.remove('far')
-        icon?.classList.add('fas')
-        btn.classList.add('liked')
-      } else {
-        icon?.classList.remove('fas')
-        icon?.classList.add('far')
-        btn.classList.remove('liked')
-      }
-    } catch (e) {
-      console.error('[MusicPage] Failed to toggle favorite:', e)
-      // Rollback on error
-      toggleLikeButton(btn)
+  // Use centralized liked tracks manager
+  const track = (window.__tracks || []).find(t => t.id === trackId) || { id: trackId }
+  likedTracksManager.toggleLike(track, btn).then(result => {
+    if (result.error) {
       if (window.notifications) window.notifications.show('Error saving favorite.', 'error')
     }
   })
@@ -891,6 +870,16 @@ function boot() {
   initMusicPage().catch(console.error)
   // Execute any pending action after login
   setTimeout(() => executePendingAction(), 500)
+  
+  // Listen for liked tracks updates to refresh UI
+  document.addEventListener('likedTracksUpdated', (e) => {
+    const { trackId, isLiked } = e.detail
+    if (trackId && isLiked !== undefined) {
+      likedTracksManager.updateTrackHeartIcons(trackId, isLiked)
+    } else {
+      likedTracksManager.updateAllHeartIcons()
+    }
+  })
 }
 
 document.addEventListener('DOMContentLoaded', () => {
