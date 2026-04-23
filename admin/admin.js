@@ -124,8 +124,7 @@ class AdminPanel {
                     '2': 'artists',
                     '3': 'tracks',
                     '4': 'team',
-                    '5': 'payments',
-                    '6': 'users'
+                    '5': 'settings'
                 };
                 const target = map[e.key];
                 if (target) {
@@ -227,11 +226,6 @@ class AdminPanel {
             this.applyPaymentFilters();
         });
 
-        // Users section handlers
-        document.getElementById('refreshUsers')?.addEventListener('click', () => {
-            this.loadUsers();
-        });
-
         // Audio URL link preview on input
         const audioUrlInput = document.getElementById('audioUrl');
         if (audioUrlInput) {
@@ -264,8 +258,7 @@ class AdminPanel {
             artists: 'artistsTable',
             tracks: 'tracksTable',
             team: 'teamTable',
-            payments: 'paymentsTable',
-            users: 'usersTable'
+            payments: 'paymentsTable'
         };
 
         const tableId = sectionToTableId[this.currentSection];
@@ -986,12 +979,12 @@ class AdminPanel {
         const titles = {
             dashboard: 'Dashboard',
             payments: 'Payment Management',
+            users: 'User Management',
             artists: 'Artist Management',
             tracks: 'Track Management',
             team: 'Team Management',
             'music-management': 'Music Management',
             projects: 'Projects',
-            users: 'User Management',
             settings: 'Studio Settings',
             savings: 'Savings Goals',
             reports: 'Reports'
@@ -1000,12 +993,12 @@ class AdminPanel {
         const subtitles = {
             dashboard: 'Welcome to your admin dashboard',
             payments: 'Manage and track all payments',
+            users: 'View and manage app users',
             artists: 'Manage artist profiles and content',
             tracks: 'Manage music tracks and releases',
             team: 'Manage team members and their profiles',
             'music-management': 'Upload and manage music tracks',
             projects: 'Manage studio projects and deliverables',
-            users: 'Manage user roles and access',
             settings: 'Configure studio settings and pricing',
             savings: 'Track and manage your savings goals',
             reports: 'Generate and view financial reports'
@@ -1025,6 +1018,9 @@ class AdminPanel {
                 case 'dashboard':
                     await this.renderDashboard();
                     break;
+                case 'users':
+                    await this.loadUsers();
+                    break;
                 case 'artists':
                     await this.loadArtists();
                     break;
@@ -1041,9 +1037,6 @@ class AdminPanel {
                     break;
                 case 'payments':
                     await this.loadPayments();
-                    break;
-                case 'users':
-                    await this.loadUsers();
                     break;
                 case 'settings':
                     await this.loadSettings();
@@ -1269,7 +1262,7 @@ class AdminPanel {
         if (!table) return;
         
         // Load payments from Firestore
-        const { db } = await import('../scripts/firebase-init.js');
+        const { db } = await import('./admin-firebase.js');
         const { collection, getDocs, query, orderBy } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
         
         try {
@@ -1348,27 +1341,25 @@ class AdminPanel {
     }
 
     async verifyPayment(paymentId) {
-        let ok = false;
-        if (window.notifications && window.notifications.confirm) {
-            ok = await window.notifications.confirm(
-                'Are you sure you want to verify this payment? This will activate the user\'s membership.',
-                'Verify Payment',
-                'warning'
-            );
-        } else {
-            ok = confirm('Are you sure you want to verify this payment? This will activate the user\'s membership.');
+        if (!confirm('Are you sure you want to verify this payment? This will activate the user\'s membership.')) {
+            return;
         }
-        if (!ok) return;
 
         try {
-            const { db } = await import('../scripts/firebase-init.js');
+            const { db } = await import('./admin-firebase.js');
             const { doc, updateDoc } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
+            
+            const reviewer = (window.adminAuth && typeof window.adminAuth.getCurrentUser === 'function')
+                ? window.adminAuth.getCurrentUser()
+                : null;
+            const reviewedBy = reviewer?.username || reviewer?.email || 'admin';
             
             const paymentRef = doc(db, 'payments', paymentId);
             await updateDoc(paymentRef, {
                 status: 'verified',
-                reviewedBy: window.adminAuth?.getCurrentUser?.()?.username || window.adminAuth?.getCurrentUser?.()?.role || 'admin',
                 reviewedAt: new Date().toISOString(),
+                reviewedBy,
+                rejectionReason: null,
                 updatedAt: new Date().toISOString()
             });
 
@@ -1381,36 +1372,31 @@ class AdminPanel {
     }
 
     async rejectPayment(paymentId) {
-        let ok = false;
-        if (window.notifications && window.notifications.confirm) {
-            ok = await window.notifications.confirm('Are you sure you want to reject this payment?', 'Reject Payment', 'danger');
-        } else {
-            ok = confirm('Are you sure you want to reject this payment?');
-        }
-        if (!ok) return;
-
-        let reason = null;
-        if (window.notifications && window.notifications.prompt) {
-            reason = await window.notifications.prompt('Provide a reason for rejecting this payment (this will be visible to the user).', '', 'Rejection Reason');
-        } else {
-            reason = prompt('Provide a reason for rejecting this payment (this will be visible to the user).', '');
-        }
-        reason = (reason == null) ? '' : String(reason).trim();
-        if (!reason) {
-            this.showNotification('Rejection cancelled (reason is required)', 'info');
+        if (!confirm('Are you sure you want to reject this payment?')) {
             return;
         }
 
         try {
-            const { db } = await import('../scripts/firebase-init.js');
+            const { db } = await import('./admin-firebase.js');
             const { doc, updateDoc } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
+
+            const reason = (prompt('Reason for rejecting this payment (required):') || '').trim();
+            if (!reason) {
+                this.showNotification('Rejection reason is required.', 'error');
+                return;
+            }
+
+            const reviewer = (window.adminAuth && typeof window.adminAuth.getCurrentUser === 'function')
+                ? window.adminAuth.getCurrentUser()
+                : null;
+            const reviewedBy = reviewer?.username || reviewer?.email || 'admin';
             
             const paymentRef = doc(db, 'payments', paymentId);
             await updateDoc(paymentRef, {
                 status: 'rejected',
                 rejectionReason: reason,
-                reviewedBy: window.adminAuth?.getCurrentUser?.()?.username || window.adminAuth?.getCurrentUser?.()?.role || 'admin',
                 reviewedAt: new Date().toISOString(),
+                reviewedBy,
                 updatedAt: new Date().toISOString()
             });
 
@@ -1418,7 +1404,6 @@ class AdminPanel {
             this.loadPayments();
         } catch (error) {
             console.error('Error rejecting payment:', error);
-            this.showNotification('Error rejecting payment: ' + (error?.message || String(error)), 'error');
             this.showNotification('Error rejecting payment', 'error');
         }
     }
@@ -1858,12 +1843,121 @@ class AdminPanel {
         }
     }
 
-    viewPayment(paymentId) {
-        const message = `Viewing payment: ${paymentId}`;
-        if (window.notifications) {
-            window.notifications.show(message, 'info');
-        } else {
-            console.log(message);
+    async viewPayment(paymentId) {
+        try {
+            const { db } = await import('./admin-firebase.js');
+            const { doc, getDoc } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
+
+            const snap = await getDoc(doc(db, 'payments', paymentId));
+            if (!snap.exists()) {
+                this.showNotification('Payment not found', 'error');
+                return;
+            }
+
+            const p = { id: snap.id, ...snap.data() };
+            const createdAt = p.createdAt ? new Date(p.createdAt).toLocaleString() : 'N/A';
+            const reviewedAt = p.reviewedAt ? new Date(p.reviewedAt).toLocaleString() : 'N/A';
+            const details = [
+                `User: ${p.userName || 'Unknown'} ${p.userEmail ? `(${p.userEmail})` : ''}`,
+                `Plan: ${p.plan || 'Unknown'}`,
+                `Amount: UGX ${this.formatNumber(p.amount || 0)}`,
+                `Method: ${p.paymentMethod || 'Unknown'}`,
+                `Phone: ${p.phoneNumber || 'N/A'}`,
+                `Transaction: ${p.transactionId || 'N/A'}`,
+                `Status: ${p.status || 'unknown'}`,
+                `Created: ${createdAt}`,
+                `Reviewed: ${reviewedAt} ${p.reviewedBy ? `by ${p.reviewedBy}` : ''}`,
+                p.rejectionReason ? `Rejection Reason: ${p.rejectionReason}` : ''
+            ].filter(Boolean).join('\n');
+
+            if (window.notifications) {
+                window.notifications.show(details, 'info');
+            } else {
+                alert(details);
+            }
+        } catch (error) {
+            console.error('Error viewing payment:', error);
+            this.showNotification('Error loading payment details', 'error');
+        }
+    }
+
+    async loadUsers() {
+        const table = document.getElementById('usersTable');
+        if (!table) return;
+
+        try {
+            const { db } = await import('../scripts/firebase-init.js');
+            const { collection, getDocs, query, orderBy, limit } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
+
+            const q = query(collection(db, 'users'), orderBy('createdAt', 'desc'), limit(200));
+            const snap = await getDocs(q);
+
+            const users = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+            if (users.length === 0) {
+                table.innerHTML = '<tr><td colspan="5" class="text-center">No users found</td></tr>';
+                return;
+            }
+
+            table.innerHTML = users.map((u) => {
+                const name = u.displayName || u.name || 'Unnamed';
+                const email = u.email || '';
+                const status = u.status || 'active';
+                const plan = u.membership?.plan || u.plan || 'N/A';
+                const created = u.createdAt && u.createdAt.toDate
+                    ? u.createdAt.toDate().toLocaleDateString()
+                    : (u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '');
+
+                return `
+                    <tr>
+                        <td>
+                            <div class="user-cell">
+                                <div class="user-name">${name}</div>
+                                <div class="user-email">${email}</div>
+                            </div>
+                        </td>
+                        <td>${plan}</td>
+                        <td>${created}</td>
+                        <td><span class="status-badge status-${status}">${status}</span></td>
+                        <td>
+                            <button class="btn btn-secondary btn-sm" type="button" onclick="adminPanel.viewUser('${u.id}')" title="View">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        } catch (error) {
+            console.error('Error loading users:', error);
+            table.innerHTML = '<tr><td colspan="5" class="text-center">Unable to load users (Firestore rules may restrict admin access)</td></tr>';
+        }
+    }
+
+    async viewUser(userId) {
+        try {
+            const { db } = await import('../scripts/firebase-init.js');
+            const { doc, getDoc } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
+            const snap = await getDoc(doc(db, 'users', userId));
+            if (!snap.exists()) {
+                this.showNotification('User not found', 'error');
+                return;
+            }
+            const u = { id: snap.id, ...snap.data() };
+            const details = [
+                `User: ${u.displayName || u.name || 'Unnamed'}`,
+                u.email ? `Email: ${u.email}` : '',
+                u.phoneNumber ? `Phone: ${u.phoneNumber}` : '',
+                u.status ? `Status: ${u.status}` : '',
+                u.membership?.plan ? `Plan: ${u.membership.plan}` : (u.plan ? `Plan: ${u.plan}` : ''),
+            ].filter(Boolean).join('\n');
+
+            if (window.notifications) {
+                window.notifications.show(details, 'info');
+            } else {
+                alert(details);
+            }
+        } catch (error) {
+            console.error('Error viewing user:', error);
+            this.showNotification('Unable to view user (Firestore rules may restrict access)', 'error');
         }
     }
 
