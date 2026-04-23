@@ -641,7 +641,19 @@ function initMembership() {
     }
 
     function openMembershipModal(planType) {
-        const plan = plans[planType] || plans.monthly
+        // Always use latest config if available, otherwise fall back to local plans
+        let plan
+        if (window.studioConfig && window.studioConfig.plans && window.studioConfig.plans[planType]) {
+            const configPlan = window.studioConfig.plans[planType]
+            plan = {
+                name: plans[planType].name,
+                price: `UGX ${configPlan.price.toLocaleString()}`,
+                period: plans[planType].period,
+                description: configPlan.description || plans[planType].description
+            }
+        } else {
+            plan = plans[planType] || plans.monthly
+        }
 
         if (selectedPlanName) selectedPlanName.textContent = `${plan.name} Plan`
         if (selectedPlanPrice) selectedPlanPrice.textContent = `${plan.price} / ${plan.period}`
