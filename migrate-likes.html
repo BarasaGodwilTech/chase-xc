@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Migrate Track Likes - Chase x Records</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a2e;
+            color: #fff;
+            padding: 40px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 {
+            margin-bottom: 20px;
+            color: #e94560;
+        }
+        .description {
+            background: #16213e;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        .description h2 {
+            margin-bottom: 10px;
+            color: #e94560;
+        }
+        .description ul {
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+        .description li {
+            margin-bottom: 8px;
+        }
+        .button-container {
+            margin-top: 30px;
+        }
+        button {
+            background: #e94560;
+            color: #fff;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #ff6b6b;
+        }
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        #log {
+            background: #0f0f23;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 30px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        .success {
+            color: #4ade80;
+        }
+        .error {
+            color: #f87171;
+        }
+        .warning {
+            color: #fbbf24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Migrate Track Likes</h1>
+        
+        <div class="description">
+            <h2>What this does:</h2>
+            <ul>
+                <li>Fetches all users from Firestore</li>
+                <li>Counts how many users liked each track (from their favorites)</li>
+                <li>Updates each track's <code>likes</code> field with the correct count</li>
+            </ul>
+            
+            <h2 style="margin-top: 20px;">Why run this?</h2>
+            <ul>
+                <li>Before this implementation, likes were only stored in user favorites</li>
+                <li>Now likes are also counted in the track's <code>likes</code> field</li>
+                <li>This migration backfills the counts for tracks liked before the change</li>
+            </ul>
+            
+            <h2 style="margin-top: 20px;">Note:</h2>
+            <ul>
+                <li>This is a one-time migration script</li>
+                <li>After running, new likes will be automatically counted</li>
+                <li>Make sure you have proper Firebase permissions</li>
+            </ul>
+        </div>
+        
+        <div class="button-container">
+            <button id="runMigration" onclick="runMigration()">Run Migration</button>
+        </div>
+        
+        <div id="log"></div>
+    </div>
+
+    <script type="module" src="scripts/firebase-init.js"></script>
+    <script type="module" src="scripts/migrate-track-likes.js"></script>
+    <script>
+        async function runMigration() {
+            const button = document.getElementById('runMigration');
+            const log = document.getElementById('log');
+            
+            button.disabled = true;
+            button.textContent = 'Running...';
+            log.innerHTML = '';
+            
+            function addLog(message, type = '') {
+                const line = document.createElement('div');
+                line.textContent = message;
+                if (type) line.className = type;
+                log.appendChild(line);
+                log.scrollTop = log.scrollHeight;
+            }
+            
+            try {
+                addLog('Starting migration...', 'warning');
+                
+                const { migrateTrackLikes } = await import('./scripts/migrate-track-likes.js');
+                const result = await migrateTrackLikes();
+                
+                if (result.success) {
+                    addLog(`Migration complete!`, 'success');
+                    addLog(`Updated ${result.updatedCount} tracks`, 'success');
+                    addLog(`Errors: ${result.errorCount}`, result.errorCount > 0 ? 'error' : 'success');
+                } else {
+                    addLog(`Migration failed: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                addLog(`Error: ${error.message}`, 'error');
+                console.error(error);
+            } finally {
+                button.disabled = false;
+                button.textContent = 'Run Migration';
+            }
+        }
+    </script>
+</body>
+</html>
