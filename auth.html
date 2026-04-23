@@ -4,6 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign In - Chase x Records</title>
+    <script type="module">
+        import { auth } from './scripts/firebase-init.js'
+        
+        // Immediate redirect for logged-in users before page renders
+        if (auth.currentUser) {
+            const redirectUrl = sessionStorage.getItem('authRedirectUrl') || 'index.html'
+            sessionStorage.removeItem('authRedirectUrl')
+            window.location.replace(redirectUrl)
+        }
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">

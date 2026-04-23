@@ -455,8 +455,12 @@ class UserAuth {
 
     toggleProfileDropdown() {
         // If user is not logged in, redirect directly to auth.html
-        if (!this.getCurrentUser()) {
-            window.location.href = 'auth.html';
+        const user = this.getCurrentUser();
+        if (!user) {
+            // Prevent redirect if already on auth page
+            if (!window.location.pathname.includes('auth.html')) {
+                window.location.href = 'auth.html';
+            }
             return;
         }
 
