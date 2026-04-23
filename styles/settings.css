@@ -601,4 +601,39 @@
     .panel-header p {
         font-size: 0.9rem;
     }
+    
+    /* Mobile-optimized buttons */
+    .settings-section .btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.85rem;
+        width: auto;
+        min-width: fit-content;
+    }
+    
+    .settings-form button[type="submit"] {
+        padding: 0.6rem 1.2rem;
+        font-size: 0.85rem;
+    }
+    
+    .btn-danger {
+        padding: 0.5rem 1rem;
+        font-size: 0.85rem;
+    }
+    
+    .btn-outline {
+        padding: 0.5rem 1rem;
+        font-size: 0.85rem;
+    }
+    
+    /* Button groups for mobile */
+    .settings-section .btn-group {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+    
+    .settings-section .btn-group .btn {
+        flex: 1;
+        min-width: calc(50% - 0.25rem);
+    }
 }
