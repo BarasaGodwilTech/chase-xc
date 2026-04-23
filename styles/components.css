@@ -219,6 +219,7 @@
   background: rgba(255, 255, 255, 0.03);
   width: fit-content;
   max-width: 100%;
+  position: relative;
 }
 
 .account-nav a {
@@ -236,6 +237,14 @@
   border: 1px solid transparent;
   transition: var(--transition);
   white-space: nowrap;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.account-nav a span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .account-nav a:hover {
@@ -260,10 +269,35 @@
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
+    padding-right: 1.25rem;
+    padding-left: 1.25rem;
   }
 
   .account-nav::-webkit-scrollbar {
     height: 0;
+  }
+
+  .account-nav::before,
+  .account-nav::after {
+    content: "";
+    position: sticky;
+    top: 0;
+    width: 18px;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .account-nav::before {
+    left: 0;
+    margin-left: -1.25rem;
+    background: linear-gradient(90deg, rgba(10, 16, 33, 1), rgba(10, 16, 33, 0));
+  }
+
+  .account-nav::after {
+    right: 0;
+    margin-right: -1.25rem;
+    background: linear-gradient(270deg, rgba(10, 16, 33, 1), rgba(10, 16, 33, 0));
   }
 
   .account-nav a {

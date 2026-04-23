@@ -26,6 +26,10 @@
     padding: 3rem 0;
 }
 
+.account-nav-container {
+    margin: 0 0 1.25rem;
+}
+
 /* Prevent any accidental horizontal overflow on small devices */
 .settings-content,
 .settings-layout,
@@ -542,6 +546,9 @@
         gap: 0.25rem;
         scroll-snap-type: x mandatory;
         scrollbar-width: none;
+        position: relative;
+        padding-right: 1.25rem;
+        padding-left: 1.25rem;
     }
 
     .settings-nav::-webkit-scrollbar {
@@ -558,14 +565,45 @@
         padding: 0.625rem 0.875rem;
         font-size: 0.85rem;
         scroll-snap-align: start;
+        max-width: 100%;
     }
     
     .settings-nav-item span {
         white-space: nowrap;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .settings-nav::before,
+    .settings-nav::after {
+        content: "";
+        position: sticky;
+        top: 0;
+        width: 18px;
+        height: 100%;
+        pointer-events: none;
+        z-index: 1;
+    }
+
+    .settings-nav::before {
+        left: 0;
+        margin-left: -1.25rem;
+        background: linear-gradient(90deg, rgba(10, 16, 33, 1), rgba(10, 16, 33, 0));
+    }
+
+    .settings-nav::after {
+        right: 0;
+        margin-right: -1.25rem;
+        background: linear-gradient(270deg, rgba(10, 16, 33, 1), rgba(10, 16, 33, 0));
     }
     
     .settings-section {
         padding: 1.5rem;
+    }
+
+    .account-nav-container {
+        margin: 0 0 1rem;
     }
 
     /* Override global main.css mobile .btn { width: 100% } */
