@@ -675,6 +675,52 @@
     margin: 0;
 }
 
+.playlist-cover-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.playlist-preview {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: rgba(0, 0, 0, 0.2);
+    margin-top: 0.5rem;
+    border-radius: 8px;
+}
+
+.playlist-preview-track {
+    width: 40px;
+    height: 40px;
+    border-radius: 6px;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.playlist-preview-track img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.playlist-preview-more {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: rgba(0, 212, 255, 0.2);
+    border-radius: 6px;
+    color: var(--primary);
+    font-size: 0.75rem;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
 .playlist-actions {
     position: absolute;
     top: 0.5rem;

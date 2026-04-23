@@ -14,6 +14,7 @@ import {
     createPlaylist
 } from './user-data.js'
 import { likedTracksManager } from './liked-tracks-manager.js'
+import { fetchTrackById } from './data/content-repo.js'
 
 class UserProfile {
     constructor() {
@@ -494,11 +495,12 @@ class UserProfile {
         }
     }
 
-    loadPlaylists() {
+    async loadPlaylists() {
         const playlistsGrid = document.getElementById('playlistsGrid');
         if (!playlistsGrid) return;
 
-        getPlaylists(this.currentUser.uid, 50).then((playlists) => {
+        try {
+            const playlists = await getPlaylists(this.currentUser.uid, 50);
             if (!playlists || playlists.length === 0) {
                 playlistsGrid.innerHTML = `
                     <div class="empty-state">
@@ -520,10 +522,45 @@ class UserProfile {
             // Store playlists for event handlers
             window.__profilePlaylists = playlists;
 
-            playlistsGrid.innerHTML = playlists.map(playlist => `
+            // Fetch track details for each playlist's preview
+            const playlistsWithPreviews = await Promise.all(playlists.map(async (playlist) => {
+                const trackIds = playlist.tracks || [];
+                const previewTracks = [];
+                
+                // Fetch first 3 tracks for preview
+                for (const trackId of trackIds.slice(0, 3)) {
+                    try {
+                        const track = await fetchTrackById(trackId);
+                        if (track) {
+                            previewTracks.push(track);
+                        }
+                    } catch (error) {
+                        console.error('[Profile] Error loading track for preview:', trackId, error);
+                    }
+                }
+
+                return { ...playlist, previewTracks };
+            }));
+
+            playlistsGrid.innerHTML = playlistsWithPreviews.map(playlist => {
+                const previewHTML = playlist.previewTracks.length > 0 
+                    ? `<div class="playlist-preview">
+                        ${playlist.previewTracks.map(track => `
+                            <div class="playlist-preview-track">
+                                <img src="${track.artwork || 'public/player-cover-1.jpg'}" alt="${track.title}">
+                            </div>
+                        `).join('')}
+                        ${playlist.trackCount > 3 ? `<div class="playlist-preview-more">+${playlist.trackCount - 3}</div>` : ''}
+                    </div>`
+                    : '';
+
+                return `
                 <div class="playlist-card" data-playlist-id="${playlist.id}">
                     <div class="playlist-artwork">
-                        <i class="fas fa-music"></i>
+                        ${playlist.previewTracks.length > 0 
+                            ? `<img src="${playlist.previewTracks[0].artwork || 'public/player-cover-1.jpg'}" alt="${playlist.name}" class="playlist-cover-image">`
+                            : '<i class="fas fa-music"></i>'
+                        }
                         <button class="playlist-play-btn" type="button" aria-label="Play ${playlist.name}">
                             <i class="fas fa-play"></i>
                         </button>
@@ -532,6 +569,7 @@ class UserProfile {
                         <h4>${playlist.name}</h4>
                         <p>${playlist.trackCount || (playlist.tracks?.length || 0)} tracks</p>
                     </div>
+                    ${previewHTML}
                     <div class="playlist-actions">
                         <button class="playlist-action-btn" data-action="edit" title="Edit playlist">
                             <i class="fas fa-edit"></i>
@@ -541,13 +579,13 @@ class UserProfile {
                         </button>
                     </div>
                 </div>
-            `).join('');
+            `}).join('');
 
             // Setup playlist card listeners
             this.setupPlaylistCardListeners();
-        }).catch((e) => {
+        } catch (e) {
             console.error('Error loading playlists:', e)
-        })
+        }
     }
 
     async createPlaylist() {
