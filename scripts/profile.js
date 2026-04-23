@@ -589,7 +589,17 @@ class UserProfile {
                 const track = window.__profileTracks[trackIndex];
                 
                 if (track && window.persistentPlayer) {
-                    window.persistentPlayer.loadTrack(track);
+                    // Set full playlist for favorites so next/prev/shuffle/repeat work
+                    const playlistData = window.__profileTracks.map(t => ({
+                        id: t.id,
+                        title: t.title,
+                        artistName: t.artistName,
+                        artwork: t.artwork,
+                        audioUrl: t.audioUrl,
+                        platformLinks: t.platformLinks || {},
+                        originalData: t
+                    }));
+                    window.persistentPlayer.setPlaylist(playlistData, trackIndex);
                     window.persistentPlayer.play();
                 }
             });
@@ -685,7 +695,7 @@ class UserProfile {
             });
         });
 
-        // Card click - navigate to playlist detail (or could open edit modal)
+        // Card click - navigate to playlist detail page
         document.querySelectorAll('#playlistsGrid .playlist-card').forEach(card => {
             card.addEventListener('click', (e) => {
                 if (e.target.closest('.playlist-play-btn') || 
@@ -693,14 +703,7 @@ class UserProfile {
                     return;
                 }
                 const playlistId = card.dataset.playlistId;
-                // For now, open edit modal on card click
-                const playlist = window.__profilePlaylists?.find(p => p.id === playlistId);
-                if (playlist) {
-                    const newName = prompt('Edit playlist name:', playlist.name);
-                    if (newName && newName.trim()) {
-                        this.updatePlaylistName(playlistId, newName.trim());
-                    }
-                }
+                window.location.href = `playlist-detail.html?id=${playlistId}`;
             });
         });
     }

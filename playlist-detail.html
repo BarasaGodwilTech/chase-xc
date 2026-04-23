@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Playlist - Chase x Records</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/components.css">
+    <link rel="stylesheet" href="styles/profile.css">
+</head>
+<body>
+    <script src="scripts/includes.js"></script>
+    <script type="module" src="scripts/config-loader.js"></script>
+    <div data-include="partials/header.html"></div>
+
+    <!-- Playlist Detail Section -->
+    <section class="playlist-detail-section">
+        <div class="container">
+            <!-- Back Button -->
+            <a href="profile.html" class="back-btn">
+                <i class="fas fa-arrow-left"></i>
+                <span>Back to Profile</span>
+            </a>
+
+            <!-- Playlist Header -->
+            <div class="playlist-detail-header">
+                <div class="playlist-detail-artwork">
+                    <i class="fas fa-music"></i>
+                </div>
+                <div class="playlist-detail-info">
+                    <h1 class="playlist-detail-title" id="playlistTitle">Loading...</h1>
+                    <p class="playlist-detail-meta" id="playlistMeta">Loading...</p>
+                    <div class="playlist-detail-actions">
+                        <button class="btn btn-primary" id="playAllBtn">
+                            <i class="fas fa-play"></i> Play All
+                        </button>
+                        <button class="btn btn-outline" id="shuffleBtn">
+                            <i class="fas fa-random"></i> Shuffle
+                        </button>
+                        <button class="btn btn-outline" id="editPlaylistBtn">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                        <button class="btn btn-outline btn-danger" id="deletePlaylistBtn">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tracks List -->
+            <div class="playlist-tracks-container">
+                <div class="playlist-tracks-header">
+                    <h3>Tracks</h3>
+                    <span class="track-count" id="trackCount">0 tracks</span>
+                </div>
+                <div class="playlist-tracks-list" id="playlistTracksList">
+                    <!-- Tracks will be loaded dynamically -->
+                    <div class="empty-state">
+                        <i class="fas fa-music"></i>
+                        <h3>No tracks in this playlist</h3>
+                        <p>Add tracks from the music page to build your playlist</p>
+                        <a href="music.html" class="btn btn-primary">Browse Music</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div data-include="partials/footer.html"></div>
+
+    <script type="module" src="scripts/firebase-init.js"></script>
+    <script type="module" src="scripts/auth.js"></script>
+    <script type="module" src="scripts/liked-tracks-manager.js"></script>
+    <script type="module" src="scripts/playlist-modal.js"></script>
+    <script src="scripts/main.js"></script>
+    <script type="module" src="scripts/playlist-detail.js"></script>
+</body>
+</html>

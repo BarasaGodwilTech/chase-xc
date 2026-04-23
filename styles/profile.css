@@ -970,3 +970,311 @@
         font-size: 0.8rem;
     }
 }
+
+/* Playlist Detail Page Styles */
+.playlist-detail-section {
+    padding: 2rem 0 4rem;
+}
+
+.playlist-detail-header {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    margin-bottom: 2rem;
+    padding: 2rem;
+    background: var(--surface);
+    border-radius: 16px;
+    border: 1px solid var(--border);
+}
+
+.playlist-detail-artwork {
+    width: 200px;
+    height: 200px;
+    background: linear-gradient(135deg, rgba(0, 212, 255, 0.2), rgba(168, 85, 247, 0.2));
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 4rem;
+    color: var(--primary);
+    flex-shrink: 0;
+}
+
+.playlist-detail-info {
+    flex: 1;
+}
+
+.playlist-detail-title {
+    font-family: var(--font-heading);
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 0.5rem 0;
+}
+
+.playlist-detail-meta {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    margin: 0 0 1.5rem 0;
+}
+
+.playlist-detail-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.playlist-tracks-container {
+    background: var(--surface);
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+}
+
+.playlist-tracks-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.playlist-tracks-header h3 {
+    color: var(--text-primary);
+    margin: 0;
+    font-size: 1.2rem;
+}
+
+.track-count {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.playlist-tracks-list {
+    max-height: 600px;
+    overflow-y: auto;
+}
+
+.playlist-track-item {
+    display: grid;
+    grid-template-columns: 50px 60px 1fr 80px 100px;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 2rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.playlist-track-item:hover {
+    background: rgba(0, 212, 255, 0.05);
+}
+
+.playlist-track-item:last-child {
+    border-bottom: none;
+}
+
+.playlist-track-item.dragging {
+    opacity: 0.5;
+    background: rgba(0, 212, 255, 0.1);
+}
+
+.playlist-track-item.drag-over {
+    border-top: 2px solid var(--primary);
+}
+
+.playlist-track-number {
+    color: var(--text-tertiary);
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.playlist-track-artwork {
+    position: relative;
+    width: 50px;
+    height: 50px;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.playlist-track-artwork img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.playlist-track-play-btn {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.7);
+    border: none;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: all 0.2s ease;
+    font-size: 0.9rem;
+}
+
+.playlist-track-artwork:hover .playlist-track-play-btn {
+    opacity: 1;
+}
+
+.playlist-track-play-btn:hover {
+    background: #1db954;
+    transform: translate(-50%, -50%) scale(1.1);
+}
+
+.playlist-track-info {
+    min-width: 0;
+}
+
+.playlist-track-title {
+    color: var(--text-primary);
+    margin: 0 0 0.25rem 0;
+    font-size: 1rem;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.playlist-track-artist {
+    color: var(--text-secondary);
+    margin: 0;
+    font-size: 0.85rem;
+}
+
+.playlist-track-duration {
+    color: var(--text-tertiary);
+    font-size: 0.85rem;
+}
+
+.playlist-track-actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
+
+.playlist-track-action {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+.playlist-track-action:hover {
+    color: var(--primary);
+    background: rgba(0, 212, 255, 0.1);
+}
+
+.playlist-track-action.btn-remove:hover {
+    color: var(--accent);
+    background: rgba(236, 72, 153, 0.1);
+}
+
+.btn-danger {
+    color: var(--accent);
+    border-color: var(--accent);
+}
+
+.btn-danger:hover {
+    background: var(--accent);
+    color: white;
+}
+
+@media (max-width: 768px) {
+    .playlist-detail-header {
+        flex-direction: column;
+        text-align: center;
+        gap: 1.5rem;
+    }
+
+    .playlist-detail-artwork {
+        width: 150px;
+        height: 150px;
+        font-size: 3rem;
+    }
+
+    .playlist-detail-title {
+        font-size: 1.8rem;
+    }
+
+    .playlist-detail-actions {
+        justify-content: center;
+    }
+
+    .playlist-track-item {
+        grid-template-columns: 40px 50px 1fr 60px;
+        gap: 0.75rem;
+        padding: 0.85rem 1rem;
+    }
+
+    .playlist-track-duration {
+        display: none;
+    }
+
+    .playlist-track-actions {
+        grid-column: 4;
+    }
+}
+
+@media (max-width: 480px) {
+    .playlist-detail-section {
+        padding: 1rem 0 2rem;
+    }
+
+    .playlist-detail-header {
+        padding: 1.5rem;
+    }
+
+    .playlist-detail-artwork {
+        width: 120px;
+        height: 120px;
+        font-size: 2.5rem;
+    }
+
+    .playlist-detail-title {
+        font-size: 1.5rem;
+    }
+
+    .playlist-detail-meta {
+        font-size: 0.95rem;
+    }
+
+    .playlist-detail-actions {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .playlist-detail-actions .btn {
+        width: 100%;
+    }
+
+    .playlist-track-item {
+        grid-template-columns: 35px 45px 1fr;
+        gap: 0.5rem;
+        padding: 0.75rem;
+    }
+
+    .playlist-track-duration,
+    .playlist-track-actions {
+        display: none;
+    }
+}

@@ -1467,6 +1467,230 @@
     font-weight: 500;
 }
 
+/* Playlist Modal Styles */
+.playlist-modal-content {
+    max-width: 500px;
+    width: 90%;
+}
+
+.playlist-modal-track-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 12px;
+    margin-bottom: 1rem;
+}
+
+.playlist-modal-track-info img {
+    width: 60px;
+    height: 60px;
+    border-radius: 8px;
+    object-fit: cover;
+}
+
+.playlist-modal-track-details h4 {
+    color: var(--text-primary);
+    margin: 0 0 0.25rem 0;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.playlist-modal-track-details p {
+    color: var(--text-secondary);
+    margin: 0;
+    font-size: 0.85rem;
+}
+
+.playlist-modal-search {
+    margin-bottom: 1rem;
+}
+
+.playlist-modal-search input {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+}
+
+.playlist-modal-search input:focus {
+    outline: none;
+    border-color: var(--primary);
+    background: rgba(0, 212, 255, 0.05);
+}
+
+.playlist-modal-list {
+    max-height: 300px;
+    overflow-y: auto;
+    margin-bottom: 1rem;
+    padding-right: 0.5rem;
+}
+
+.playlist-modal-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.playlist-modal-list::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 3px;
+}
+
+.playlist-modal-list::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 3px;
+}
+
+.playlist-modal-list::-webkit-scrollbar-thumb:hover {
+    background: var(--primary);
+}
+
+.playlist-modal-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.85rem 1rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.playlist-modal-item:hover {
+    background: rgba(0, 212, 255, 0.08);
+    border-color: rgba(0, 212, 255, 0.3);
+    transform: translateX(4px);
+}
+
+.playlist-modal-item.duplicate {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.playlist-modal-item.duplicate:hover {
+    transform: none;
+    background: rgba(255, 255, 255, 0.03);
+    border-color: var(--border);
+}
+
+.playlist-modal-item-icon {
+    width: 40px;
+    height: 40px;
+    background: rgba(0, 212, 255, 0.1);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary);
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.playlist-modal-item-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.playlist-modal-item-info h4 {
+    color: var(--text-primary);
+    margin: 0 0 0.25rem 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.playlist-modal-item-info p {
+    color: var(--text-secondary);
+    margin: 0;
+    font-size: 0.8rem;
+}
+
+.playlist-modal-item-status {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary);
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.playlist-modal-item.duplicate .playlist-modal-item-status {
+    color: var(--secondary);
+}
+
+.playlist-modal-empty,
+.playlist-modal-error {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-secondary);
+}
+
+.playlist-modal-empty i,
+.playlist-modal-error i {
+    font-size: 2rem;
+    margin-bottom: 0.75rem;
+    opacity: 0.5;
+}
+
+.playlist-modal-empty p,
+.playlist-modal-error p {
+    margin: 0.5rem 0 0 0;
+    font-size: 0.9rem;
+}
+
+.playlist-modal-error {
+    color: var(--accent);
+}
+
+.playlist-modal-error i {
+    color: var(--accent);
+}
+
+.playlist-modal-create {
+    margin-top: 1rem;
+}
+
+.btn-full {
+    width: 100%;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateX(-50%) translateY(20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideDown {
+    from {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(-50%) translateY(20px);
+        opacity: 0;
+    }
+}
+
+.text-muted {
+    color: var(--text-tertiary);
+    font-size: 0.85rem;
+}
+
 /* Contact Info in Footer */
 .contact-info-footer {
     display: flex;

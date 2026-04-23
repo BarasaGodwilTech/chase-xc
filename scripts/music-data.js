@@ -500,7 +500,20 @@ class MusicDataRenderer {
             return;
         }
 
-        console.log('[MusicData] User authenticated, proceeding with add to playlist action');
+        // Use playlist modal instead of browser prompt
+        if (window.playlistModal) {
+            window.playlistModal.open(track, (playlistId, playlistName) => {
+                console.log('[MusicData] Added to playlist:', playlistName)
+            })
+        } else {
+            // Fallback to old flow if modal not available
+            const uid = window.userAuth?.getCurrentUser?.()?.uid
+            if (!uid) return
+            this.addToPlaylistFlow(uid, track).catch((e) => {
+                console.error('[MusicData] Failed to add to playlist:', e)
+                this.showNotification('Error adding to playlist.', 'error')
+            })
+        }
     }
 
     openExternalPlayer(url, track = null) {

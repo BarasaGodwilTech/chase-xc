@@ -298,13 +298,20 @@ function handleAddToPlaylist() {
     return
   }
 
-  const uid = window.userAuth?.getCurrentUser?.()?.uid
-  if (!uid) return
-
-  addToPlaylistFlow(uid, currentTrack).catch((e) => {
-    console.error('[TrackDetail] Failed to add to playlist:', e)
-    if (window.notifications) window.notifications.show('Error adding to playlist.', 'error')
-  })
+  // Use playlist modal instead of browser prompt
+  if (window.playlistModal) {
+    window.playlistModal.open(currentTrack, (playlistId, playlistName) => {
+      console.log('[TrackDetail] Added to playlist:', playlistName)
+    })
+  } else {
+    // Fallback to old flow if modal not available
+    const uid = window.userAuth?.getCurrentUser?.()?.uid
+    if (!uid) return
+    addToPlaylistFlow(uid, currentTrack).catch((e) => {
+      console.error('[TrackDetail] Failed to add to playlist:', e)
+      if (window.notifications) window.notifications.show('Error adding to playlist.', 'error')
+    })
+  }
 }
 
 async function addToPlaylistFlow(uid, track) {
