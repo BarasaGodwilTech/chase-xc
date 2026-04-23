@@ -124,7 +124,8 @@ class AdminPanel {
                     '2': 'artists',
                     '3': 'tracks',
                     '4': 'team',
-                    '5': 'settings'
+                    '5': 'payments',
+                    '6': 'users'
                 };
                 const target = map[e.key];
                 if (target) {
@@ -226,6 +227,11 @@ class AdminPanel {
             this.applyPaymentFilters();
         });
 
+        // Users section handlers
+        document.getElementById('refreshUsers')?.addEventListener('click', () => {
+            this.loadUsers();
+        });
+
         // Audio URL link preview on input
         const audioUrlInput = document.getElementById('audioUrl');
         if (audioUrlInput) {
@@ -258,7 +264,8 @@ class AdminPanel {
             artists: 'artistsTable',
             tracks: 'tracksTable',
             team: 'teamTable',
-            payments: 'paymentsTable'
+            payments: 'paymentsTable',
+            users: 'usersTable'
         };
 
         const tableId = sectionToTableId[this.currentSection];
@@ -984,6 +991,7 @@ class AdminPanel {
             team: 'Team Management',
             'music-management': 'Music Management',
             projects: 'Projects',
+            users: 'User Management',
             settings: 'Studio Settings',
             savings: 'Savings Goals',
             reports: 'Reports'
@@ -997,6 +1005,7 @@ class AdminPanel {
             team: 'Manage team members and their profiles',
             'music-management': 'Upload and manage music tracks',
             projects: 'Manage studio projects and deliverables',
+            users: 'Manage user roles and access',
             settings: 'Configure studio settings and pricing',
             savings: 'Track and manage your savings goals',
             reports: 'Generate and view financial reports'
@@ -1032,6 +1041,9 @@ class AdminPanel {
                     break;
                 case 'payments':
                     await this.loadPayments();
+                    break;
+                case 'users':
+                    await this.loadUsers();
                     break;
                 case 'settings':
                     await this.loadSettings();
@@ -1257,7 +1269,7 @@ class AdminPanel {
         if (!table) return;
         
         // Load payments from Firestore
-        const { db } = await import('./admin-firebase.js');
+        const { db } = await import('../scripts/firebase-init.js');
         const { collection, getDocs, query, orderBy } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
         
         try {
@@ -1336,17 +1348,27 @@ class AdminPanel {
     }
 
     async verifyPayment(paymentId) {
-        if (!confirm('Are you sure you want to verify this payment? This will activate the user\'s membership.')) {
-            return;
+        let ok = false;
+        if (window.notifications && window.notifications.confirm) {
+            ok = await window.notifications.confirm(
+                'Are you sure you want to verify this payment? This will activate the user\'s membership.',
+                'Verify Payment',
+                'warning'
+            );
+        } else {
+            ok = confirm('Are you sure you want to verify this payment? This will activate the user\'s membership.');
         }
+        if (!ok) return;
 
         try {
-            const { db } = await import('./admin-firebase.js');
+            const { db } = await import('../scripts/firebase-init.js');
             const { doc, updateDoc } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
             
             const paymentRef = doc(db, 'payments', paymentId);
             await updateDoc(paymentRef, {
                 status: 'verified',
+                reviewedBy: window.adminAuth?.getCurrentUser?.()?.username || window.adminAuth?.getCurrentUser?.()?.role || 'admin',
+                reviewedAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()
             });
 
@@ -1359,17 +1381,36 @@ class AdminPanel {
     }
 
     async rejectPayment(paymentId) {
-        if (!confirm('Are you sure you want to reject this payment?')) {
+        let ok = false;
+        if (window.notifications && window.notifications.confirm) {
+            ok = await window.notifications.confirm('Are you sure you want to reject this payment?', 'Reject Payment', 'danger');
+        } else {
+            ok = confirm('Are you sure you want to reject this payment?');
+        }
+        if (!ok) return;
+
+        let reason = null;
+        if (window.notifications && window.notifications.prompt) {
+            reason = await window.notifications.prompt('Provide a reason for rejecting this payment (this will be visible to the user).', '', 'Rejection Reason');
+        } else {
+            reason = prompt('Provide a reason for rejecting this payment (this will be visible to the user).', '');
+        }
+        reason = (reason == null) ? '' : String(reason).trim();
+        if (!reason) {
+            this.showNotification('Rejection cancelled (reason is required)', 'info');
             return;
         }
 
         try {
-            const { db } = await import('./admin-firebase.js');
+            const { db } = await import('../scripts/firebase-init.js');
             const { doc, updateDoc } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
             
             const paymentRef = doc(db, 'payments', paymentId);
             await updateDoc(paymentRef, {
                 status: 'rejected',
+                rejectionReason: reason,
+                reviewedBy: window.adminAuth?.getCurrentUser?.()?.username || window.adminAuth?.getCurrentUser?.()?.role || 'admin',
+                reviewedAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()
             });
 
@@ -1377,6 +1418,7 @@ class AdminPanel {
             this.loadPayments();
         } catch (error) {
             console.error('Error rejecting payment:', error);
+            this.showNotification('Error rejecting payment: ' + (error?.message || String(error)), 'error');
             this.showNotification('Error rejecting payment', 'error');
         }
     }

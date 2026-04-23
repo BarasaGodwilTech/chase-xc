@@ -74,6 +74,10 @@
 
             <div class="nav-section">
                 <h4>SYSTEM</h4>
+                <a href="#" class="nav-item" data-target="users">
+                    <i class="fas fa-user-cog"></i>
+                    <span>Users</span>
+                </a>
                 <a href="#" class="nav-item" data-target="settings">
                     <i class="fas fa-cog"></i>
                     <span>Settings</span>
@@ -689,6 +693,35 @@
                         </div>
                     </form>
                 </div>
+            </div>
+        </section>
+
+        <!-- Users Section -->
+        <section class="admin-section" id="users">
+            <div class="section-header">
+                <h2>User Management</h2>
+                <div class="section-actions">
+                    <button class="btn btn-primary" id="refreshUsers" type="button">
+                        <i class="fas fa-sync"></i> Refresh
+                    </button>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th>Member Since</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTable">
+                        <!-- Users will be loaded here -->
+                    </tbody>
+                </table>
             </div>
         </section>
 
