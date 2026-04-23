@@ -172,25 +172,34 @@ class MembershipPaymentManager {
     }
 
     getPlanDetails(planType) {
-        // Plan details will be loaded from real data source
+        // Load from Firebase config if available
+        let price = ''
+        let description = ''
+        
+        if (window.studioConfig && window.studioConfig.plans && window.studioConfig.plans[planType]) {
+            const configPlan = window.studioConfig.plans[planType]
+            price = `UGX ${configPlan.price.toLocaleString()}`
+            description = configPlan.description || ''
+        }
+        
         const plans = {
             weekly: {
                 name: 'Weekly Pass',
-                price: '', // Will be loaded from real data source
+                price: price,
                 period: 'week',
-                description: '' // Will be loaded from real data source
+                description: description
             },
             monthly: {
                 name: 'Monthly Pro',
-                price: '', // Will be loaded from real data source
+                price: price,
                 period: 'month',
-                description: '' // Will be loaded from real data source
+                description: description
             },
             yearly: {
                 name: 'Yearly Elite',
-                price: '', // Will be loaded from real data source
+                price: price,
                 period: 'year',
-                description: '' // Will be loaded from real data source
+                description: description
             }
         };
         return plans[planType] || plans.monthly;
