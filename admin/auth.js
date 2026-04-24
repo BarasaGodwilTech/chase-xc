@@ -2,10 +2,9 @@ import { auth } from '../scripts/firebase-init.js'
 import {
     onAuthStateChanged,
     signInWithEmailAndPassword,
-    signInWithRedirect,
+    signInWithPopup,
     GoogleAuthProvider,
     signOut,
-    getRedirectResult,
 } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js'
 import { db } from '../scripts/firebase-init.js'
 import {
@@ -28,19 +27,6 @@ class AdminAuth {
     init() {
         this.setupEventListeners()
         this.bindAuthListener()
-        this.handleRedirectResult()
-    }
-
-    async handleRedirectResult() {
-        try {
-            const result = await getRedirectResult(auth)
-            if (result) {
-                console.log('Google sign-in successful via redirect')
-            }
-        } catch (error) {
-            console.error('Redirect result error:', error)
-            // Don't show notification for redirect errors as they may occur on normal page loads
-        }
     }
 
     setupEventListeners() {
@@ -256,10 +242,11 @@ class AdminAuth {
         this.showLoading(true)
         try {
             const provider = new GoogleAuthProvider()
-            await signInWithRedirect(auth, provider)
+            await signInWithPopup(auth, provider)
         } catch (error) {
             console.error('Admin Google login error:', error)
             this.showNotification(this.getAuthErrorMessage(error?.code) || 'Google sign-in failed', 'error')
+        } finally {
             this.showLoading(false)
         }
     }
