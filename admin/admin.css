@@ -157,31 +157,36 @@ body.login-page {
     position: relative;
     display: flex;
     align-items: center;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    transition: var(--transition);
+}
+
+.input-group:focus-within {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
 }
 
 .input-group i {
-    position: absolute;
-    left: 1rem;
     color: var(--text-secondary);
-    z-index: 2;
+    font-size: 1rem;
+    padding-left: 1rem;
+    padding-right: 0.75rem;
+    pointer-events: none;
+    flex-shrink: 0;
 }
 
 .input-group input {
-    width: 100%;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--border);
+    flex: 1;
+    background: transparent;
+    border: none;
     color: var(--text-primary);
-    padding: 0.75rem 1rem 0.75rem 2.5rem;
+    padding: 0.75rem 1rem 0.75rem 0;
     border-radius: var(--radius);
     font-family: 'Inter', sans-serif;
-    transition: var(--transition);
     font-size: 1rem;
     outline: none;
-}
-
-.input-group input:focus {
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
 }
 
 .input-group input::placeholder {
@@ -190,13 +195,18 @@ body.login-page {
 
 .password-toggle {
     position: absolute;
-    right: 1rem;
+    right: 0.75rem;
     background: none;
     border: none;
     color: var(--text-secondary);
     cursor: pointer;
     z-index: 2;
     padding: 0.5rem;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .password-toggle:hover {
@@ -233,6 +243,7 @@ body.login-page {
     justify-content: center;
     transition: var(--transition);
     background: rgba(255, 255, 255, 0.05);
+    flex-shrink: 0;
 }
 
 .checkbox input:checked + .checkmark {
@@ -243,8 +254,9 @@ body.login-page {
 .checkbox input:checked + .checkmark::after {
     content: '✓';
     color: white;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: bold;
+    line-height: 1;
 }
 
 .forgot-password {
@@ -268,10 +280,12 @@ body.login-page {
     font-weight: 500;
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
+    justify-content: center;
+    gap: 0.6rem;
     text-decoration: none;
     font-size: 1rem;
     outline: none;
+    white-space: nowrap;
 }
 
 .btn-primary {
@@ -296,6 +310,30 @@ body.login-page {
     width: 100%;
 }
 
+.btn-google {
+    background: #ffffff;
+    color: #1a1a1a;
+    border: 1px solid #dadce0;
+    width: 100%;
+    justify-content: center;
+    margin-top: 1rem;
+}
+
+.btn-google:hover {
+    background: #f8f9fa;
+    border-color: #c2c8d0;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.btn-google:active {
+    transform: translateY(0);
+}
+
+.btn-full {
+    width: 100%;
+    justify-content: center;
+}
 
 .login-footer {
     text-align: center;
@@ -307,6 +345,7 @@ body.login-page {
 .login-footer p {
     color: var(--text-secondary);
     font-size: 0.9rem;
+    margin-bottom: 0.5rem;
 }
 
 .login-footer a {
@@ -316,6 +355,20 @@ body.login-page {
 
 .login-footer a:hover {
     text-decoration: underline;
+}
+
+.back-to-site {
+    margin-top: 0.75rem;
+}
+
+.back-to-site a {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    transition: var(--transition);
+}
+
+.back-to-site a:hover {
+    color: var(--primary);
 }
 
 .login-background {
@@ -1028,6 +1081,46 @@ body.admin-page {
     color: var(--danger);
 }
 
+/* Notification Toast */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem 1.5rem;
+    color: var(--text-primary);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.95rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    z-index: 2000;
+    transform: translateX(120%);
+    transition: transform 0.3s ease;
+    max-width: 350px;
+    pointer-events: none;
+}
+
+.notification.show {
+    transform: translateX(0);
+    pointer-events: auto;
+}
+
+.notification.error {
+    border-color: var(--danger);
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.notification.success {
+    border-color: var(--success);
+    background: rgba(16, 185, 129, 0.1);
+}
+
+.notification.info {
+    border-color: var(--primary);
+    background: rgba(0, 212, 255, 0.1);
+}
+
 /* Notifications Panel */
 .notifications-panel {
     position: fixed;
@@ -1078,6 +1171,7 @@ body.admin-page {
     align-items: center;
     justify-content: center;
     z-index: 2000;
+    backdrop-filter: blur(4px);
 }
 
 .loading-overlay.active {
@@ -1098,6 +1192,108 @@ body.admin-page {
 .loading-spinner p {
     color: var(--text-primary);
     font-size: 1.1rem;
+}
+
+/* Modal */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(10, 14, 39, 0.8);
+    display: none !important;
+    align-items: center;
+    justify-content: center;
+    z-index: 1500;
+    backdrop-filter: blur(4px);
+}
+
+.modal.active {
+    display: flex !important;
+}
+
+.modal-content {
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    width: 100%;
+    max-width: 400px;
+    margin: 1rem;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border);
+    gap: 1rem;
+}
+
+.modal-header h3 {
+    font-family: 'Poppins', sans-serif;
+    font-size: 1.25rem;
+    margin: 0;
+    color: var(--text-primary);
+    flex: 1;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 0.5rem;
+    transition: var(--transition);
+    font-size: 1.1rem;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+
+.modal-close:hover {
+    color: var(--primary);
+    background: rgba(0, 212, 255, 0.1);
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.modal-body p {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+    line-height: 1.5;
+}
+
+.modal-body .form-group {
+    margin-bottom: 1.5rem;
+}
+
+.modal-body .form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+    font-weight: 500;
 }
 
 @keyframes spin {

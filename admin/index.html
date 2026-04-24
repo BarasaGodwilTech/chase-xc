@@ -18,15 +18,15 @@
                 <h1>Chase x Records</h1>
             </div>
             <h2>Admin Portal</h2>
-            <p>Sign in to access the admin dashboard</p>
+            <p>Secure access to the admin dashboard</p>
         </div>
 
         <form class="login-form" id="loginForm">
             <div class="form-group">
-                <label for="username">Username</label>
+                <label for="email">Email</label>
                 <div class="input-group">
                     <i class="fas fa-user"></i>
-                    <input type="text" id="username" name="username" required placeholder="Enter your username">
+                    <input type="email" id="email" name="email" required placeholder="Enter your email">
                 </div>
             </div>
 
@@ -47,7 +47,7 @@
                     <span class="checkmark"></span>
                     Remember me
                 </label>
-                <a href="#" class="forgot-password">Forgot password?</a>
+                <a href="#" class="forgot-password" id="forgotPasswordBtn">Forgot password?</a>
             </div>
 
             <button type="submit" class="btn btn-primary btn-login">
@@ -55,8 +55,14 @@
                 Sign In
             </button>
 
+            <button type="button" class="btn btn-google" id="googleSignInBtn">
+                <i class="fab fa-google"></i>
+                Sign in with Google
+            </button>
+
             <div class="login-footer">
                 <p>Need help? <a href="mailto:support@chasexrecords.com">Contact support</a></p>
+                <p class="back-to-site"><a href="../index.html">← Back to main site</a></p>
             </div>
         </form>
 
@@ -70,8 +76,38 @@
     </div>
 
     <div class="notification" id="notification"></div>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner">
+            <i class="fas fa-circle-notch fa-spin"></i>
+            <p id="loadingText">Signing in...</p>
+        </div>
+    </div>
+    <div class="modal" id="resetModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Reset Password</h3>
+                <button class="modal-close" id="closeResetModal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <p>Enter your email address and we'll send you a link to reset your password.</p>
+                <form id="resetPasswordForm">
+                    <div class="form-group">
+                        <label for="resetEmail">Email</label>
+                        <div class="input-group">
+                            <i class="fas fa-envelope"></i>
+                            <input type="email" id="resetEmail" required placeholder="Enter your email">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-full">
+                        <i class="fas fa-paper-plane"></i>
+                        Send Reset Link
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
 
-    <script src="auth.js"></script>
+    <script type="module" src="auth.js"></script>
     <script type="module" src="../scripts/notifications.js"></script>
 </body>
 </html>

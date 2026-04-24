@@ -7,12 +7,9 @@ service cloud.firestore {
       return request.auth != null;
     }
     
-    // Helper function to check if user is admin (you can customize this based on your auth system)
+    // Helper function to check if user is admin (Option B: Firestore allowlist)
     function isAdmin() {
-      return isAuthenticated(); // For now, any authenticated user can write
-      // In production, you might want: return request.auth.token.admin == true;
-      // To restrict access to specific admin emails:
-      // return request.auth != null && request.auth.token.email in ['admin@example.com'];
+      return isAuthenticated() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
     
     // Helper function to validate track data
@@ -64,10 +61,10 @@ service cloud.firestore {
       // Public read access for music page
       allow read: if true;
       
-      // Write access (TEMPORARY: disabled auth for development)
-      allow create: if true;
-      allow update: if true;
-      allow delete: if true;
+      // Write access (admin only)
+      allow create: if isAdmin() && isValidArtistData();
+      allow update: if isAdmin() && isValidArtistData();
+      allow delete: if isAdmin();
       
       // In production, use:
       // allow create: if isAdmin() && isValidArtistData();
@@ -82,10 +79,10 @@ service cloud.firestore {
       // Public read access for music page (only published tracks)
       allow read: if resource.data.status == 'published' || true;
       
-      // Write access (TEMPORARY: disabled auth for development)
-      allow create: if true;
-      allow update: if true;
-      allow delete: if true;
+      // Write access (admin only)
+      allow create: if isAdmin() && isValidTrackData();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
       
       // In production, use:
       // allow create: if isAdmin() && isValidTrackData();
@@ -101,7 +98,7 @@ service cloud.firestore {
       allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
       
       // Admins can read all payments
-      allow read: if true;
+      allow read: if isAdmin();
       
       // Users can create their own payments
       allow create: if isAuthenticated() && 
@@ -109,13 +106,13 @@ service cloud.firestore {
                      isValidPaymentData();
       
       // Admins can update payment status
-      allow update: if true;
+      allow update: if isAdmin();
       
       // Admins can delete payments
-      allow delete: if true;
+      allow delete: if isAdmin();
       
       // Admins can list all payments
-      allow list: if true;
+      allow list: if isAdmin();
     }
     
     // User payments subcollection - users can only read their own
@@ -130,8 +127,8 @@ service cloud.firestore {
       // Public read access for config (prices, payment details, contact info, about stats)
       allow read: if true;
       
-      // Write access for admin only (TEMPORARY: disabled auth for development)
-      allow write: if true;
+      // Write access for admin only
+      allow write: if isAdmin() && isValidSettingsData();
       
       // In production, use:
       // allow write: if isAdmin() && isValidSettingsData();
@@ -139,12 +136,24 @@ service cloud.firestore {
 
     // Users collection - each user can access only their own data
     match /users/{userId} {
-      allow read, create, update, delete: if isAuthenticated() && userId == request.auth.uid;
+      allow read: if (isAuthenticated() && userId == request.auth.uid) || isAdmin();
+      allow create: if isAuthenticated() && userId == request.auth.uid;
+      allow update: if (isAuthenticated() && userId == request.auth.uid) || isAdmin();
+      allow delete: if isAdmin();
+
+      allow list: if isAdmin();
 
       // Subcollections under a user (listeningEvents, notifications, favorites, playlists, etc.)
       match /{subcollection}/{docId} {
-        allow read, create, update, delete: if isAuthenticated() && userId == request.auth.uid;
+        allow read, create, update, delete: if (isAuthenticated() && userId == request.auth.uid) || isAdmin();
       }
+    }
+
+    // Admin allowlist
+    match /admins/{adminId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if isAdmin();
+      allow list: if isAdmin();
     }
     
     // Team collection - public read, admin write
@@ -152,8 +161,8 @@ service cloud.firestore {
       // Public read access for team member info displayed on about page
       allow read: if true;
       
-      // Write access for admin only (TEMPORARY: disabled auth for development)
-      allow write: if true;
+      // Write access for admin only
+      allow write: if isAdmin();
       
       // In production, use:
       // allow write: if isAdmin() && isValidTeamData();

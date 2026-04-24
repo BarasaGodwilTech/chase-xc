@@ -1262,7 +1262,7 @@ class AdminPanel {
         if (!table) return;
         
         // Load payments from Firestore
-        const { db } = await import('./admin-firebase.js');
+        const { db } = await import('../scripts/admin-firebase.js');
         const { collection, getDocs, query, orderBy } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
         
         try {
@@ -1346,7 +1346,7 @@ class AdminPanel {
         }
 
         try {
-            const { db } = await import('./admin-firebase.js');
+            const { db } = await import('../scripts/admin-firebase.js');
             const { doc, updateDoc } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
             
             const reviewer = (window.adminAuth && typeof window.adminAuth.getCurrentUser === 'function')
@@ -1377,7 +1377,7 @@ class AdminPanel {
         }
 
         try {
-            const { db } = await import('./admin-firebase.js');
+            const { db } = await import('../scripts/admin-firebase.js');
             const { doc, updateDoc } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
 
             const reason = (prompt('Reason for rejecting this payment (required):') || '').trim();
@@ -1845,7 +1845,7 @@ class AdminPanel {
 
     async viewPayment(paymentId) {
         try {
-            const { db } = await import('./admin-firebase.js');
+            const { db } = await import('../scripts/admin-firebase.js');
             const { doc, getDoc } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
 
             const snap = await getDoc(doc(db, 'payments', paymentId));
