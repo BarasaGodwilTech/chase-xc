@@ -732,6 +732,8 @@ async function deleteTrackFromFirestore(trackId) {
       const msg = error?.message ? String(error.message) : String(error);
       const code = error?.code ? String(error.code) : '';
       window.notifications.show(`Failed to delete track${code ? ` (${code})` : ''}: ${msg}`, 'error');
+    } else {
+      alert(error?.message ? String(error.message) : 'Failed to delete track. Please try again.');
     }
     throw error;
   }
