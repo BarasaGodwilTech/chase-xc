@@ -1379,7 +1379,7 @@ body.admin-page {
 }
 
 /* Modal */
-.modal {
+.app-modal {
     position: fixed;
     top: 0;
     left: 0;
@@ -1393,11 +1393,11 @@ body.admin-page {
     backdrop-filter: blur(4px);
 }
 
-.modal.active {
+.app-modal.active {
     display: flex !important;
 }
 
-.modal-content {
+.app-modal .modal-content {
     background: var(--surface);
     border-radius: var(--radius);
     border: 1px solid var(--border);
