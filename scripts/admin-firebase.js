@@ -711,9 +711,11 @@ window.deleteArtist = async function(artistId, artistName) {
   } catch (error) {
     console.error('[admin-firebase] Error deleting artist:', error);
     if (window.notifications) {
-      window.notifications.show('Failed to delete artist. Please try again.', 'error');
+      const msg = error?.message ? String(error.message) : String(error);
+      const code = error?.code ? String(error.code) : '';
+      window.notifications.show(`Failed to delete artist${code ? ` (${code})` : ''}: ${msg}`, 'error');
     } else {
-      alert('Failed to delete artist. Please try again.');
+      alert(error?.message ? String(error.message) : 'Failed to delete artist. Please try again.');
     }
   }
 };
@@ -726,6 +728,11 @@ async function deleteTrackFromFirestore(trackId) {
     return true;
   } catch (error) {
     console.error('[admin-firebase] Error deleting track:', error);
+    if (window.notifications) {
+      const msg = error?.message ? String(error.message) : String(error);
+      const code = error?.code ? String(error.code) : '';
+      window.notifications.show(`Failed to delete track${code ? ` (${code})` : ''}: ${msg}`, 'error');
+    }
     throw error;
   }
 }
