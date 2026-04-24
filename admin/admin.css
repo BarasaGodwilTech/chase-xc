@@ -21,6 +21,10 @@
     box-sizing: border-box;
 }
 
+html {
+    background-color: var(--background);
+}
+
 .hidden {
     display: none !important;
 }
@@ -95,6 +99,7 @@ body.login-page {
     height: 100%;
     overflow: hidden;
     padding: 1rem;
+    margin: 0;
 }
 
 .login-container {
