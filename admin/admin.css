@@ -88,8 +88,13 @@ body.login-page {
     justify-content: center;
     min-height: 100vh;
     background: linear-gradient(135deg, var(--background) 0%, #1a1f3a 100%);
-    position: relative;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     overflow: hidden;
+    padding: 1rem;
 }
 
 .login-container {
@@ -98,10 +103,11 @@ body.login-page {
     border-radius: var(--radius);
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
     width: 100%;
-    max-width: 400px;
+    max-width: 420px;
     position: relative;
     z-index: 10;
     border: 1px solid var(--border);
+    margin: 0 auto;
 }
 
 .login-header {
@@ -112,7 +118,6 @@ body.login-page {
 .logo {
     display: flex;
     align-items: center;
-    justify-content: center;
     gap: 0.75rem;
     margin-bottom: 1rem;
 }
@@ -168,6 +173,48 @@ body.login-page {
     box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
 }
 
+.input-group.error {
+    border-color: var(--danger);
+    animation: shake 0.3s ease;
+}
+
+.input-group.error:focus-within {
+    border-color: var(--danger);
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.input-group.success {
+    border-color: var(--success);
+}
+
+.input-group.success:focus-within {
+    border-color: var(--success);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+.input-group input:focus {
+    outline: none;
+}
+
+.input-group input:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: -2px;
+}
+
+.input-group input:invalid:not(:placeholder-shown) {
+    border-color: var(--danger);
+}
+
+.input-group input:valid:not(:placeholder-shown) {
+    border-color: var(--success);
+}
+
 .input-group i {
     color: var(--text-secondary);
     font-size: 1rem;
@@ -182,14 +229,27 @@ body.login-page {
     background: transparent;
     border: none;
     color: var(--text-primary);
-    padding: 0.75rem 1rem 0.75rem 0;
+    padding: 0.875rem 1rem 0.875rem 0;
     border-radius: var(--radius);
     font-family: 'Inter', sans-serif;
     font-size: 1rem;
     outline: none;
+    min-height: 48px;
 }
 
 .input-group input::placeholder {
+    color: var(--text-secondary);
+}
+
+.input-group input::-webkit-input-placeholder {
+    color: var(--text-secondary);
+}
+
+.input-group input::-moz-placeholder {
+    color: var(--text-secondary);
+}
+
+.input-group input:-ms-input-placeholder {
     color: var(--text-secondary);
 }
 
@@ -201,16 +261,34 @@ body.login-page {
     color: var(--text-secondary);
     cursor: pointer;
     z-index: 2;
-    padding: 0.5rem;
-    width: 32px;
-    height: 32px;
+    padding: 0.75rem;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
+    border-radius: 4px;
+    transition: var(--transition);
 }
 
 .password-toggle:hover {
     color: var(--primary);
+    background: rgba(0, 212, 255, 0.1);
+}
+
+.password-toggle:active {
+    transform: scale(0.95);
+}
+
+.password-toggle:focus {
+    outline: none;
+}
+
+.password-toggle:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: -2px;
 }
 
 .form-options {
@@ -223,10 +301,12 @@ body.login-page {
 .checkbox {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.75rem;
     cursor: pointer;
     font-size: 0.9rem;
     color: var(--text-primary);
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .checkbox input {
@@ -234,16 +314,18 @@ body.login-page {
 }
 
 .checkmark {
-    width: 18px;
-    height: 18px;
+    width: 22px;
+    height: 22px;
     border: 2px solid var(--border);
-    border-radius: 3px;
+    border-radius: 4px;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: var(--transition);
     background: rgba(255, 255, 255, 0.05);
     flex-shrink: 0;
+    min-width: 22px;
+    min-height: 22px;
 }
 
 .checkbox input:checked + .checkmark {
@@ -254,9 +336,18 @@ body.login-page {
 .checkbox input:checked + .checkmark::after {
     content: '✓';
     color: white;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: bold;
     line-height: 1;
+}
+
+.checkbox:hover .checkmark {
+    border-color: var(--primary);
+}
+
+.checkbox:focus-within .checkmark {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.1);
 }
 
 .forgot-password {
@@ -264,10 +355,23 @@ body.login-page {
     text-decoration: none;
     font-size: 0.9rem;
     transition: var(--transition);
+    padding: 0.5rem;
+    border-radius: 4px;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .forgot-password:hover {
+    background: rgba(0, 212, 255, 0.1);
     color: var(--secondary);
+}
+
+.forgot-password:focus {
+    outline: none;
+}
+
+.forgot-password:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
 }
 
 .btn {
@@ -308,6 +412,7 @@ body.login-page {
     font-size: 1rem;
     padding: 1rem;
     width: 100%;
+    min-height: 52px;
 }
 
 .btn-google {
@@ -317,6 +422,7 @@ body.login-page {
     width: 100%;
     justify-content: center;
     margin-top: 1rem;
+    min-height: 52px;
 }
 
 .btn-google:hover {
@@ -623,8 +729,12 @@ body.admin-page {
 }
 
 .search-box input:focus {
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+    outline: none;
+}
+
+.search-box input:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: -2px;
 }
 
 .search-box input::placeholder {
@@ -798,6 +908,15 @@ body.admin-page {
     cursor: pointer;
 }
 
+.chart-filter:focus {
+    outline: none;
+}
+
+.chart-filter:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: -2px;
+}
+
 .chart-container {
     height: 300px;
     display: flex;
@@ -845,6 +964,15 @@ body.admin-page {
 
 .view-all:hover {
     color: var(--secondary);
+}
+
+.view-all:focus {
+    outline: none;
+}
+
+.view-all:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
 }
 
 .activity-list {
@@ -967,6 +1095,15 @@ body.admin-page {
     background: rgba(0, 212, 255, 0.1);
 }
 
+.btn-secondary:focus {
+    outline: none;
+}
+
+.btn-secondary:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
 .btn-sm {
     padding: 0.5rem 1rem;
     font-size: 0.9rem;
@@ -1011,8 +1148,13 @@ body.admin-page {
 
 .filter-group select:focus,
 .filter-group input:focus {
-    border-color: var(--primary);
-    box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.1);
+    outline: none;
+}
+
+.filter-group select:focus-visible,
+.filter-group input:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: -2px;
 }
 
 .filter-group span {
@@ -1096,31 +1238,65 @@ body.admin-page {
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
     z-index: 2000;
     transform: translateX(120%);
-    transition: transform 0.3s ease;
+    opacity: 0;
+    visibility: hidden;
+    transition: transform 0.3s ease, opacity 0.3s ease, visibility 0.3s ease;
     max-width: 350px;
     pointer-events: none;
     word-wrap: break-word;
     overflow-wrap: break-word;
+    display: none;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.notification::before {
+    content: '';
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+}
+
+.notification.error::before {
+    content: '✕';
+    color: var(--danger);
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(239, 68, 68, 0.2);
+    border-radius: 50%;
+}
+
+.notification.success::before {
+    content: '✓';
+    color: var(--success);
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(16, 185, 129, 0.2);
+    border-radius: 50%;
+}
+
+.notification.info::before {
+    content: 'i';
+    color: var(--primary);
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 212, 255, 0.2);
+    border-radius: 50%;
 }
 
 .notification.show {
     transform: translateX(0);
+    opacity: 1;
+    visibility: visible;
     pointer-events: auto;
-}
-
-.notification.error {
-    border-color: var(--danger);
-    background: rgba(239, 68, 68, 0.1);
-}
-
-.notification.success {
-    border-color: var(--success);
-    background: rgba(16, 185, 129, 0.1);
-}
-
-.notification.info {
-    border-color: var(--primary);
-    background: rgba(0, 212, 255, 0.1);
+    display: flex;
 }
 
 /* Notifications Panel */
@@ -1168,7 +1344,7 @@ body.admin-page {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(10, 14, 39, 0.9);
+    background: rgba(10, 14, 39, 0.95);
     display: none;
     align-items: center;
     justify-content: center;
@@ -1194,6 +1370,7 @@ body.admin-page {
 .loading-spinner p {
     color: var(--text-primary);
     font-size: 1.1rem;
+    font-weight: 500;
 }
 
 /* Modal */
@@ -1224,6 +1401,9 @@ body.admin-page {
     margin: 1rem;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
     animation: modalSlideIn 0.3s ease;
+    max-height: 90vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 @keyframes modalSlideIn {
@@ -1259,21 +1439,37 @@ body.admin-page {
     border: none;
     color: var(--text-secondary);
     cursor: pointer;
-    padding: 0.5rem;
+    padding: 0.75rem;
     transition: var(--transition);
     font-size: 1.1rem;
-    width: 36px;
-    height: 36px;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
     border-radius: 4px;
     flex-shrink: 0;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .modal-close:hover {
     color: var(--primary);
     background: rgba(0, 212, 255, 0.1);
+}
+
+.modal-close:active {
+    transform: scale(0.95);
+}
+
+.modal-close:focus {
+    outline: none;
+}
+
+.modal-close:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: -2px;
 }
 
 .modal-body {
@@ -1407,9 +1603,12 @@ body.admin-page {
     }
 
     .password-toggle {
-        width: 28px;
-        height: 28px;
+        width: 40px;
+        height: 40px;
+        min-width: 40px;
+        min-height: 40px;
         right: 0.5rem;
+        padding: 0.5rem;
     }
 
     .form-options {

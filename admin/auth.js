@@ -5,7 +5,6 @@ import {
     signInWithPopup,
     GoogleAuthProvider,
     signOut,
-    sendPasswordResetEmail,
 } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js'
 import { db } from '../scripts/firebase-init.js'
 import {
@@ -52,33 +51,6 @@ class AdminAuth {
             logoutBtn.addEventListener('click', (e) => {
                 e.preventDefault()
                 this.handleLogout()
-            })
-        }
-
-        const forgotPasswordBtn = document.getElementById('forgotPasswordBtn')
-        if (forgotPasswordBtn) {
-            forgotPasswordBtn.addEventListener('click', (e) => {
-                e.preventDefault()
-                this.openResetModal()
-            })
-        }
-
-        const closeResetModal = document.getElementById('closeResetModal')
-        if (closeResetModal) {
-            closeResetModal.addEventListener('click', () => this.closeResetModal())
-        }
-
-        const resetPasswordForm = document.getElementById('resetPasswordForm')
-        if (resetPasswordForm) {
-            resetPasswordForm.addEventListener('submit', (e) => this.handlePasswordReset(e))
-        }
-
-        const resetModal = document.getElementById('resetModal')
-        if (resetModal) {
-            resetModal.addEventListener('click', (e) => {
-                if (e.target === resetModal) {
-                    this.closeResetModal()
-                }
             })
         }
     }
@@ -157,11 +129,30 @@ class AdminAuth {
         e.preventDefault()
         const email = (document.getElementById('email')?.value || '').trim()
         const password = document.getElementById('password')?.value || ''
+        const emailGroup = document.getElementById('email')?.closest('.input-group')
+        const passwordGroup = document.getElementById('password')?.closest('.input-group')
+
+        // Clear previous validation states
+        emailGroup?.classList.remove('error', 'success')
+        passwordGroup?.classList.remove('error', 'success')
 
         if (!email || !password) {
             this.showNotification('Email and password are required.', 'error')
+            if (!email) emailGroup?.classList.add('error')
+            if (!password) passwordGroup?.classList.add('error')
             return
         }
+
+        // Validate email format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+        if (!emailRegex.test(email)) {
+            this.showNotification('Please enter a valid email address.', 'error')
+            emailGroup?.classList.add('error')
+            return
+        }
+
+        emailGroup?.classList.add('success')
+        passwordGroup?.classList.add('success')
 
         this.showLoading(true)
         try {
@@ -169,6 +160,8 @@ class AdminAuth {
         } catch (error) {
             console.error('Admin email login error:', error)
             this.showNotification(this.getAuthErrorMessage(error?.code) || 'Login failed', 'error')
+            passwordGroup?.classList.remove('success')
+            passwordGroup?.classList.add('error')
         } finally {
             this.showLoading(false)
         }
@@ -235,6 +228,12 @@ class AdminAuth {
     }
 
     showNotification(message, type = 'info') {
+        // Validate message - don't show empty notifications
+        if (!message || (typeof message === 'string' && message.trim() === '')) {
+            console.warn('Notification not shown: empty message')
+            return
+        }
+
         const notification = document.getElementById('notification')
         if (notification) {
             notification.textContent = message
@@ -264,49 +263,6 @@ class AdminAuth {
             'auth/weak-password': 'Password should be at least 6 characters'
         }
         return map[code] || null
-    }
-
-    openResetModal() {
-        const modal = document.getElementById('resetModal')
-        if (modal) {
-            modal.classList.add('active')
-            const emailInput = document.getElementById('resetEmail')
-            if (emailInput) {
-                emailInput.value = document.getElementById('email')?.value || ''
-                emailInput.focus()
-            }
-        }
-    }
-
-    closeResetModal() {
-        const modal = document.getElementById('resetModal')
-        if (modal) {
-            modal.classList.remove('active')
-            const form = document.getElementById('resetPasswordForm')
-            if (form) form.reset()
-        }
-    }
-
-    async handlePasswordReset(e) {
-        e.preventDefault()
-        const email = (document.getElementById('resetEmail')?.value || '').trim()
-        if (!email) {
-            this.showNotification('Please enter your email address', 'error')
-            return
-        }
-
-        this.showLoading(true, 'Sending reset link...')
-        try {
-            await sendPasswordResetEmail(auth, email)
-            this.showNotification('Password reset email sent! Check your inbox.', 'success')
-            this.closeResetModal()
-        } catch (error) {
-            console.error('Password reset error:', error)
-            const msg = this.getAuthErrorMessage(error?.code) || 'Failed to send reset email'
-            this.showNotification(msg, 'error')
-        } finally {
-            this.showLoading(false)
-        }
     }
 
     hasPermission() {

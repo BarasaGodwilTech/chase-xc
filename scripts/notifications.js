@@ -351,6 +351,12 @@ class NotificationSystem {
      * @param {number} duration - Duration in ms (0 for no auto-dismiss)
      */
     show(message, type = 'info', title = null, duration = 4000) {
+        // Validate message - don't show empty notifications
+        if (!message || (typeof message === 'string' && message.trim() === '')) {
+            console.warn('Notification not shown: empty message');
+            return null;
+        }
+
         const notification = document.createElement('div');
         notification.className = `notification ${type}`;
 
