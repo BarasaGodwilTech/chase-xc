@@ -159,8 +159,24 @@ service cloud.firestore {
     // Admin allowlist - only super admin can manage
     match /admins/{adminId} {
       allow read: if isSuperAdmin() || isAdmin();
-      allow create, update, delete: if isSuperAdmin();
+      // Allow super admin to create their own record if it doesn't exist (bootstrap)
+      // Allow admins to create their own record if they have a valid invite
+      allow create: if isSuperAdmin() || 
+                     (isAuthenticated() && request.auth.token.email == 'barasagodwil@gmail.com' && adminId == request.auth.uid) ||
+                     (isAuthenticated() && adminId == request.auth.uid && exists(/databases/$(database)/documents/adminInvites/$(request.auth.token.email)));
+      // Allow super admin to update admin roles (including promoting to super admin)
+      allow update: if isSuperAdmin();
+      allow delete: if isSuperAdmin();
       allow list: if isSuperAdmin() || isAdmin();
+    }
+
+    // Admin invites - super admin can create, invited users can read their own invite
+    match /adminInvites/{inviteEmail} {
+      allow read: if isSuperAdmin() || (isAuthenticated() && request.auth.token.email == inviteEmail);
+      allow create: if isSuperAdmin();
+      allow update: if isSuperAdmin();
+      allow delete: if isSuperAdmin();
+      allow list: if isSuperAdmin();
     }
     
     // Team collection - public read, admin write

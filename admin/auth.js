@@ -2,14 +2,17 @@ import { auth } from '../scripts/firebase-init.js'
 import {
     onAuthStateChanged,
     signInWithEmailAndPassword,
-    signInWithPopup,
+    signInWithRedirect,
     GoogleAuthProvider,
     signOut,
+    getRedirectResult,
 } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js'
 import { db } from '../scripts/firebase-init.js'
 import {
     doc,
     getDoc,
+    setDoc,
+    deleteDoc,
 } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js'
 
 class AdminAuth {
@@ -25,6 +28,19 @@ class AdminAuth {
     init() {
         this.setupEventListeners()
         this.bindAuthListener()
+        this.handleRedirectResult()
+    }
+
+    async handleRedirectResult() {
+        try {
+            const result = await getRedirectResult(auth)
+            if (result) {
+                console.log('Google sign-in successful via redirect')
+            }
+        } catch (error) {
+            console.error('Redirect result error:', error)
+            // Don't show notification for redirect errors as they may occur on normal page loads
+        }
     }
 
     setupEventListeners() {
@@ -67,7 +83,23 @@ class AdminAuth {
                 return
             }
 
-            const adminInfo = await this.fetchAdminProfile(user.uid)
+            let adminInfo = await this.fetchAdminProfile(user.uid)
+            
+            // Auto-create admin record for super admin if it doesn't exist (bootstrap)
+            if (!adminInfo && user.email === 'barasagodwil@gmail.com') {
+                console.log('Creating admin record for super admin:', user.email)
+                adminInfo = await this.createAdminRecord(user)
+            }
+            
+            // Check for pending admin invite and create admin record
+            if (!adminInfo) {
+                const invite = await this.fetchAdminInvite(user.email)
+                if (invite) {
+                    console.log('Creating admin record from invite for:', user.email)
+                    adminInfo = await this.createAdminRecordFromInvite(user, invite)
+                }
+            }
+
             this.isAdmin = Boolean(adminInfo)
             this.adminProfile = adminInfo
 
@@ -84,6 +116,59 @@ class AdminAuth {
             return { id: snap.id, ...snap.data() }
         } catch (e) {
             console.error('Failed to fetch admin profile:', e)
+            return null
+        }
+    }
+
+    async createAdminRecord(user) {
+        try {
+            const adminData = {
+                name: user.displayName || user.email.split('@')[0],
+                email: user.email,
+                role: 'super_admin',
+                createdAt: new Date().toISOString(),
+                createdBy: user.uid
+            }
+            await setDoc(doc(db, 'admins', user.uid), adminData)
+            console.log('Admin record created successfully:', adminData)
+            return { id: user.uid, ...adminData }
+        } catch (e) {
+            console.error('Failed to create admin record:', e)
+            return null
+        }
+    }
+
+    async fetchAdminInvite(email) {
+        try {
+            const ref = doc(db, 'adminInvites', email)
+            const snap = await getDoc(ref)
+            if (!snap.exists()) return null
+            return { id: snap.id, ...snap.data() }
+        } catch (e) {
+            console.error('Failed to fetch admin invite:', e)
+            return null
+        }
+    }
+
+    async createAdminRecordFromInvite(user, invite) {
+        try {
+            const adminData = {
+                name: user.displayName || user.email.split('@')[0],
+                email: user.email,
+                role: invite.role || 'admin',
+                createdAt: new Date().toISOString(),
+                createdBy: invite.createdBy,
+                invitedBy: invite.createdBy
+            }
+            await setDoc(doc(db, 'admins', user.uid), adminData)
+            
+            // Remove the invite after creating admin record
+            await deleteDoc(doc(db, 'adminInvites', user.email))
+            
+            console.log('Admin record created from invite successfully:', adminData)
+            return { id: user.uid, ...adminData }
+        } catch (e) {
+            console.error('Failed to create admin record from invite:', e)
             return null
         }
     }
@@ -171,11 +256,10 @@ class AdminAuth {
         this.showLoading(true)
         try {
             const provider = new GoogleAuthProvider()
-            await signInWithPopup(auth, provider)
+            await signInWithRedirect(auth, provider)
         } catch (error) {
             console.error('Admin Google login error:', error)
             this.showNotification(this.getAuthErrorMessage(error?.code) || 'Google sign-in failed', 'error')
-        } finally {
             this.showLoading(false)
         }
     }

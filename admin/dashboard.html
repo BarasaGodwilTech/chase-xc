@@ -78,6 +78,10 @@
                     <i class="fas fa-users-cog"></i>
                     <span>Users</span>
                 </a>
+                <a href="#" class="nav-item" data-target="admin-management">
+                    <i class="fas fa-user-shield"></i>
+                    <span>Admin Management</span>
+                </a>
                 <a href="#" class="nav-item" data-target="settings">
                     <i class="fas fa-cog"></i>
                     <span>Settings</span>
@@ -1141,62 +1145,26 @@
                         <p class="summary-value">UGX 0</p>
                     </div>
                     <div class="summary-card">
-                        <h3>Active Goals</h3>
-                        <p class="summary-value">0</p>
+                <!-- Notifications Panel -->
+                <div class="notifications-panel" id="notificationsPanel">
+                    <div class="panel-header">
+                        <h3>Notifications</h3>
+                        <button class="btn btn-icon" id="closeNotifications">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="notifications-list">
+                        <!-- Notifications will be loaded here -->
                     </div>
                 </div>
 
-                <div class="savings-list">
-                    <p class="text-center">No savings goals yet. Click "Add Goal" to create one.</p>
-                </div>
-            </div>
-        </section>
-
-        <!-- Reports Section -->
-        <section class="admin-section" id="reports">
-            <div class="section-header">
-                <h2>Reports</h2>
-                <div class="section-actions">
-                    <button class="btn btn-secondary" type="button">
-                        <i class="fas fa-download"></i> Export Report
-                    </button>
-                </div>
-            </div>
-
-            <div class="reports-container">
-                <div class="report-filters">
-                    <div class="filter-group">
-                        <label>Report Type:</label>
-                        <select>
-                            <option>Revenue Report</option>
-                            <option>Artist Performance</option>
-                            <option>Track Analytics</option>
-                            <option>Payment History</option>
-                        </select>
+                <!-- Loading Overlay -->
+                <div class="loading-overlay" id="loadingOverlay">
+                    <div class="loading-spinner">
+                        <i class="fas fa-compact-disc fa-spin"></i>
+                        <p>Loading...</p>
                     </div>
-                    <div class="filter-group">
-                        <label>Date Range:</label>
-                        <input type="date">
-                        <span>to</span>
-                        <input type="date">
-                    </div>
-                    <button class="btn btn-primary">
-                        <i class="fas fa-filter"></i> Generate Report
-                    </button>
                 </div>
-
-                <div class="report-preview">
-                    <p class="text-center">Select report type and date range to generate a report.</p>
-                </div>
-            </div>
-        </section>
-
-    </main>
-
-    <!-- Notifications Panel -->
-    <div class="notifications-panel" id="notificationsPanel">
-        <div class="panel-header">
-            <h3>Notifications</h3>
             <button class="btn btn-icon" id="closeNotifications">
                 <i class="fas fa-times"></i>
             </button>
