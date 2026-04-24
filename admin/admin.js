@@ -1895,7 +1895,27 @@ class AdminPanel {
             const q = query(collection(db, 'users'), orderBy('createdAt', 'desc'), limit(200));
             const snap = await getDocs(q);
 
-            const users = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+            let adminIds = new Set();
+            let adminEmails = new Set();
+            try {
+                const adminsSnap = await getDocs(collection(db, 'admins'));
+                adminsSnap.docs.forEach((d) => {
+                    adminIds.add(d.id);
+                    const email = d.data()?.email;
+                    if (email) adminEmails.add(String(email).toLowerCase());
+                });
+            } catch (e) {
+                console.warn('Unable to load admins for filtering users list:', e);
+            }
+
+            const users = snap.docs
+                .map((d) => ({ id: d.id, ...d.data() }))
+                .filter((u) => {
+                    const uidMatch = adminIds.has(u.id);
+                    const emailMatch = u.email && adminEmails.has(String(u.email).toLowerCase());
+                    return !uidMatch && !emailMatch;
+                });
+
             if (users.length === 0) {
                 table.innerHTML = '<tr><td colspan="5" class="text-center">No users found</td></tr>';
                 return;
