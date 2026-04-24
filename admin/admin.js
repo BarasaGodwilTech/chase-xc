@@ -1045,6 +1045,9 @@ class AdminPanel {
                     break;
                 case 'reports':
                     break;
+                case 'admin-management':
+                    await this.loadAdminManagement();
+                    break;
             }
         } catch (error) {
             console.error('Error loading section data:', error);
@@ -2813,6 +2816,21 @@ class AdminPanel {
                 }
             }
         });
+
+        // Admin Management - Invite button
+        document.getElementById('inviteAdminBtn')?.addEventListener('click', () => {
+            this.openInviteModal();
+        });
+
+        // Admin Management - Close modal
+        document.getElementById('closeInviteModal')?.addEventListener('click', () => {
+            this.closeInviteModal();
+        });
+
+        // Admin Management - Send invite form
+        document.getElementById('inviteAdminForm')?.addEventListener('submit', (e) => {
+            this.sendAdminInvite(e);
+        });
     }
 
     openArtistForm(artist = null) {
@@ -2978,6 +2996,217 @@ class AdminPanel {
     async viewArtist(artistId) {
         // View redirects to edit form (same as edit track pattern)
         await this.editArtist(artistId);
+    }
+
+    // Admin Management Methods
+    async loadAdminManagement() {
+        if (!this.isSuperAdmin()) {
+            this.showNotification('Access denied: Only super admins can manage admins', 'error');
+            return;
+        }
+        await this.loadAdmins();
+        await this.loadAdminInvites();
+    }
+
+    async loadAdmins() {
+        try {
+            const { db } = await import('../scripts/firebase-init.js');
+            const { collection, getDocs, query, orderBy } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
+            const q = query(collection(db, 'admins'), orderBy('createdAt', 'desc'));
+            const snapshot = await getDocs(q);
+            
+            const adminsTable = document.getElementById('adminsTable');
+            if (!adminsTable) return;
+
+            const currentAdmin = window.adminAuth?.getCurrentUser();
+            const isSuperAdmin = currentAdmin?.role === 'super_admin';
+
+            adminsTable.innerHTML = snapshot.docs.map(doc => {
+                const admin = { id: doc.id, ...doc.data() };
+                const isCurrentUser = admin.id === currentAdmin?.uid;
+                const canEdit = isSuperAdmin && !isCurrentUser;
+                const canDelete = isSuperAdmin && !isCurrentUser;
+                
+                const roleBadge = admin.role === 'super_admin' 
+                    ? '<span class="badge badge-super-admin">Super Admin</span>'
+                    : '<span class="badge badge-admin">Admin</span>';
+
+                return `
+                    <tr>
+                        <td>${admin.name || admin.email}</td>
+                        <td>${admin.email}</td>
+                        <td>${roleBadge}</td>
+                        <td>${new Date(admin.createdAt).toLocaleDateString()}</td>
+                        <td>
+                            ${canEdit ? `<button class="btn btn-sm btn-secondary" onclick="window.adminPanel.editAdminRole('${admin.id}')">
+                                <i class="fas fa-edit"></i>
+                            </button>` : ''}
+                            ${canDelete ? `<button class="btn btn-sm btn-danger" onclick="window.adminPanel.deleteAdmin('${admin.id}')">
+                                <i class="fas fa-trash"></i>
+                            </button>` : ''}
+                            ${isCurrentUser ? '<span class="text-muted">(You)</span>' : ''}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        } catch (error) {
+            console.error('Error loading admins:', error);
+            this.showNotification('Failed to load admins: ' + error.message, 'error');
+        }
+    }
+
+    async loadAdminInvites() {
+        try {
+            const { db } = await import('../scripts/firebase-init.js');
+            const { collection, getDocs } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
+            const snapshot = await getDocs(collection(db, 'adminInvites'));
+            
+            const invitesTable = document.getElementById('invitesTable');
+            if (!invitesTable) return;
+
+            const currentAdmin = window.adminAuth?.getCurrentUser();
+            const isSuperAdmin = currentAdmin?.role === 'super_admin';
+
+            invitesTable.innerHTML = snapshot.docs.map(doc => {
+                const invite = { id: doc.id, ...doc.data() };
+                const canDelete = isSuperAdmin;
+                
+                const roleBadge = invite.role === 'super_admin' 
+                    ? '<span class="badge badge-super-admin">Super Admin</span>'
+                    : '<span class="badge badge-admin">Admin</span>';
+
+                return `
+                    <tr>
+                        <td>${invite.id}</td>
+                        <td>${roleBadge}</td>
+                        <td>${invite.createdBy || 'Unknown'}</td>
+                        <td>
+                            ${canDelete ? `<button class="btn btn-sm btn-danger" onclick="window.adminPanel.deleteAdminInvite('${invite.id}')">
+                                <i class="fas fa-trash"></i>
+                            </button>` : ''}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            if (snapshot.empty) {
+                invitesTable.innerHTML = '<tr><td colspan="4" class="text-center">No pending invites</td></tr>';
+            }
+        } catch (error) {
+            console.error('Error loading admin invites:', error);
+            this.showNotification('Failed to load invites: ' + error.message, 'error');
+        }
+    }
+
+    openInviteModal() {
+        if (!this.isSuperAdmin()) {
+            this.showNotification('Access denied: Only super admins can invite admins', 'error');
+            return;
+        }
+        const modal = document.getElementById('inviteAdminModal');
+        if (modal) modal.classList.add('active');
+    }
+
+    closeInviteModal() {
+        const modal = document.getElementById('inviteAdminModal');
+        const form = document.getElementById('inviteAdminForm');
+        if (modal) modal.classList.remove('active');
+        if (form) form.reset();
+    }
+
+    async sendAdminInvite(e) {
+        e.preventDefault();
+        const email = document.getElementById('inviteEmail')?.value?.trim();
+        const role = document.getElementById('inviteRole')?.value;
+
+        if (!email) {
+            this.showNotification('Email is required', 'error');
+            return;
+        }
+
+        try {
+            const { db } = await import('../scripts/firebase-init.js');
+            const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
+            const currentAdmin = window.adminAuth?.getCurrentUser();
+
+            const inviteData = {
+                email,
+                role,
+                createdBy: currentAdmin?.email || currentAdmin?.uid,
+                createdAt: new Date().toISOString()
+            };
+
+            await setDoc(doc(db, 'adminInvites', email), inviteData);
+            this.showNotification(`Invite sent to ${email}`, 'success');
+            this.closeInviteModal();
+            await this.loadAdminInvites();
+        } catch (error) {
+            console.error('Error sending invite:', error);
+            this.showNotification('Failed to send invite: ' + error.message, 'error');
+        }
+    }
+
+    async deleteAdminInvite(email) {
+        if (!confirm('Are you sure you want to delete this invite?')) return;
+
+        try {
+            const { db } = await import('../scripts/firebase-init.js');
+            const { doc, deleteDoc } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
+            await deleteDoc(doc(db, 'adminInvites', email));
+            this.showNotification('Invite deleted successfully', 'success');
+            await this.loadAdminInvites();
+        } catch (error) {
+            console.error('Error deleting invite:', error);
+            this.showNotification('Failed to delete invite: ' + error.message, 'error');
+        }
+    }
+
+    async editAdminRole(adminId) {
+        if (!this.isSuperAdmin()) {
+            this.showNotification('Access denied: Only super admins can edit admin roles', 'error');
+            return;
+        }
+
+        try {
+            const { db } = await import('../scripts/firebase-init.js');
+            const { doc, getDoc, updateDoc } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
+            const adminDoc = await getDoc(doc(db, 'admins', adminId));
+            
+            if (!adminDoc.exists()) {
+                this.showNotification('Admin not found', 'error');
+                return;
+            }
+
+            const admin = adminDoc.data();
+            const newRole = admin.role === 'super_admin' ? 'admin' : 'super_admin';
+            
+            await updateDoc(doc(db, 'admins', adminId), { role: newRole });
+            this.showNotification(`Admin role updated to ${newRole}`, 'success');
+            await this.loadAdmins();
+        } catch (error) {
+            console.error('Error updating admin role:', error);
+            this.showNotification('Failed to update admin role: ' + error.message, 'error');
+        }
+    }
+
+    async deleteAdmin(adminId) {
+        if (!confirm('Are you sure you want to remove this admin? This action cannot be undone.')) return;
+
+        try {
+            const { db } = await import('../scripts/firebase-init.js');
+            const { doc, deleteDoc } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
+            await deleteDoc(doc(db, 'admins', adminId));
+            this.showNotification('Admin removed successfully', 'success');
+            await this.loadAdmins();
+        } catch (error) {
+            console.error('Error deleting admin:', error);
+            this.showNotification('Failed to remove admin: ' + error.message, 'error');
+        }
+    }
+
+    isSuperAdmin() {
+        const currentAdmin = window.adminAuth?.getCurrentUser();
+        return currentAdmin?.role === 'super_admin';
     }
 }
 

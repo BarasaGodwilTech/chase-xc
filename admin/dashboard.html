@@ -1127,24 +1127,115 @@
                                 <i class="fas fa-plus"></i> Add Goal
                             </button>
                         </div>
-        <!-- Savings Section -->
-        <section class="admin-section" id="savings">
-            <div class="section-header">
-                <h2>Savings Goals</h2>
-                <div class="section-actions">
-                    <button class="btn btn-primary" type="button">
-                        <i class="fas fa-plus"></i> Add Goal
-                    </button>
-                </div>
-            </div>
-
-            <div class="savings-container">
-                <div class="savings-summary">
-                    <div class="summary-card">
-                        <h3>Total Saved</h3>
-                        <p class="summary-value">UGX 0</p>
                     </div>
-                    <div class="summary-card">
+
+                    <div class="savings-container">
+                        <div class="savings-summary">
+                            <div class="summary-card">
+                                <h3>Total Saved</h3>
+                                <p class="summary-value">UGX 0</p>
+                            </div>
+                            <div class="summary-card">
+                                <h3>Active Goals</h3>
+                                <p class="summary-value">0</p>
+                            </div>
+                        </div>
+
+                        <div class="savings-list">
+                            <p class="text-center">No savings goals yet. Click "Add Goal" to create one.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Reports Section -->
+                <section class="admin-section" id="reports">
+                    <div class="section-header">
+                        <h2>Reports</h2>
+                        <div class="section-actions">
+                            <button class="btn btn-secondary" type="button">
+                                <i class="fas fa-download"></i> Export Report
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="reports-container">
+                        <div class="report-filters">
+                            <div class="filter-group">
+                                <label>Report Type:</label>
+                                <select>
+                                    <option>Revenue Report</option>
+                                    <option>Artist Performance</option>
+                                    <option>Track Analytics</option>
+                                    <option>Payment History</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label>Date Range:</label>
+                                <input type="date">
+                                <span>to</span>
+                                <input type="date">
+                            </div>
+                            <button class="btn btn-primary">
+                                <i class="fas fa-filter"></i> Generate Report
+                            </button>
+                        </div>
+
+                        <div class="report-preview">
+                            <p class="text-center">Select report type and date range to generate a report.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Admin Management Section -->
+                <section class="admin-section" id="admin-management">
+                    <div class="section-header">
+                        <h2>Admin Management</h2>
+                        <div class="section-actions">
+                            <button class="btn btn-primary" id="inviteAdminBtn" type="button">
+                                <i class="fas fa-user-plus"></i> Invite Admin
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Admin List -->
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Role</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminsTable">
+                                <!-- Admins will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pending Invites -->
+                    <div class="invites-section">
+                        <h3>Pending Invites</h3>
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Email</th>
+                                        <th>Role</th>
+                                        <th>Invited By</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="invitesTable">
+                                    <!-- Invites will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
                 <!-- Notifications Panel -->
                 <div class="notifications-panel" id="notificationsPanel">
                     <div class="panel-header">
@@ -1165,28 +1256,42 @@
                         <p>Loading...</p>
                     </div>
                 </div>
-            <button class="btn btn-icon" id="closeNotifications">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        <div class="notifications-list">
-            <!-- Notifications will be loaded here -->
-        </div>
-    </div>
 
-    <!-- Loading Overlay -->
-    <div class="loading-overlay" id="loadingOverlay">
-        <div class="loading-spinner">
-            <i class="fas fa-compact-disc fa-spin"></i>
-            <p>Loading...</p>
-        </div>
-    </div>
+                <!-- Invite Admin Modal -->
+                <div class="modal" id="inviteAdminModal">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3>Invite Admin</h3>
+                            <button type="button" class="modal-close" id="closeInviteModal">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="inviteAdminForm">
+                                <div class="form-group">
+                                    <label for="inviteEmail">Email Address</label>
+                                    <input type="email" id="inviteEmail" name="inviteEmail" required placeholder="Enter email address">
+                                </div>
+                                <div class="form-group">
+                                    <label for="inviteRole">Role</label>
+                                    <select id="inviteRole" name="inviteRole" required>
+                                        <option value="admin">Admin</option>
+                                        <option value="super_admin">Super Admin</option>
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-paper-plane"></i> Send Invite
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
 
-    <script type="module" src="auth.js"></script>
-    <script type="module" src="../scripts/firebase-init.js"></script>
-    <script type="module" src="../scripts/admin-firebase.js"></script>
-    <script type="module" src="../scripts/config-loader.js"></script>
-    <script type="module" src="../scripts/notifications.js"></script>
-    <script src="admin.js"></script>
-</body>
-</html>
+                <script type="module" src="auth.js"></script>
+                <script type="module" src="../scripts/firebase-init.js"></script>
+                <script type="module" src="../scripts/admin-firebase.js"></script>
+                <script type="module" src="../scripts/config-loader.js"></script>
+                <script type="module" src="../scripts/notifications.js"></script>
+                <script src="admin.js"></script>
+            </body>
+            </html>
