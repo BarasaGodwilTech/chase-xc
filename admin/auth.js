@@ -198,6 +198,16 @@ class AdminAuth {
                 // Important: do not block awaiting a modal while the loading overlay is active
                 // (can deadlock on some devices).
                 this.showLoading(false)
+
+                // Always provide an inline fallback that lasts longer on the login page.
+                // This ensures the user is informed even if the modal/toast fails to render.
+                const inline = document.getElementById('notification')
+                if (inline) {
+                    inline.textContent = message
+                    inline.className = 'notification error show'
+                    setTimeout(() => inline.classList.remove('show'), 8000)
+                }
+
                 if (window.notifications && typeof window.notifications.alert === 'function') {
                     window.notifications.alert(message, 'Not authorized', 'warning')
                 } else {
