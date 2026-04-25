@@ -323,8 +323,10 @@ class AdminAuth {
         } catch (error) {
             console.error('Admin Google login error:', error)
             this.showNotification(this.getAuthErrorMessage(error?.code) || 'Google sign-in failed', 'error')
-        } finally {
             this.showLoading(false)
+        } finally {
+            // Keep the loading overlay visible after successful sign-in.
+            // Access verification + redirects are handled in onAuthStateChanged.
         }
     }
 
