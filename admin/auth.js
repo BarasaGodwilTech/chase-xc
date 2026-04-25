@@ -62,6 +62,15 @@ class AdminAuth {
             this.currentUser = user || null
             this.isAuthenticated = Boolean(user)
 
+            const path = window.location.pathname
+            const onLogin = path.includes('/admin/') && (path.endsWith('/admin/') || path.includes('admin/index.html'))
+            if (onLogin && user) {
+                this.showLoading(true, 'Verifying access...')
+                if (window.notifications && typeof window.notifications.show === 'function') {
+                    window.notifications.show('Verifying admin access…', 'info', null, 1800)
+                }
+            }
+
             if (!user) {
                 this.isAdmin = false
                 this.adminProfile = null
@@ -93,6 +102,10 @@ class AdminAuth {
             window.dispatchEvent(new Event('adminAuthState'))
             await this.applyRedirects()
             this.updateAdminHeaderUI()
+
+            if (onLogin) {
+                this.showLoading(false)
+            }
         })
     }
 
@@ -185,6 +198,9 @@ class AdminAuth {
 
             if (this.isAuthenticated && !this.isAdmin) {
                 const message = 'Access denied. Your account is not invited as an admin.'
+                if (window.notifications && typeof window.notifications.show === 'function') {
+                    window.notifications.show(message, 'error', 'Not authorized', 5000)
+                }
                 if (window.notifications && typeof window.notifications.alert === 'function') {
                     await window.notifications.alert(message, 'Not authorized', 'warning')
                 } else {
@@ -207,6 +223,9 @@ class AdminAuth {
             }
             if (!this.isAdmin) {
                 const message = 'Access denied. Your account is not invited as an admin.'
+                if (window.notifications && typeof window.notifications.show === 'function') {
+                    window.notifications.show(message, 'error', 'Not authorized', 5000)
+                }
                 if (window.notifications && typeof window.notifications.alert === 'function') {
                     await window.notifications.alert(message, 'Not authorized', 'warning')
                 } else {
@@ -266,7 +285,21 @@ class AdminAuth {
             await signInWithEmailAndPassword(auth, email, password)
         } catch (error) {
             console.error('Admin email login error:', error)
-            this.showNotification(this.getAuthErrorMessage(error?.code) || 'Login failed', 'error')
+            if (error?.code === 'auth/user-not-found') {
+                const invite = await this.fetchAdminInvite(email)
+                if (invite) {
+                    const message = 'You have an admin invite for this email. Please sign in with Google using the invited email address, or create an account first and then sign in.'
+                    if (window.notifications && typeof window.notifications.alert === 'function') {
+                        await window.notifications.alert(message, 'Invite found', 'info')
+                    } else {
+                        this.showNotification(message, 'info')
+                    }
+                } else {
+                    this.showNotification(this.getAuthErrorMessage(error?.code) || 'Login failed', 'error')
+                }
+            } else {
+                this.showNotification(this.getAuthErrorMessage(error?.code) || 'Login failed', 'error')
+            }
             passwordGroup?.classList.remove('success')
             passwordGroup?.classList.add('error')
         } finally {
@@ -282,6 +315,11 @@ class AdminAuth {
         try {
             const provider = new GoogleAuthProvider()
             await signInWithPopup(auth, provider)
+
+            this.showLoading(true, 'Verifying access...')
+            if (window.notifications && typeof window.notifications.show === 'function') {
+                window.notifications.show('Signed in. Verifying admin access…', 'info', null, 2400)
+            }
         } catch (error) {
             console.error('Admin Google login error:', error)
             this.showNotification(this.getAuthErrorMessage(error?.code) || 'Google sign-in failed', 'error')
