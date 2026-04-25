@@ -169,6 +169,22 @@ class AdminAuth {
         if (onLogin) {
             if (this.isAuthenticated && this.isAdmin) {
                 window.location.href = 'dashboard.html'
+                return
+            }
+
+            if (this.isAuthenticated && !this.isAdmin) {
+                const message = 'Access denied. Your account is not invited as an admin.'
+                if (window.notifications && typeof window.notifications.alert === 'function') {
+                    await window.notifications.alert(message, 'Not authorized', 'warning')
+                } else {
+                    this.showNotification(message, 'error')
+                }
+
+                try {
+                    await signOut(auth)
+                } catch (e) {
+                    console.error('Failed to sign out unauthorized user:', e)
+                }
             }
             return
         }
@@ -230,73 +246,27 @@ class AdminAuth {
         emailGroup?.classList.add('success')
         passwordGroup?.classList.add('success')
 
-        this.showLoading(true, 'Signing in...')
+        this.showLoading(true)
         try {
             await signInWithEmailAndPassword(auth, email, password)
-            // Success - auth listener will handle redirect
         } catch (error) {
             console.error('Admin email login error:', error)
+            this.showNotification(this.getAuthErrorMessage(error?.code) || 'Login failed', 'error')
             passwordGroup?.classList.remove('success')
             passwordGroup?.classList.add('error')
-            
-            const errorMessage = this.getAuthErrorMessage(error?.code) || 'Login failed. Please try again.'
-            this.showNotification(errorMessage, 'error')
-            
-            // If it's a network error, provide additional guidance
-            if (error?.code === 'auth/network-request-failed' || error?.code === 'auth/internal-error') {
-                setTimeout(() => {
-                    this.showNotification('Please check your internet connection and try again.', 'error')
-                }, 1500)
-            }
         } finally {
             this.showLoading(false)
         }
     }
 
     async handleGoogleLogin() {
-        this.showLoading(true, 'Connecting to Google...')
+        this.showLoading(true, 'Opening Google sign-in...')
         try {
             const provider = new GoogleAuthProvider()
-            // Add custom scopes if needed
-            provider.addScope('email')
-            provider.addScope('profile')
-            
             await signInWithPopup(auth, provider)
-            // Success - auth listener will handle redirect
         } catch (error) {
             console.error('Admin Google login error:', error)
-            
-            let errorMessage = 'Google sign-in failed'
-            
-            // Handle specific error cases with user-friendly messages
-            if (error?.code === 'auth/popup-closed-by-user') {
-                errorMessage = 'Sign-in was cancelled. Please try again.'
-            } else if (error?.code === 'auth/popup-blocked') {
-                errorMessage = 'Popup was blocked by your browser. Please allow popups for this site and try again.'
-            } else if (error?.code === 'auth/cancelled-popup-request') {
-                errorMessage = 'Multiple sign-in attempts detected. Please wait and try again.'
-            } else if (error?.code === 'auth/network-request-failed' || error?.code === 'auth/internal-error') {
-                errorMessage = 'Network error. Please check your internet connection and try again.'
-            } else if (error?.code === 'auth/account-exists-with-different-credential') {
-                errorMessage = 'An account already exists with the same email but different sign-in credentials.'
-            } else if (error?.code === 'auth/invalid-credential') {
-                errorMessage = 'Invalid Google credentials. Please try again.'
-            } else if (error?.code === 'auth/user-disabled') {
-                errorMessage = 'This account has been disabled. Please contact support.'
-            } else if (error?.code === 'auth/operation-not-allowed') {
-                errorMessage = 'Google sign-in is not enabled. Please contact support.'
-            } else {
-                errorMessage = this.getAuthErrorMessage(error?.code) || 'Google sign-in failed. Please try again.'
-            }
-            
-            this.showNotification(errorMessage, 'error')
-            
-            // For popup blocked errors, show additional guidance after a delay
-            if (error?.code === 'auth/popup-blocked') {
-                setTimeout(() => {
-                    this.showNotification('Click the popup blocker icon in your browser address bar and allow popups for this site.', 'info')
-                }, 2000)
-            }
+            this.showNotification(this.getAuthErrorMessage(error?.code) || 'Google sign-in failed', 'error')
         } finally {
             this.showLoading(false)
         }
@@ -379,6 +349,9 @@ class AdminAuth {
             'auth/wrong-password': 'Incorrect password',
             'auth/too-many-requests': 'Too many attempts. Please try again later',
             'auth/popup-closed-by-user': 'Sign-in was cancelled',
+            'auth/popup-blocked': 'Popup was blocked by your browser. Please allow popups and try again.',
+            'auth/cancelled-popup-request': 'Another sign-in attempt is in progress. Please try again.',
+            'auth/network-request-failed': 'Network error. Check your connection and try again.',
             'auth/operation-not-allowed': 'This sign-in method is not enabled',
             'auth/invalid-credential': 'Invalid email or password',
             'auth/email-already-in-use': 'This email is already in use',
