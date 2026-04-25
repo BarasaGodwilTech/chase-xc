@@ -38,15 +38,17 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
 
+  // Only handle requests we explicitly precache. Avoid runtime caching of the whole site
+  // (it can serve stale admin/auth JS and break login flows).
+  const pathname = url.pathname.replace(/^\//, '');
+  if (!urlsToCache.includes(pathname)) {
+    return;
+  }
+
   event.respondWith(
     caches.match(req).then((cached) => {
       if (cached) return cached;
-      return fetch(req).then((res) => {
-        // Best-effort runtime cache (keeps existing behavior of caching what was requested)
-        const copy = res.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(req, copy)).catch(() => {});
-        return res;
-      });
+      return fetch(req).then((res) => res);
     })
   );
 });
