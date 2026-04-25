@@ -64,10 +64,18 @@ class AdminAuth {
 
             const path = window.location.pathname
             const onLogin = path.includes('/admin/') && (path.endsWith('/admin/') || path.includes('admin/index.html'))
+            const onDashboard = path.includes('admin/dashboard.html')
             if (onLogin && user) {
                 this.showLoading(true, 'Verifying access...')
                 if (window.notifications && typeof window.notifications.show === 'function') {
                     window.notifications.show('Verifying admin access…', 'info', null, 1800)
+                }
+            }
+
+            if (onDashboard) {
+                document.body?.classList.add('auth-pending')
+                if (user) {
+                    this.showLoading(true, 'Verifying access...')
                 }
             }
 
@@ -104,6 +112,11 @@ class AdminAuth {
             this.updateAdminHeaderUI()
 
             if (onLogin) {
+                this.showLoading(false)
+            }
+
+            if (onDashboard && this.isAdmin) {
+                document.body?.classList.remove('auth-pending')
                 this.showLoading(false)
             }
         })

@@ -36,6 +36,15 @@ body {
     line-height: 1.6;
 }
 
+body.admin-page.auth-pending .admin-nav,
+body.admin-page.auth-pending .admin-main {
+    visibility: hidden;
+}
+
+body.admin-page.auth-pending #loadingOverlay {
+    display: flex;
+}
+
 body.login-page,
 body.login-page * {
     box-sizing: border-box;
