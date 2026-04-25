@@ -82,6 +82,15 @@ class AdminAuth {
             if (!user) {
                 this.isAdmin = false
                 this.adminProfile = null
+
+                if (onLogin) {
+                    this.showLoading(false)
+                }
+
+                if (onDashboard) {
+                    this.showLoading(false)
+                }
+
                 window.dispatchEvent(new Event('adminAuthState'))
                 await this.applyRedirects()
                 return
@@ -122,14 +131,26 @@ class AdminAuth {
         })
     }
 
+    withTimeout(promise, ms, label = 'Request') {
+        let timeoutId
+        const timeoutPromise = new Promise((_, reject) => {
+            timeoutId = setTimeout(() => reject(new Error(`${label} timed out`)), ms)
+        })
+        return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timeoutId))
+    }
+
     async fetchAdminProfile(uid) {
         try {
             const ref = doc(db, 'admins', uid)
-            const snap = await getDoc(ref)
+            const snap = await this.withTimeout(getDoc(ref), 8000, 'Admin profile lookup')
             if (!snap.exists()) return null
             return { id: snap.id, ...snap.data() }
         } catch (e) {
             console.error('Failed to fetch admin profile:', e)
+            if ((e?.message || '').toLowerCase().includes('timed out')) {
+                this.showNotification('Verification is taking too long. Please check your connection and try again.', 'error')
+                return null
+            }
             const code = e?.code || ''
             if (code === 'permission-denied' || code === 'missing-or-insufficient-permissions') {
                 this.showNotification('Unable to verify admin access (permissions). Please contact support.', 'error')
@@ -140,55 +161,14 @@ class AdminAuth {
         }
     }
 
-    async createAdminRecord(user) {
-        try {
-            const adminData = {
-                name: user.displayName || user.email.split('@')[0],
-                email: user.email,
-                role: 'super_admin',
-                createdAt: new Date().toISOString(),
-                createdBy: user.uid
-            }
-            await setDoc(doc(db, 'admins', user.uid), adminData)
-            console.log('Admin record created successfully:', adminData)
-            return { id: user.uid, ...adminData }
-        } catch (e) {
-            console.error('Failed to create admin record:', e)
-            return null
-        }
-    }
-
     async fetchAdminInvite(email) {
         try {
             const ref = doc(db, 'adminInvites', email)
-            const snap = await getDoc(ref)
+            const snap = await this.withTimeout(getDoc(ref), 8000, 'Admin invite lookup')
             if (!snap.exists()) return null
             return { id: snap.id, ...snap.data() }
         } catch (e) {
             console.error('Failed to fetch admin invite:', e)
-            return null
-        }
-    }
-
-    async createAdminRecordFromInvite(user, invite) {
-        try {
-            const adminData = {
-                name: user.displayName || user.email.split('@')[0],
-                email: user.email,
-                role: invite.role || 'admin',
-                createdAt: new Date().toISOString(),
-                createdBy: invite.createdBy,
-                invitedBy: invite.createdBy
-            }
-            await setDoc(doc(db, 'admins', user.uid), adminData)
-            
-            // Remove the invite after creating admin record
-            await deleteDoc(doc(db, 'adminInvites', user.email))
-            
-            console.log('Admin record created from invite successfully:', adminData)
-            return { id: user.uid, ...adminData }
-        } catch (e) {
-            console.error('Failed to create admin record from invite:', e)
             return null
         }
     }
@@ -224,6 +204,8 @@ class AdminAuth {
                     await signOut(auth)
                 } catch (e) {
                     console.error('Failed to sign out unauthorized user:', e)
+                } finally {
+                    this.showLoading(false)
                 }
             }
             return
@@ -244,6 +226,7 @@ class AdminAuth {
                 } else {
                     this.showNotification(message, 'error')
                 }
+                this.showLoading(false)
                 window.location.href = 'index.html'
             }
         }
