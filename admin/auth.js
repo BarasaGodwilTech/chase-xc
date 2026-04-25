@@ -194,8 +194,12 @@ class AdminAuth {
                 if (window.notifications && typeof window.notifications.show === 'function') {
                     window.notifications.show(message, 'error', 'Not authorized', 5000)
                 }
+
+                // Important: do not block awaiting a modal while the loading overlay is active
+                // (can deadlock on some devices).
+                this.showLoading(false)
                 if (window.notifications && typeof window.notifications.alert === 'function') {
-                    await window.notifications.alert(message, 'Not authorized', 'warning')
+                    window.notifications.alert(message, 'Not authorized', 'warning')
                 } else {
                     this.showNotification(message, 'error')
                 }
