@@ -104,6 +104,12 @@ class AdminAuth {
             return { id: snap.id, ...snap.data() }
         } catch (e) {
             console.error('Failed to fetch admin profile:', e)
+            const code = e?.code || ''
+            if (code === 'permission-denied' || code === 'missing-or-insufficient-permissions') {
+                this.showNotification('Unable to verify admin access (permissions). Please contact support.', 'error')
+            } else {
+                this.showNotification('Unable to verify admin access. Please try again.', 'error')
+            }
             return null
         }
     }
@@ -168,6 +174,11 @@ class AdminAuth {
 
         if (onLogin) {
             if (this.isAuthenticated && this.isAdmin) {
+                if (window.notifications && typeof window.notifications.show === 'function') {
+                    window.notifications.show('Login successful. Redirecting…', 'success', 'Welcome', 1800)
+                }
+                this.showLoading(true, 'Redirecting to dashboard...')
+                await new Promise((r) => setTimeout(r, 200))
                 window.location.href = 'dashboard.html'
                 return
             }
@@ -219,6 +230,7 @@ class AdminAuth {
 
     async handleEmailLogin(e) {
         e.preventDefault()
+
         const email = (document.getElementById('email')?.value || '').trim()
         const password = document.getElementById('password')?.value || ''
         const emailGroup = document.getElementById('email')?.closest('.input-group')
@@ -246,7 +258,10 @@ class AdminAuth {
         emailGroup?.classList.add('success')
         passwordGroup?.classList.add('success')
 
-        this.showLoading(true)
+        this.showLoading(true, 'Signing in...')
+        if (window.notifications && typeof window.notifications.show === 'function') {
+            window.notifications.show('Signing in…', 'info', null, 1200)
+        }
         try {
             await signInWithEmailAndPassword(auth, email, password)
         } catch (error) {
@@ -261,6 +276,9 @@ class AdminAuth {
 
     async handleGoogleLogin() {
         this.showLoading(true, 'Opening Google sign-in...')
+        if (window.notifications && typeof window.notifications.show === 'function') {
+            window.notifications.show('Opening Google sign-in…', 'info', null, 1600)
+        }
         try {
             const provider = new GoogleAuthProvider()
             await signInWithPopup(auth, provider)

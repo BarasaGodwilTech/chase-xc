@@ -158,7 +158,7 @@ service cloud.firestore {
 
     // Admin allowlist - only super admin can manage
     match /admins/{adminId} {
-      allow read: if isSuperAdmin() || isAdmin();
+      allow read: if isSuperAdmin() || (isAuthenticated() && adminId == request.auth.uid) || isAdmin();
       // Allow super admin to create their own record if it doesn't exist (bootstrap)
       // Allow admins to create their own record if they have a valid invite
       allow create: if isSuperAdmin() || 
