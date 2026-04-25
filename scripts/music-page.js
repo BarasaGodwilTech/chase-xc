@@ -167,9 +167,91 @@ async function renderLatestReleases(tracks) {
     return
   }
 
-  // Render using full track card functionality
-  const cards = latestTracks.map((track, index) => renderTrackCard(track, index, track.artistName))
-  container.innerHTML = cards.join('')
+  // Render with creative layout - featured card + smaller cards
+  const featuredTrack = latestTracks[0]
+  const sideTracks = latestTracks.slice(1)
+
+  const featuredHtml = renderFeaturedReleaseCard(featuredTrack, 0, featuredTrack.artistName)
+  const sideHtml = sideTracks.map((track, index) => renderSideReleaseCard(track, index + 1, track.artistName)).join('')
+
+  container.innerHTML = `
+    <div class="latest-releases-grid">
+      <div class="featured-release">${featuredHtml}</div>
+      <div class="side-releases">${sideHtml}</div>
+    </div>
+  `
+}
+
+function renderFeaturedReleaseCard(track, index, artistName) {
+  const categories = getTrackCategories(track)
+  const badge = getTrackBadge(track)
+  const spotifyUrl = track.spotifyUrl || (track.platformLinks?.spotify) || ''
+  const isLiked = likedTracksManager.isTrackLiked(track.id)
+
+  return `
+    <div class="featured-release-card" data-track="${index}" data-category="${categories.join(' ')}" data-spotify-url="${spotifyUrl}" data-track-id="${track.id || ''}">
+      <div class="featured-artwork">
+        <img src="${escapeHtml(track.artwork || '')}" alt="${escapeHtml(track.title || '')}">
+        <div class="featured-overlay">
+          <div class="featured-gradient"></div>
+          ${badge ? `<div class="featured-badge ${badge.type}">${badge.text}</div>` : ''}
+          <button class="featured-play-btn" aria-label="Play ${escapeHtml(track.title || '')}" type="button">
+            <i class="fas fa-play"></i>
+          </button>
+        </div>
+      </div>
+      <div class="featured-content">
+        <div class="featured-number">01</div>
+        <div class="featured-info">
+          <h4 class="featured-title">${escapeHtml(track.title || '')}</h4>
+          <p class="featured-artist">${escapeHtml(artistName || track.artistName || 'Unknown Artist')}</p>
+          <div class="featured-meta">
+            <span class="featured-genre">${escapeHtml(track.genre || '')}</span>
+            <span class="featured-duration">${escapeHtml(track.duration || '')}</span>
+          </div>
+        </div>
+        <div class="featured-actions">
+          <button class="featured-like-btn ${isLiked ? 'liked' : ''}" title="Like" data-like-track-id="${track.id}" type="button">
+            <i class="${isLiked ? 'fas' : 'far'} fa-heart"></i>
+          </button>
+          ${spotifyUrl ? `<a href="${spotifyUrl}" target="_blank" class="featured-spotify-btn" title="Listen on Spotify"><i class="fab fa-spotify"></i></a>` : ''}
+        </div>
+      </div>
+    </div>
+  `
+}
+
+function renderSideReleaseCard(track, index, artistName) {
+  const categories = getTrackCategories(track)
+  const badge = getTrackBadge(track)
+  const spotifyUrl = track.spotifyUrl || (track.platformLinks?.spotify) || ''
+  const isLiked = likedTracksManager.isTrackLiked(track.id)
+
+  return `
+    <div class="side-release-card" data-track="${index}" data-category="${categories.join(' ')}" data-spotify-url="${spotifyUrl}" data-track-id="${track.id || ''}">
+      <div class="side-artwork">
+        <img src="${escapeHtml(track.artwork || '')}" alt="${escapeHtml(track.title || '')}">
+        <div class="side-overlay">
+          <button class="side-play-btn" aria-label="Play ${escapeHtml(track.title || '')}" type="button">
+            <i class="fas fa-play"></i>
+          </button>
+        </div>
+        ${badge ? `<div class="side-badge ${badge.type}">${badge.text}</div>` : ''}
+      </div>
+      <div class="side-content">
+        <div class="side-number">0${index + 1}</div>
+        <div class="side-info">
+          <h4 class="side-title">${escapeHtml(track.title || '')}</h4>
+          <p class="side-artist">${escapeHtml(artistName || track.artistName || 'Unknown Artist')}</p>
+        </div>
+        <div class="side-actions">
+          <button class="side-like-btn ${isLiked ? 'liked' : ''}" title="Like" data-like-track-id="${track.id}" type="button">
+            <i class="${isLiked ? 'fas' : 'far'} fa-heart"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  `
 }
 
 async function renderGenreCards(tracks) {
@@ -288,10 +370,10 @@ async function initMusicPage() {
 
 function setupTrackCardListeners() {
   // Play button listeners - plays track on all devices
-  document.querySelectorAll('.track-play-btn').forEach(btn => {
+  document.querySelectorAll('.track-play-btn, .featured-play-btn, .side-play-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation()
-      const card = btn.closest('.track-card')
+      const card = btn.closest('.track-card, .featured-release-card, .side-release-card')
       const trackIndex = parseInt(card.dataset.track)
       const track = window.__tracks[trackIndex]
       
@@ -302,16 +384,16 @@ function setupTrackCardListeners() {
   })
 
   // Card click listeners - navigate to detail page on all devices
-  document.querySelectorAll('.track-card').forEach(card => {
+  document.querySelectorAll('.track-card, .featured-release-card, .side-release-card').forEach(card => {
     if (card._clickHandler) {
       card.removeEventListener('click', card._clickHandler)
     }
     
     card._clickHandler = (e) => {
       // Don't navigate if clicking on play button, like button, or spotify indicator
-      if (e.target.closest('.track-play-btn') || 
-          e.target.closest('.like-btn-mini') || 
-          e.target.closest('.spotify-indicator')) {
+      if (e.target.closest('.track-play-btn, .featured-play-btn, .side-play-btn') || 
+          e.target.closest('.like-btn-mini, .featured-like-btn, .side-like-btn') || 
+          e.target.closest('.spotify-indicator, .featured-spotify-btn')) {
         return
       }
       const trackId = card.dataset.trackId
@@ -323,7 +405,7 @@ function setupTrackCardListeners() {
   })
 
   // Like button listeners
-  document.querySelectorAll('.like-btn-mini[data-like-track-id]').forEach(btn => {
+  document.querySelectorAll('.like-btn-mini[data-like-track-id], .featured-like-btn[data-like-track-id], .side-like-btn[data-like-track-id]').forEach(btn => {
     if (btn._likeHandler) {
       btn.removeEventListener('click', btn._likeHandler)
     }
@@ -336,13 +418,13 @@ function setupTrackCardListeners() {
   })
 
   // Spotify indicator click
-  document.querySelectorAll('.spotify-indicator').forEach(indicator => {
+  document.querySelectorAll('.spotify-indicator, .featured-spotify-btn').forEach(indicator => {
     if (indicator._spotifyHandler) {
       indicator.removeEventListener('click', indicator._spotifyHandler)
     }
     indicator._spotifyHandler = (e) => {
       e.stopPropagation()
-      const card = indicator.closest('.track-card')
+      const card = indicator.closest('.track-card, .featured-release-card')
       const spotifyUrl = card.dataset.spotifyUrl
       if (spotifyUrl) {
         window.open(spotifyUrl, '_blank')
