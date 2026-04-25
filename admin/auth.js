@@ -65,6 +65,7 @@ class AdminAuth {
             if (!user) {
                 this.isAdmin = false
                 this.adminProfile = null
+                window.dispatchEvent(new Event('adminAuthState'))
                 this.applyRedirects()
                 return
             }
@@ -89,6 +90,7 @@ class AdminAuth {
             this.isAdmin = Boolean(adminInfo)
             this.adminProfile = adminInfo
 
+            window.dispatchEvent(new Event('adminAuthState'))
             this.applyRedirects()
             this.updateAdminHeaderUI()
         })

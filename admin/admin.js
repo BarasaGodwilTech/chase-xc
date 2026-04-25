@@ -8,11 +8,15 @@ class AdminPanel {
         this.settingsDirtyBound = false;
         this.searchBound = false;
 
+        this._adminAuthListenerBound = false;
+
         this.init();
     }
 
+
     init() {
         console.log('AdminPanel initializing...');
+
 
         // Ensure we have a reliable focus target for keyboard navigation
         const adminNav = document.getElementById('adminNav');
@@ -21,10 +25,13 @@ class AdminPanel {
         }
 
         this.setupEventListeners();
+        this.bindAdminAuthState();
+
 
         const storedSection = localStorage.getItem('admin:lastSection');
         const initialSection = storedSection && document.getElementById(storedSection) ? storedSection : 'dashboard';
         this.showSection(initialSection);
+
 
         // Only listen for local DataManager updates when running in local-storage mode.
         if (this.dataManager) {
@@ -35,6 +42,35 @@ class AdminPanel {
 
         console.log('AdminPanel initialized successfully');
     }
+
+    bindAdminAuthState() {
+        if (this._adminAuthListenerBound) return;
+        this._adminAuthListenerBound = true;
+
+        const apply = () => {
+            this.applyRoleBasedUI();
+        };
+
+        // Apply immediately if adminAuth is already present.
+        apply();
+
+        // Re-apply whenever admin auth state changes.
+        window.addEventListener('adminAuthState', apply);
+    }
+
+    applyRoleBasedUI() {
+        const isSuper = this.isSuperAdmin();
+        const adminMgmtNav = document.querySelector('.nav-item[data-target="admin-management"]');
+        if (adminMgmtNav) {
+            adminMgmtNav.style.display = isSuper ? '' : 'none';
+        }
+
+        // If user is not super admin and is currently on admin-management, move them away.
+        if (!isSuper && this.currentSection === 'admin-management') {
+            this.showSection('dashboard');
+        }
+    }
+
 
     setupEventListeners() {
         console.log('Setting up event listeners...');
@@ -1265,7 +1301,7 @@ class AdminPanel {
         if (!table) return;
         
         // Load payments from Firestore
-        const { db } = await import('../scripts/admin-firebase.js');
+        const { db } = await import('../scripts/firebase-init.js');
         const { collection, getDocs, query, orderBy } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
         
         try {
@@ -1349,7 +1385,7 @@ class AdminPanel {
         }
 
         try {
-            const { db } = await import('../scripts/admin-firebase.js');
+            const { db } = await import('../scripts/firebase-init.js');
             const { doc, updateDoc } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
             
             const reviewer = (window.adminAuth && typeof window.adminAuth.getCurrentUser === 'function')
@@ -1380,7 +1416,7 @@ class AdminPanel {
         }
 
         try {
-            const { db } = await import('../scripts/admin-firebase.js');
+            const { db } = await import('../scripts/firebase-init.js');
             const { doc, updateDoc } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
 
             const reason = (prompt('Reason for rejecting this payment (required):') || '').trim();
@@ -1698,7 +1734,7 @@ class AdminPanel {
             try {
                 const { db } = await import('../scripts/firebase-init.js');
                 const { doc, deleteDoc } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
-                
+
                 await deleteDoc(doc(db, 'team', memberId));
                 this.showNotification('Team member deleted successfully!', 'success');
                 this.loadTeam();
@@ -1848,7 +1884,7 @@ class AdminPanel {
 
     async viewPayment(paymentId) {
         try {
-            const { db } = await import('../scripts/admin-firebase.js');
+            const { db } = await import('../scripts/firebase-init.js');
             const { doc, getDoc } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
 
             const snap = await getDoc(doc(db, 'payments', paymentId));
@@ -2775,8 +2811,11 @@ class AdminPanel {
             ok = confirm('Are you sure you want to logout?');
         }
         if (ok) {
-            localStorage.removeItem('adminToken');
-            sessionStorage.removeItem('adminToken');
+            // Prefer signing out via Firebase auth if available.
+            if (window.adminAuth && typeof window.adminAuth.handleLogout === 'function') {
+                await window.adminAuth.handleLogout();
+                return;
+            }
             window.location.href = 'index.html';
         }
     }
@@ -3239,6 +3278,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const init = () => {
             if (window.adminPanel) return;
+
+            // If admin auth is present and the user is not an authenticated admin,
+            // do not initialize the panel (admin/auth.js will handle redirect).
+            if (window.adminAuth && typeof window.adminAuth.isLoggedIn === 'function') {
+                if (!window.adminAuth.isLoggedIn()) {
+                    // Auth may still be resolving; retry once when the auth listener fires.
+                    window.addEventListener('adminAuthState', init, { once: true });
+                    return;
+                }
+            }
             window.adminPanel = new AdminPanel();
         };
 
