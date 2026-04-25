@@ -943,10 +943,6 @@ function initAdminFirebase() {
 
         if (!artistDel && !trackDel) return
 
-        // Prevent duplicate handlers from firing in other scripts
-        e.preventDefault()
-        e.stopPropagation()
-
         try {
           if (artistDel) {
             const artistId = artistDel.dataset?.artistId || artistDel.closest('tr')?.dataset?.artistId
@@ -955,6 +951,9 @@ function initAdminFirebase() {
             if (!artistId) {
               if (window.notifications) window.notifications.show('Delete failed: missing artist id', 'error')
             } else {
+              // Prevent duplicate handlers from firing in other scripts only when we can handle it.
+              e.preventDefault()
+              e.stopPropagation()
               await window.deleteArtist(artistId, artistName)
             }
           }
@@ -966,6 +965,10 @@ function initAdminFirebase() {
               if (window.notifications) window.notifications.show('Delete failed: missing track id', 'error')
               return
             }
+
+            // Prevent duplicate handlers from firing in other scripts only when we can handle it.
+            e.preventDefault()
+            e.stopPropagation()
 
             let ok = false
             if (window.notifications && window.notifications.confirm) {
