@@ -66,7 +66,7 @@ class AdminAuth {
                 this.isAdmin = false
                 this.adminProfile = null
                 window.dispatchEvent(new Event('adminAuthState'))
-                this.applyRedirects()
+                await this.applyRedirects()
                 return
             }
 
@@ -91,7 +91,7 @@ class AdminAuth {
             this.adminProfile = adminInfo
 
             window.dispatchEvent(new Event('adminAuthState'))
-            this.applyRedirects()
+            await this.applyRedirects()
             this.updateAdminHeaderUI()
         })
     }
@@ -161,7 +161,7 @@ class AdminAuth {
         }
     }
 
-    applyRedirects() {
+    async applyRedirects() {
         const path = window.location.pathname
         const onLogin = path.includes('/admin/') && (path.endsWith('/admin/') || path.includes('admin/index.html'))
         const onDashboard = path.includes('admin/dashboard.html')
@@ -179,10 +179,13 @@ class AdminAuth {
                 return
             }
             if (!this.isAdmin) {
-                this.showNotification('Access denied: your account is not an admin.', 'error')
-                setTimeout(() => {
-                    window.location.href = 'index.html'
-                }, 700)
+                const message = 'Access denied. Your account is not invited as an admin.'
+                if (window.notifications && typeof window.notifications.alert === 'function') {
+                    await window.notifications.alert(message, 'Not authorized', 'warning')
+                } else {
+                    this.showNotification(message, 'error')
+                }
+                window.location.href = 'index.html'
             }
         }
     }

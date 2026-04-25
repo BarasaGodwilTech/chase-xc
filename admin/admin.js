@@ -65,6 +65,11 @@ class AdminPanel {
             adminMgmtNav.style.display = isSuper ? '' : 'none';
         }
 
+        const inviteBtn = document.getElementById('inviteAdminBtn');
+        if (inviteBtn) {
+            inviteBtn.style.display = isSuper ? '' : 'none';
+        }
+
         // If user is not super admin and is currently on admin-management, move them away.
         if (!isSuper && this.currentSection === 'admin-management') {
             this.showSection('dashboard');
@@ -1894,8 +1899,8 @@ class AdminPanel {
             }
 
             const p = { id: snap.id, ...snap.data() };
-            const createdAt = p.createdAt ? new Date(p.createdAt).toLocaleString() : 'N/A';
-            const reviewedAt = p.reviewedAt ? new Date(p.reviewedAt).toLocaleString() : 'N/A';
+            const createdAt = p.createdAt ? new Date(p.createdAt).toLocaleDateString() : 'N/A';
+            const reviewedAt = p.reviewedAt ? new Date(p.reviewedAt).toLocaleDateString() : 'N/A';
             const details = [
                 `User: ${p.userName || 'Unknown'} ${p.userEmail ? `(${p.userEmail})` : ''}`,
                 `Plan: ${p.plan || 'Unknown'}`,
@@ -3019,7 +3024,7 @@ class AdminPanel {
 
             const memberData = { name, role, badge, status, skills, bio, image: imageUrl };
 
-            if (this.editingItem?.id) {
+            if (this.editingItem && this.editingItem.id) {
                 const { db } = await import('../scripts/firebase-init.js');
                 const { doc, updateDoc } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
                 await updateDoc(doc(db, 'team', this.editingItem.id), memberData);
@@ -3060,17 +3065,58 @@ class AdminPanel {
     // Admin Management Methods
     async loadAdminManagement() {
         if (!this.isSuperAdmin()) {
-            this.showNotification('Access denied: Only super admins can manage admins', 'error');
+            this.renderAdminManagementAccessDenied();
             return;
         }
         await this.loadAdmins();
         await this.loadAdminInvites();
     }
 
+    renderAdminManagementAccessDenied() {
+        const section = document.getElementById('admin-management');
+        if (!section) return;
+
+        const inviteBtn = document.getElementById('inviteAdminBtn');
+        if (inviteBtn) inviteBtn.style.display = 'none';
+
+        const adminsTable = document.getElementById('adminsTable');
+        const invitesTable = document.getElementById('invitesTable');
+
+        if (adminsTable) {
+            adminsTable.innerHTML = '<tr><td colspan="5" class="text-center">Access denied</td></tr>';
+        }
+
+        if (invitesTable) {
+            invitesTable.innerHTML = '<tr><td colspan="4" class="text-center">Access denied</td></tr>';
+        }
+
+        // Insert a friendly access panel right after the header.
+        const existing = section.querySelector('[data-admin-mgmt-denied="true"]');
+        if (existing) return;
+
+        const header = section.querySelector('.section-header');
+        const panel = document.createElement('div');
+        panel.dataset.adminMgmtDenied = 'true';
+        panel.className = 'table-container';
+        panel.innerHTML = `
+            <div class="text-center" style="padding: 1.25rem;">
+                <h3 style="margin: 0 0 0.5rem;">Not authorized</h3>
+                <p style="margin: 0; opacity: 0.85;">Access denied. Only super admins can invite or manage admins.</p>
+            </div>
+        `;
+
+        if (header && header.parentNode) {
+            header.insertAdjacentElement('afterend', panel);
+        } else {
+            section.prepend(panel);
+        }
+    }
+
     async loadAdmins() {
         try {
             const { db } = await import('../scripts/firebase-init.js');
             const { collection, getDocs, query, orderBy } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
+            
             const q = query(collection(db, 'admins'), orderBy('createdAt', 'desc'));
             const snapshot = await getDocs(q);
             
