@@ -318,7 +318,7 @@ class AdminAuth {
 
             this.showLoading(true, 'Verifying access...')
             if (window.notifications && typeof window.notifications.show === 'function') {
-                window.notifications.show('Signed in. Verifying admin access…', 'info', null, 2400)
+                window.notifications.show('Verifying admin access…', 'info', null, 2400)
             }
         } catch (error) {
             console.error('Admin Google login error:', error)
