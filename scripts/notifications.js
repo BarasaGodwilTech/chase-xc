@@ -460,7 +460,7 @@ class NotificationSystem {
             cancelBtn.addEventListener('click', () => cleanup(false));
             confirmBtn.addEventListener('click', () => cleanup(true));
 
-            this.modalContainer.appendChild(modal);
+            document.body.appendChild(modal);
         });
     }
 
@@ -510,11 +510,11 @@ class NotificationSystem {
                 resolve();
             };
 
-            overlay.addEventListener('click', cleanup);
-            closeBtn.addEventListener('click', cleanup);
-            okBtn.addEventListener('click', cleanup);
+            overlay.addEventListener('click', () => cleanup());
+            closeBtn.addEventListener('click', () => cleanup());
+            okBtn.addEventListener('click', () => cleanup());
 
-            this.modalContainer.appendChild(modal);
+            document.body.appendChild(modal);
         });
     }
 
@@ -561,6 +561,11 @@ class NotificationSystem {
             const cancelBtn = modal.querySelector('.cancel-btn');
             const submitBtn = modal.querySelector('.submit-btn');
 
+            const cleanup = (result) => {
+                modal.remove();
+                resolve(result);
+            };
+
             // Focus input and select text
             setTimeout(() => {
                 input.focus();
@@ -574,17 +579,12 @@ class NotificationSystem {
                 }
             });
 
-            const cleanup = (result) => {
-                modal.remove();
-                resolve(result || null);
-            };
-
             overlay.addEventListener('click', () => cleanup(null));
             closeBtn.addEventListener('click', () => cleanup(null));
             cancelBtn.addEventListener('click', () => cleanup(null));
             submitBtn.addEventListener('click', () => cleanup(input.value));
 
-            this.modalContainer.appendChild(modal);
+            document.body.appendChild(modal);
         });
     }
 }
