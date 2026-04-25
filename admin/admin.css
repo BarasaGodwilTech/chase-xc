@@ -36,6 +36,11 @@ body {
     line-height: 1.6;
 }
 
+body.login-page,
+body.login-page * {
+    box-sizing: border-box;
+}
+
 /* Platform Selection Styles */
 .platform-option {
     cursor: pointer;
@@ -93,10 +98,18 @@ body.login-page {
     min-height: 100vh;
     background: linear-gradient(135deg, var(--background) 0%, #1a1f3a 100%);
     width: 100%;
+    overflow-x: hidden;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     padding: 1rem;
     margin: 0;
+
+    scrollbar-width: none;
+}
+
+body.login-page::-webkit-scrollbar {
+    width: 0;
+    height: 0;
 }
 
 .login-container {
@@ -111,7 +124,14 @@ body.login-page {
     border: 1px solid var(--border);
     margin: 0 auto;
     max-height: calc(100vh - 2rem);
-    overflow: auto;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: none;
+}
+
+.login-container::-webkit-scrollbar {
+    width: 0;
+    height: 0;
 }
 
 .login-header {
