@@ -221,13 +221,19 @@ class AdminAuth {
                 if (window.notifications && typeof window.notifications.show === 'function') {
                     window.notifications.show(message, 'error', 'Not authorized', 5000)
                 }
+
+                this.showLoading(false)
+                document.body?.classList.remove('auth-pending')
+
                 if (window.notifications && typeof window.notifications.alert === 'function') {
-                    await window.notifications.alert(message, 'Not authorized', 'warning')
+                    window.notifications.alert(message, 'Not authorized', 'warning')
                 } else {
                     this.showNotification(message, 'error')
                 }
-                this.showLoading(false)
-                window.location.href = 'index.html'
+
+                setTimeout(() => {
+                    window.location.href = 'index.html'
+                }, 300)
             }
         }
     }
