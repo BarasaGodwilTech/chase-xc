@@ -445,7 +445,6 @@ async function handleAudioUploadSubmit(e) {
   const artworkFile = /** @type {File|null} */ (fd.get('trackArtwork'))
 
   const spotifyArtworkUrl = document.getElementById('spotifyArtworkUrl')?.value || ''
-  const importedArtworkUrl = document.getElementById('importedArtworkUrl')?.value || ''
 
   const editingItem = window.adminPanel && window.adminPanel.editingItem
   const isEdit = Boolean(editingItem && editingItem.type === 'track' && editingItem.id)
@@ -530,9 +529,8 @@ async function handleAudioUploadSubmit(e) {
 
     // Handle artwork - either upload file or use Spotify URL
     let artworkUrl = existingTrack?.artwork || ''
-    if (importedArtworkUrl && importedArtworkUrl.startsWith('http')) {
-      artworkUrl = importedArtworkUrl
-    } else if (spotifyArtworkUrl && spotifyArtworkUrl.startsWith('http')) {
+    if (spotifyArtworkUrl && spotifyArtworkUrl.startsWith('http')) {
+      // Use the Spotify artwork URL
       artworkUrl = spotifyArtworkUrl
     } else if (artworkFile && artworkFile instanceof File && artworkFile.size > 0) {
       // Upload the artwork file
@@ -591,9 +589,6 @@ async function handleAudioUploadSubmit(e) {
     // Clear Spotify artwork URL
     const spotifyArtworkInput = document.getElementById('spotifyArtworkUrl')
     if (spotifyArtworkInput) spotifyArtworkInput.value = ''
-
-    const importedArtworkInput = document.getElementById('importedArtworkUrl')
-    if (importedArtworkInput) importedArtworkInput.value = ''
 
     // Clear artwork preview
     const artworkPreview = document.getElementById('artworkPreview')
