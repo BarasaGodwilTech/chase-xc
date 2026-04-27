@@ -221,6 +221,14 @@ async function populateArtistSelect(selectedId = '') {
 let editingArtistId = null
 
 function openAddArtistModal() {
+  const prevSection = window.adminPanel?.currentSection || ''
+  if (prevSection && prevSection !== 'artists') {
+    window.__returnToAdminSectionAfterArtistAdd = prevSection
+    if (typeof window.adminPanel?.showSection === 'function') {
+      window.adminPanel.showSection('artists')
+    }
+  }
+
   const formContainer = document.getElementById('artistManagementForm')
   if (!formContainer) return
   editingArtistId = null
@@ -249,6 +257,12 @@ function closeAddArtistForm() {
   if (form) form.reset()
   setArtistImagePreview(null)
   editingArtistId = null
+
+  const backTo = window.__returnToAdminSectionAfterArtistAdd
+  if (backTo && backTo !== 'artists' && typeof window.adminPanel?.showSection === 'function') {
+    window.__returnToAdminSectionAfterArtistAdd = null
+    window.adminPanel.showSection(backTo)
+  }
 }
 
 function schedulePopulateArtistSelect(selectedId = '') {
@@ -409,6 +423,12 @@ async function handleAddArtistSubmit(e) {
     form.reset()
     setArtistImagePreview(null)
     editingArtistId = null
+
+    const backTo = window.__returnToAdminSectionAfterArtistAdd
+    if (backTo && backTo !== 'artists' && typeof window.adminPanel?.showSection === 'function') {
+      window.__returnToAdminSectionAfterArtistAdd = null
+      window.adminPanel.showSection(backTo)
+    }
   } catch (err) {
     console.error(err)
     alert('Failed to save artist. Please try again.')
