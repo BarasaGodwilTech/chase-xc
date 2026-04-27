@@ -948,6 +948,10 @@ class AdminPanel {
             } catch (_) {
                 artistInput.value = '__add_new__';
             }
+
+            if (artistInput.value === '__add_new__') {
+                artistInput.dispatchEvent(new Event('change', { bubbles: true }));
+            }
         }
 
         if (durationInput && this.selectedSpotifyTrack.duration) {
@@ -1740,17 +1744,32 @@ class AdminPanel {
     }
 
     async deleteTeamMember(memberId) {
+        let memberName = '';
+        try {
+            const { db } = await import('../scripts/firebase-init.js');
+            const { doc, getDoc } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
+            const snap = await getDoc(doc(db, 'team', memberId));
+            if (snap.exists()) {
+                const m = snap.data() || {};
+                memberName = m.name || m.fullName || m.displayName || m.email || '';
+            }
+        } catch (_) {
+            // ignore lookup failures; still allow delete
+        }
+
+        const label = memberName ? `"${memberName}"` : `ID ${memberId}`;
+        const msg = `Are you sure you want to delete team member ${label}? This action cannot be undone.`;
+
         let ok = false;
         if (window.notifications && window.notifications.confirm) {
-            ok = await window.notifications.confirm('Are you sure you want to delete this team member?', 'Delete Team Member', 'warning');
+            ok = await window.notifications.confirm(msg, 'Delete Team Member', 'warning');
         } else {
-            ok = confirm('Are you sure you want to delete this team member?');
+            ok = confirm(msg);
         }
         if (ok) {
             try {
                 const { db } = await import('../scripts/firebase-init.js');
                 const { doc, deleteDoc } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
-
                 await deleteDoc(doc(db, 'team', memberId));
                 this.showNotification('Team member deleted successfully!', 'success');
                 this.loadTeam();
@@ -1761,23 +1780,24 @@ class AdminPanel {
         }
     }
 
-    async handleImageUpload(file) {
-        // For demo purposes, convert to data URL
-        // In production, upload to Firebase Storage
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = (e) => resolve(e.target.result);
-            reader.onerror = reject;
-            reader.readAsDataURL(file);
-        });
-    }
-
     async deleteArtist(artistId) {
+        let artistName = '';
+        try {
+            const artists = await window.fetchArtists();
+            const a = (artists || []).find(x => x.id === artistId);
+            artistName = a?.name || '';
+        } catch (_) {
+            // ignore
+        }
+
+        const label = artistName ? `"${artistName}"` : `ID ${artistId}`;
+        const msg = `Are you sure you want to delete artist ${label}? This action cannot be undone.`;
+
         let ok = false;
         if (window.notifications && window.notifications.confirm) {
-            ok = await window.notifications.confirm('Are you sure you want to delete this artist?', 'Delete Artist', 'warning');
+            ok = await window.notifications.confirm(msg, 'Delete Artist', 'warning');
         } else {
-            ok = confirm('Are you sure you want to delete this artist?');
+            ok = confirm(msg);
         }
         if (!ok) return;
         try {
@@ -1880,11 +1900,23 @@ class AdminPanel {
     }
 
     async deleteTrack(trackId) {
+        let trackTitle = '';
+        try {
+            const tracks = await window.fetchTracks();
+            const t = (tracks || []).find(x => x.id === trackId);
+            trackTitle = t?.title || '';
+        } catch (_) {
+            // ignore
+        }
+
+        const label = trackTitle ? `"${trackTitle}"` : `ID ${trackId}`;
+        const msg = `Are you sure you want to delete track ${label}? This action cannot be undone.`;
+
         let ok = false;
         if (window.notifications && window.notifications.confirm) {
-            ok = await window.notifications.confirm('Are you sure you want to delete this track?', 'Delete Track', 'warning');
+            ok = await window.notifications.confirm(msg, 'Delete Track', 'warning');
         } else {
-            ok = confirm('Are you sure you want to delete this track?');
+            ok = confirm(msg);
         }
         if (ok) {
             try {
@@ -1902,13 +1934,11 @@ class AdminPanel {
         try {
             const { db } = await import('../scripts/firebase-init.js');
             const { doc, getDoc } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
-
             const snap = await getDoc(doc(db, 'payments', paymentId));
             if (!snap.exists()) {
                 this.showNotification('Payment not found', 'error');
                 return;
             }
-
             const p = { id: snap.id, ...snap.data() };
             const createdAt = p.createdAt ? new Date(p.createdAt).toLocaleDateString() : 'N/A';
             const reviewedAt = p.reviewedAt ? new Date(p.reviewedAt).toLocaleDateString() : 'N/A';
@@ -2501,7 +2531,7 @@ class AdminPanel {
             }
 
             // Try to fetch from oEmbed API
-            const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`;
+            const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}`;
             
             try {
                 const response = await fetch(oembedUrl);
@@ -2733,6 +2763,10 @@ class AdminPanel {
                     artistSelect.value = matchingArtist ? matchingArtist.id : '__add_new__';
                 } catch (_) {
                     artistSelect.value = '__add_new__';
+                }
+
+                if (artistSelect.value === '__add_new__') {
+                    artistSelect.dispatchEvent(new Event('change', { bubbles: true }));
                 }
             }
 
@@ -3345,7 +3379,20 @@ class AdminPanel {
     }
 
     async deleteAdmin(adminId) {
-        if (!confirm('Are you sure you want to remove this admin? This action cannot be undone.')) return;
+        let adminLabel = `ID ${adminId}`;
+        try {
+            const { db } = await import('../scripts/firebase-init.js');
+            const { doc, getDoc } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
+            const snap = await getDoc(doc(db, 'admins', adminId));
+            if (snap.exists()) {
+                const a = snap.data() || {};
+                adminLabel = a.email ? `"${a.email}"` : adminLabel;
+            }
+        } catch (_) {
+            // ignore
+        }
+
+        if (!confirm(`Are you sure you want to remove admin ${adminLabel}? This action cannot be undone.`)) return;
 
         try {
             const { db } = await import('../scripts/firebase-init.js');

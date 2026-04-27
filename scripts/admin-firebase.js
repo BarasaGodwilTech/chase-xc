@@ -1014,11 +1014,23 @@ function initAdminFirebase() {
             e.preventDefault()
             e.stopPropagation()
 
+            let trackLabel = `ID ${trackId}`
+            try {
+              const row = trackDel.closest('tr')
+              const titleCell = row?.querySelector('td')
+              const titleText = titleCell?.textContent ? String(titleCell.textContent).trim() : ''
+              if (titleText) trackLabel = `"${titleText.replace(/\s+/g, ' ')}"`
+            } catch (_) {
+              // ignore
+            }
+
+            const confirmMsg = `Are you sure you want to delete track ${trackLabel}? This action cannot be undone.`
+
             let ok = false
             if (window.notifications && window.notifications.confirm) {
-              ok = await window.notifications.confirm('Are you sure you want to delete this track?', 'Delete Track', 'warning')
+              ok = await window.notifications.confirm(confirmMsg, 'Delete Track', 'warning')
             } else {
-              ok = confirm('Are you sure you want to delete this track?')
+              ok = confirm(confirmMsg)
             }
             if (!ok) return
 
