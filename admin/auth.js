@@ -50,10 +50,29 @@ class AdminAuth {
 
         const logoutBtn = document.getElementById('logoutBtn')
         if (logoutBtn) {
-            logoutBtn.addEventListener('click', (e) => {
-                e.preventDefault()
-                this.handleLogout()
-            })
+            logoutBtn.addEventListener(
+                'click',
+                async (e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    e.stopImmediatePropagation()
+
+                    let ok = false
+                    if (window.notifications && window.notifications.confirm) {
+                        ok = await window.notifications.confirm(
+                            'Are you sure you want to logout?',
+                            'Logout',
+                            'warning'
+                        )
+                    } else {
+                        ok = confirm('Are you sure you want to logout?')
+                    }
+
+                    if (!ok) return
+                    await this.handleLogout()
+                },
+                true
+            )
         }
     }
 
