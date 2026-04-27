@@ -974,6 +974,12 @@ class AdminPanel {
             }
         }
 
+        // Move the Spotify link into the Audio Link field so it can be previewed/tested and saved.
+        const audioUrlInput = document.getElementById('audioUrl');
+        if (audioUrlInput && this.selectedSpotifyTrack.url) {
+            audioUrlInput.value = this.selectedSpotifyTrack.url;
+        }
+
         // Clear Spotify URL input
         if (spotifyUrlInput) spotifyUrlInput.value = '';
 
@@ -986,6 +992,11 @@ class AdminPanel {
 
         // Switch to upload method to complete the import
         this.switchUploadMethod('upload');
+
+        // Trigger the existing inline preview logic bound to #audioUrl (scripts/admin-firebase.js)
+        if (audioUrlInput) {
+            audioUrlInput.dispatchEvent(new Event('input', { bubbles: true }));
+        }
 
         this.showNotification('Track data imported from Spotify. Please add an audio link (URL) to complete.', 'success');
     }
