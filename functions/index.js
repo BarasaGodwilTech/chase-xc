@@ -28,7 +28,7 @@ function sanitizeSegment(s) {
     .replace(/[^a-zA-Z0-9._\-/]/g, '')
 }
 
-exports.githubUploadProfileImage = onCall({ timeoutSeconds: 60, memory: '256MiB' }, async (request) => {
+exports.githubUploadProfileImage = onCall({ timeoutSeconds: 60, memory: '256MiB', cors: true }, async (request) => {
   if (!request.auth) {
     throw new HttpsError('unauthenticated', 'Authentication required')
   }
