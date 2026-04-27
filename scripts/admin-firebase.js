@@ -17,10 +17,48 @@ import {
   getDownloadURL,
 } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js'
 
-import { db, storage } from './firebase-init.js'
+import { db, storage, firebaseApp } from './firebase-init.js'
 
 function normalizeGenre(genre) {
   return (genre || '').trim()
+}
+
+async function fileToBase64(file) {
+  const dataUrl = await new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onerror = () => reject(reader.error || new Error('Failed to read file'))
+    reader.onload = () => resolve(String(reader.result || ''))
+    reader.readAsDataURL(file)
+  })
+
+  const idx = dataUrl.indexOf(',')
+  return idx >= 0 ? dataUrl.slice(idx + 1) : dataUrl
+}
+
+async function uploadProfileImageToGithub(entityType, file) {
+  try {
+    const { getFunctions, httpsCallable } = await import(
+      'https://www.gstatic.com/firebasejs/10.12.5/firebase-functions.js'
+    )
+
+    const functions = getFunctions(firebaseApp)
+    const upload = httpsCallable(functions, 'githubUploadProfileImage')
+    const base64 = await fileToBase64(file)
+
+    const res = await upload({
+      entityType,
+      mimeType: file.type || 'image/jpeg',
+      fileName: file.name || 'image.jpg',
+      base64,
+    })
+
+    const url = res?.data?.url
+    if (typeof url === 'string' && url.startsWith('http')) return url
+    return ''
+  } catch (e) {
+    console.warn('[admin-firebase] GitHub upload failed, falling back to Firebase Storage:', e)
+    return ''
+  }
 }
 
 async function fetchArtists() {
@@ -353,10 +391,13 @@ async function handleAddArtistSubmit(e) {
   try {
     if (imageFile && imageFile instanceof File && imageFile.size > 0) {
       try {
-        const now = Date.now()
-        const ext = safeFileExt(imageFile.name) || 'jpg'
-        const path = `artists/${now}.${ext}`
-        imageUrl = await uploadFileToStorage(path, imageFile)
+        imageUrl = await uploadProfileImageToGithub('artists', imageFile)
+        if (!imageUrl) {
+          const now = Date.now()
+          const ext = safeFileExt(imageFile.name) || 'jpg'
+          const path = `artists/${now}.${ext}`
+          imageUrl = await uploadFileToStorage(path, imageFile)
+        }
       } catch (uploadErr) {
         console.error(uploadErr)
 

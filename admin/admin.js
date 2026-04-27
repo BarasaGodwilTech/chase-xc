@@ -43,6 +43,58 @@ class AdminPanel {
         console.log('AdminPanel initialized successfully');
     }
 
+    async handleImageUpload(file, entityType = 'team') {
+        if (!file) return '';
+
+        // Prefer GitHub uploads (server-side token via Cloud Function). If not configured,
+        // fall back to Firebase Storage.
+        try {
+            const { firebaseApp } = await import('../scripts/firebase-init.js');
+            const { getFunctions, httpsCallable } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-functions.js');
+
+            const base64 = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onerror = () => reject(reader.error || new Error('Failed to read file'));
+                reader.onload = () => {
+                    const dataUrl = String(reader.result || '');
+                    const idx = dataUrl.indexOf(',');
+                    resolve(idx >= 0 ? dataUrl.slice(idx + 1) : dataUrl);
+                };
+                reader.readAsDataURL(file);
+            });
+
+            const functions = getFunctions(firebaseApp);
+            const upload = httpsCallable(functions, 'githubUploadProfileImage');
+            const res = await upload({
+                entityType: String(entityType || 'team'),
+                mimeType: file.type || 'image/jpeg',
+                fileName: file.name || 'image.jpg',
+                base64,
+            });
+
+            const url = res?.data?.url;
+            if (typeof url === 'string' && url.startsWith('http')) {
+                return url;
+            }
+        } catch (e) {
+            // Not fatal — will fall back below.
+            console.warn('[AdminPanel] GitHub upload failed, falling back to Firebase Storage:', e);
+        }
+
+        // Firebase Storage fallback
+        const { storage } = await import('../scripts/firebase-init.js');
+        const { ref, uploadBytes, getDownloadURL } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js');
+
+        const parts = String(file.name || '').split('.');
+        const ext = (parts.length > 1 ? parts.pop() : 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+        const now = Date.now();
+        const path = `${String(entityType || 'team')}/${now}.${ext}`;
+
+        const storageRef = ref(storage, path);
+        await uploadBytes(storageRef, file);
+        return getDownloadURL(storageRef);
+    }
+
     bindAdminAuthState() {
         if (this._adminAuthListenerBound) return;
         this._adminAuthListenerBound = true;

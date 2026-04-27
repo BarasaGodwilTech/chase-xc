@@ -190,5 +190,11 @@ service cloud.firestore {
       // In production, use:
       // allow write: if isAdmin() && isValidTeamData();
     }
+
+    // Private configuration/secrets (never public)
+    match /private/{document=**} {
+      allow read, write: if isSuperAdmin();
+      allow list: if isSuperAdmin();
+    }
   }
 }
