@@ -2031,53 +2031,38 @@ class AdminPanel {
     }
 
     showLinkPreview(url) {
-        const preview = document.getElementById('audioUrlInlinePreview');
-        if (!preview) return;
+        const preview = document.getElementById("audioUrlPreview");
+        const previewLink = document.getElementById("audioUrlPreviewLink");
+        const status = document.getElementById("audioUrlStatus");
+        if (!preview || !previewLink) return;
 
-        const raw = String(url || '').trim();
-        if (!raw) {
-            preview.innerHTML = '';
-            return;
-        }
-
-        let parsedUrl = null;
         try {
-            parsedUrl = new URL(raw);
-        } catch (_) {
-            preview.innerHTML = `
-                <div class="link-preview-status invalid">Invalid URL format</div>
-            `;
-            return;
-        }
+            new URL(url); // validate URL format
+            previewLink.href = url;
+            previewLink.textContent = url.length > 60 ? url.substring(0, 57) + "..." : url;
+            preview.style.display = "block";
 
-        const href = parsedUrl.href;
-        const isHttp = href.startsWith('http://') || href.startsWith('https://');
-        const isDirectAudio = /\.(mp3|wav|ogg|m4a|aac)(\?|#|$)/i.test(href);
-
-        const safeText = href.length > 80 ? href.substring(0, 77) + '...' : href;
-
-        preview.innerHTML = `
-            <div class="audio-preview-row">
-                <a href="${href}" target="_blank" rel="noopener noreferrer">${safeText}</a>
-                <button type="button" class="btn btn-secondary btn-sm" id="testAudioLinkBtn">Test</button>
-            </div>
-            <div class="link-preview-status ${isHttp ? 'valid' : 'invalid'}">${isHttp ? 'URL format looks valid' : 'URL should start with http:// or https://'}</div>
-            ${isDirectAudio ? `<audio controls preload="none" style="width:100%; margin-top:8px;"><source src="${href}"></audio>` : ''}
-        `;
-
-        const testBtn = document.getElementById('testAudioLinkBtn');
-        if (testBtn) {
-            testBtn.addEventListener('click', () => {
-                window.__lastTestedAudioUrl = href;
-                window.open(href, '_blank', 'noopener');
-            }, { once: true });
+            if (status) {
+                const isHttp = url.startsWith("http://") || url.startsWith("https://");
+                status.textContent = isHttp ? "URL format looks valid" : "URL should start with http:// or https://";
+                status.className = "link-preview-status " + (isHttp ? "valid" : "invalid");
+            }
+        } catch (e) {
+            if (status) {
+                status.textContent = "Invalid URL format";
+                status.className = "link-preview-status invalid";
+            }
+            preview.style.display = "block";
+            previewLink.textContent = url;
+            previewLink.href = "#";
         }
     }
 
     hideLinkPreview() {
-        const preview = document.getElementById('audioUrlInlinePreview');
-        if (preview) preview.innerHTML = '';
+        const preview = document.getElementById("audioUrlPreview");
+        if (preview) preview.style.display = "none";
     }
+
 
     resetUploadForm() {
         const form = document.getElementById('audioUploadForm');
