@@ -987,13 +987,1671 @@ class AdminPanel {
         // Switch to upload method to complete the import
         this.switchUploadMethod('upload');
 
-        // If the Audio Link field has a value (e.g., from a previous session), trigger preview rendering.
-        const audioUrlInput = document.getElementById('audioUrl');
-        if (audioUrlInput && audioUrlInput.value && audioUrlInput.value.trim()) {
-            audioUrlInput.dispatchEvent(new Event('input', { bubbles: true }));
+        this.showNotification('Track data imported from Spotify. Please add an audio link (URL) to complete.', 'success');
+    }
+
+    showSection(sectionId) {
+        document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+        document.querySelector(`[data-target="${sectionId}"]`)?.classList.add('active');
+
+        document.querySelectorAll('.admin-section').forEach(section => section.classList.remove('active'));
+
+        const activeSection = document.getElementById(sectionId);
+        if (!activeSection) {
+            console.error('Section not found:', sectionId);
+            return;
+        }
+        activeSection.classList.add('active');
+
+        this.updatePageTitle(sectionId);
+        this.currentSection = sectionId;
+        localStorage.setItem('admin:lastSection', sectionId);
+        this.loadSectionData(sectionId);
+
+        const searchInput = document.querySelector('.search-box input');
+        if (searchInput && !searchInput.value) {
+            this.applyTableSearch('');
+        } else if (searchInput) {
+            this.applyTableSearch(searchInput.value);
+        }
+    }
+
+    updatePageTitle(sectionId) {
+        const titles = {
+            dashboard: 'Dashboard',
+            payments: 'Payment Management',
+            users: 'User Management',
+            artists: 'Artist Management',
+            tracks: 'Track Management',
+            team: 'Team Management',
+            'music-management': 'Music Management',
+            projects: 'Projects',
+            settings: 'Studio Settings',
+            savings: 'Savings Goals',
+            reports: 'Reports'
+        };
+
+        const subtitles = {
+            dashboard: 'Welcome to your admin dashboard',
+            payments: 'Manage and track all payments',
+            users: 'View and manage app users',
+            artists: 'Manage artist profiles and content',
+            tracks: 'Manage music tracks and releases',
+            team: 'Manage team members and their profiles',
+            'music-management': 'Upload and manage music tracks',
+            projects: 'Manage studio projects and deliverables',
+            settings: 'Configure studio settings and pricing',
+            savings: 'Track and manage your savings goals',
+            reports: 'Generate and view financial reports'
+        };
+
+        const pageTitle = document.getElementById('pageTitle');
+        const pageSubtitle = document.getElementById('pageSubtitle');
+
+        if (pageTitle) pageTitle.textContent = titles[sectionId] || 'Admin Panel';
+        if (pageSubtitle) pageSubtitle.textContent = subtitles[sectionId] || 'Manage your studio operations';
+    }
+
+    async loadSectionData(sectionId) {
+        console.log('Loading section data:', sectionId);
+        try {
+            switch (sectionId) {
+                case 'dashboard':
+                    await this.renderDashboard();
+                    break;
+                case 'users':
+                    await this.loadUsers();
+                    break;
+                case 'artists':
+                    await this.loadArtists();
+                    break;
+                case 'tracks':
+                    await this.loadTracks();
+                    break;
+                case 'team':
+                    await this.loadTeam();
+                    break;
+                case 'music-management':
+                    await this.loadArtistsForSelect();
+                    break;
+                case 'projects':
+                    break;
+                case 'payments':
+                    await this.loadPayments();
+                    break;
+                case 'settings':
+                    await this.loadSettings();
+                    break;
+                case 'savings':
+                    break;
+                case 'reports':
+                    break;
+                case 'admin-management':
+                    await this.loadAdminManagement();
+                    break;
+            }
+        } catch (error) {
+            console.error('Error loading section data:', error);
+            this.showNotification('Error loading data: ' + error.message, 'error');
+        }
+    }
+
+    async renderDashboard() {
+        console.log('Rendering dashboard...');
+
+        const artists = await window.fetchArtists();
+        const tracks = await window.fetchTracks();
+        const payments = await window.fetchPayments();
+
+        const totalStreams = tracks.reduce((sum, track) => sum + (track.streams || 0), 0);
+        const totalRevenue = Math.round(totalStreams * 0.003);
+        const publishedTracks = tracks.filter(t => t.status === 'published');
+        const pendingPayments = payments.filter(p => p.status === 'pending').length;
+
+        const totalRevenueEl = document.getElementById('totalRevenue');
+        const totalArtistsEl = document.getElementById('totalArtists');
+        const activeProjectsEl = document.getElementById('activeProjects');
+        const pendingPaymentsEl = document.getElementById('pendingPayments');
+
+        const totalTracksValueEl = document.getElementById('totalTracksValue');
+        const streamsValueEl = document.getElementById('streamsValue');
+        const bookingsValueEl = document.getElementById('bookingsValue');
+        const ratingValueEl = document.getElementById('ratingValue');
+
+        if (totalRevenueEl) totalRevenueEl.textContent = `UGX ${this.formatNumber(totalRevenue)}`;
+        if (totalArtistsEl) totalArtistsEl.textContent = artists.length;
+        if (activeProjectsEl) activeProjectsEl.textContent = publishedTracks.length;
+        if (pendingPaymentsEl) pendingPaymentsEl.textContent = pendingPayments;
+
+        // Update quick stats
+        if (totalTracksValueEl) totalTracksValueEl.textContent = tracks.length;
+        if (streamsValueEl) streamsValueEl.textContent = this.formatNumber(totalStreams);
+        if (bookingsValueEl) bookingsValueEl.textContent = '0'; // TODO: Implement bookings tracking
+        if (ratingValueEl) ratingValueEl.textContent = 'N/A'; // TODO: Implement rating system
+    }
+
+    async loadArtists() {
+        console.log('Loading artists...');
+        const container = document.getElementById('artistsTable');
+        if (!container) {
+            console.error('Artists table container not found');
+            return;
         }
 
-        this.showNotification('Track data imported from Spotify. Please add an audio link (URL) to complete.', 'success');
+        const artists = await window.fetchArtists();
+        const tracks = await window.fetchTracks();
+
+        if (artists.length === 0) {
+            container.innerHTML = '<tr><td colspan="7" class="text-center">No artists found</td></tr>';
+            return;
+        }
+
+        // Calculate stats for each artist
+        const statsByArtist = new Map();
+        for (const t of tracks || []) {
+            const artistId = String(t.artist || '');
+            if (!artistId) continue;
+            if (!statsByArtist.has(artistId)) statsByArtist.set(artistId, { tracks: 0, streams: 0 });
+            const s = statsByArtist.get(artistId);
+            s.tracks += 1;
+            s.streams += Number(t.streams || 0);
+        }
+
+        container.innerHTML = artists.map(artist => {
+            const stats = statsByArtist.get(artist.id) || { tracks: 0, streams: 0 };
+            const since = artist.createdAt && artist.createdAt.toDate ? String(artist.createdAt.toDate().getFullYear()) : artist.since || '';
+
+            return `
+                <tr>
+                    <td>
+                        <div class="artist-cell">
+                            <img src="${artist.image}" alt="${artist.name}" class="artist-avatar">
+                            <span>${artist.name}</span>
+                        </div>
+                    </td>
+                    <td>${artist.genre}</td>
+                    <td>${stats.tracks}</td>
+                    <td>${this.formatNumber(stats.streams)}</td>
+                    <td>${since}</td>
+                    <td><span class="status-badge status-${artist.status}">${artist.status}</span></td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn btn-primary btn-sm js-edit-artist" type="button" data-artist-id="${artist.id}">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-secondary btn-sm js-view-artist" type="button" data-artist-id="${artist.id}">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn btn-danger btn-sm js-delete-artist" type="button" data-artist-id="${artist.id}">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        if (!container.dataset.actionsBound) {
+            container.dataset.actionsBound = 'true';
+            container.addEventListener('click', async (e) => {
+                const editBtn = e.target.closest('.js-edit-artist');
+                const viewBtn = e.target.closest('.js-view-artist');
+                const delBtn = e.target.closest('.js-delete-artist');
+
+                const artistId = editBtn?.dataset?.artistId || viewBtn?.dataset?.artistId || delBtn?.dataset?.artistId;
+                if (!artistId) return;
+
+                try {
+                    if (editBtn) await this.editArtist(artistId);
+                    if (viewBtn) await this.viewArtist(artistId);
+                    if (delBtn) await this.deleteArtist(artistId);
+                } catch (error) {
+                    console.error('Artist action failed:', error);
+                    this.showNotification('Action failed: ' + (error?.message || String(error)), 'error');
+                }
+            });
+        }
+    }
+
+    async loadTracks() {
+        console.log('Loading tracks...');
+        const container = document.getElementById('tracksTable');
+        if (!container) {
+            console.error('Tracks table container not found');
+            return;
+        }
+
+        const tracks = await window.fetchTracks();
+        const artists = await window.fetchArtists();
+
+        if (tracks.length === 0) {
+            container.innerHTML = '<tr><td colspan="7" class="text-center">No tracks found</td></tr>';
+            return;
+        }
+
+        // Create artist lookup map
+        const artistMap = new Map();
+        for (const a of artists || []) {
+            artistMap.set(a.id, a.name || 'Unknown Artist');
+        }
+
+        container.innerHTML = tracks.map(track => {
+            const artistName = artistMap.get(track.artist) || track.artistName || 'Unknown Artist';
+            return `
+                <tr>
+                    <td>
+                        <div class="track-cell">
+                            <img src="${track.artwork}" alt="${track.title}" class="track-artwork-small">
+                            <span>${track.title}</span>
+                        </div>
+                    </td>
+                    <td>${artistName}</td>
+                    <td>${track.genre}</td>
+                    <td>${this.formatNumber(track.streams)}</td>
+                    <td>${track.duration}</td>
+                    <td><span class="status-badge status-${track.status}">${track.status}</span></td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn btn-primary btn-sm js-edit-track" type="button" data-track-id="${track.id}">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-secondary btn-sm js-view-track" type="button" data-track-id="${track.id}">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn btn-danger btn-sm js-delete-track" type="button" data-track-id="${track.id}">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        if (!container.dataset.actionsBound) {
+            container.dataset.actionsBound = 'true';
+            container.addEventListener('click', async (e) => {
+                const editBtn = e.target.closest('.js-edit-track');
+                const viewBtn = e.target.closest('.js-view-track');
+                const delBtn = e.target.closest('.js-delete-track');
+
+                const trackId = editBtn?.dataset?.trackId || viewBtn?.dataset?.trackId || delBtn?.dataset?.trackId;
+                if (!trackId) return;
+
+                try {
+                    if (editBtn) await this.editTrack(trackId);
+                    if (viewBtn) await this.viewTrack(trackId);
+                    if (delBtn) await this.deleteTrack(trackId);
+                } catch (error) {
+                    console.error('Track action failed:', error);
+                    this.showNotification('Action failed: ' + (error?.message || String(error)), 'error');
+                }
+            });
+        }
+    }
+
+    async loadArtistsForSelect() {
+        const artistSelect = document.getElementById('trackArtist');
+        if (!artistSelect) return;
+        
+        const artists = await window.fetchArtists();
+        // Preserve the Firestore-powered artist select behavior, including "+ Add new artist..."
+        // (admin-firebase.js relies on the special __add_new__ option).
+        artistSelect.innerHTML = '<option value="">Select Artist</option>' +
+            '<option value="__add_new__">+ Add new artist...</option>' +
+            artists.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+    }
+
+    async loadPayments() {
+        const table = document.getElementById('paymentsTable');
+        if (!table) return;
+        
+        // Load payments from Firestore
+        const { db } = await import('../scripts/firebase-init.js');
+        const { collection, getDocs, query, orderBy } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
+        
+        try {
+            const paymentsQuery = query(collection(db, 'payments'), orderBy('createdAt', 'desc'));
+            const snapshot = await getDocs(paymentsQuery);
+            
+            const payments = [];
+            snapshot.forEach(doc => {
+                payments.push({ id: doc.id, ...doc.data() });
+            });
+            
+            if (payments.length === 0) {
+                table.innerHTML = '<tr><td colspan="9" class="text-center">No payments found</td></tr>';
+                return;
+            }
+            
+            table.innerHTML = payments.map(payment => `
+                <tr>
+                    <td>
+                        <div class="user-cell">
+                            <div class="user-name">${payment.userName || 'Unknown'}</div>
+                            <div class="user-email">${payment.userEmail || ''}</div>
+                        </div>
+                    </td>
+                    <td>${payment.plan || 'Unknown'}</td>
+                    <td>UGX ${this.formatNumber(payment.amount || 0)}</td>
+                    <td>${payment.paymentMethod || 'Unknown'}</td>
+                    <td>${payment.phoneNumber || 'N/A'}</td>
+                    <td><code>${payment.transactionId || 'N/A'}</code></td>
+                    <td>${new Date(payment.createdAt).toLocaleDateString()}</td>
+                    <td><span class="status-badge status-${payment.status}">${payment.status}</span></td>
+                    <td>
+                        ${payment.status === 'pending' ? `
+                            <button class="btn btn-success btn-sm" onclick="adminPanel.verifyPayment('${payment.id}')" title="Verify">
+                                <i class="fas fa-check"></i>
+                            </button>
+                            <button class="btn btn-danger btn-sm" onclick="adminPanel.rejectPayment('${payment.id}')" title="Reject">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        ` : `
+                            <button class="btn btn-secondary btn-sm" onclick="adminPanel.viewPayment('${payment.id}')" title="View">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        `}
+                    </td>
+                </tr>
+            `).join('');
+        } catch (error) {
+            console.error('Error loading payments from Firestore:', error);
+            // Fallback to localStorage
+            const payments = await window.fetchPayments();
+            
+            if (payments.length === 0) {
+                table.innerHTML = '<tr><td colspan="9" class="text-center">No payments found</td></tr>';
+                return;
+            }
+            
+            table.innerHTML = payments.map(payment => `
+                <tr>
+                    <td>${payment.fullName || payment.artist || 'Unknown'}</td>
+                    <td>${payment.billingCycle || 'Membership'}</td>
+                    <td>UGX ${this.formatNumber(payment.amount || 0)}</td>
+                    <td>N/A</td>
+                    <td>N/A</td>
+                    <td>N/A</td>
+                    <td>${new Date(payment.timestamp).toLocaleDateString()}</td>
+                    <td><span class="status-badge status-${payment.status}">${payment.status}</span></td>
+                    <td>
+                        <button class="btn btn-primary btn-sm" onclick="adminPanel.viewPayment('${payment.id}')">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+    }
+
+    async verifyPayment(paymentId) {
+        if (!confirm('Are you sure you want to verify this payment? This will activate the user\'s membership.')) {
+            return;
+        }
+
+        try {
+            const { db } = await import('../scripts/firebase-init.js');
+            const { doc, updateDoc } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
+            
+            const reviewer = (window.adminAuth && typeof window.adminAuth.getCurrentUser === 'function')
+                ? window.adminAuth.getCurrentUser()
+                : null;
+            const reviewedBy = reviewer?.username || reviewer?.email || 'admin';
+            
+            const paymentRef = doc(db, 'payments', paymentId);
+            await updateDoc(paymentRef, {
+                status: 'verified',
+                reviewedAt: new Date().toISOString(),
+                reviewedBy,
+                rejectionReason: null,
+                updatedAt: new Date().toISOString()
+            });
+
+            this.showNotification('Payment verified successfully', 'success');
+            this.loadPayments();
+        } catch (error) {
+            console.error('Error verifying payment:', error);
+            this.showNotification('Error verifying payment', 'error');
+        }
+    }
+
+    async rejectPayment(paymentId) {
+        if (!confirm('Are you sure you want to reject this payment?')) {
+            return;
+        }
+
+        try {
+            const { db } = await import('../scripts/firebase-init.js');
+            const { doc, updateDoc } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
+
+            const reason = (prompt('Reason for rejecting this payment (required):') || '').trim();
+            if (!reason) {
+                this.showNotification('Rejection reason is required.', 'error');
+                return;
+            }
+
+            const reviewer = (window.adminAuth && typeof window.adminAuth.getCurrentUser === 'function')
+                ? window.adminAuth.getCurrentUser()
+                : null;
+            const reviewedBy = reviewer?.username || reviewer?.email || 'admin';
+            
+            const paymentRef = doc(db, 'payments', paymentId);
+            await updateDoc(paymentRef, {
+                status: 'rejected',
+                rejectionReason: reason,
+                reviewedAt: new Date().toISOString(),
+                reviewedBy,
+                updatedAt: new Date().toISOString()
+            });
+
+            this.showNotification('Payment rejected', 'success');
+            this.loadPayments();
+        } catch (error) {
+            console.error('Error rejecting payment:', error);
+            this.showNotification('Error rejecting payment', 'error');
+        }
+    }
+
+    async loadSettings() {
+        const applyValue = (id, value) => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            if (el.type === 'number') {
+                const n = Number(value);
+                el.value = Number.isFinite(n) ? String(n) : '';
+                return;
+            }
+            el.value = value == null ? '' : String(value);
+        };
+
+        const populateFromConfig = (config) => {
+            const c = config || window.studioConfig || {};
+
+            applyValue('mtnNumber', c.payment?.mtn);
+            applyValue('airtelNumber', c.payment?.airtel);
+            applyValue('bankName', c.payment?.bank?.name);
+            applyValue('bankAccount', c.payment?.bank?.account);
+            applyValue('bankAccountName', c.payment?.bank?.accountName);
+            applyValue('supportPhone', c.payment?.supportPhone);
+
+            applyValue('weeklyPrice', c.plans?.weekly?.price);
+            applyValue('weeklyDescription', c.plans?.weekly?.description);
+            applyValue('monthlyPrice', c.plans?.monthly?.price);
+            applyValue('monthlyDescription', c.plans?.monthly?.description);
+            applyValue('yearlyPrice', c.plans?.yearly?.price);
+            applyValue('yearlyDescription', c.plans?.yearly?.description);
+
+            applyValue('productionPrice', c.services?.production);
+            applyValue('mixingPrice', c.services?.mixing);
+            applyValue('masteringPrice', c.services?.mastering);
+            applyValue('vocalPrice', c.services?.vocal);
+            applyValue('hourlyRate', c.services?.hourlyRate);
+            applyValue('packagePrice', c.services?.packagePrice);
+            applyValue('songwritingPrice', c.services?.songwriting);
+            applyValue('restorationPrice', c.services?.restoration);
+            applyValue('sessionMusicianMin', c.services?.sessionMusicianMin);
+            applyValue('sessionMusicianMax', c.services?.sessionMusicianMax);
+
+            applyValue('budgetStandard', c.budgetTiers?.standard);
+            applyValue('budgetClassic', c.budgetTiers?.classic);
+            applyValue('budgetPremium', c.budgetTiers?.premium);
+            applyValue('budgetDeluxe', c.budgetTiers?.deluxe);
+
+            applyValue('contactPhone', c.contact?.phone);
+            applyValue('contactEmail', c.contact?.email);
+            applyValue('contactLocation', c.contact?.location);
+
+            applyValue('monthlySavings', c.planSavings?.monthly);
+            applyValue('yearlySavings', c.planSavings?.yearly);
+
+            applyValue('statProjects', c.about?.projects);
+            applyValue('statArtists', c.about?.artists);
+            applyValue('statStreams', c.about?.streams);
+
+            applyValue('socialInstagram', c.social?.instagram);
+            applyValue('socialYouTube', c.social?.youtube);
+            applyValue('socialTikTok', c.social?.tiktok);
+            applyValue('socialTwitter', c.social?.twitter);
+            applyValue('socialSpotify', c.social?.spotify);
+            applyValue('socialWhatsApp', c.social?.whatsapp);
+        };
+
+        const bindDirtyTracking = () => {
+            if (this.settingsDirtyBound) return;
+            this.settingsDirtyBound = true;
+            const container = document.getElementById('settings');
+            if (!container) return;
+            container.addEventListener('input', (e) => {
+                const t = e.target;
+                if (!t) return;
+                if (t.closest('form')) {
+                    this.settingsDirty = true;
+                }
+            });
+        };
+
+        const bindSaveButton = () => {
+            const btn = document.getElementById('saveSettings');
+            if (!btn || btn.dataset.bound === '1') return;
+            btn.dataset.bound = '1';
+
+            btn.addEventListener('click', async (e) => {
+                e.preventDefault();
+
+                const read = (id) => document.getElementById(id)?.value ?? '';
+                const readNum = (id) => {
+                    const v = String(read(id)).trim();
+                    if (!v) return 0;
+                    const n = Number(v);
+                    return Number.isFinite(n) ? n : 0;
+                };
+
+                const base = window.studioConfig ? JSON.parse(JSON.stringify(window.studioConfig)) : {};
+                base.payment = base.payment || {};
+                base.payment.bank = base.payment.bank || {};
+                base.plans = base.plans || { weekly: {}, monthly: {}, yearly: {} };
+                base.plans.weekly = base.plans.weekly || {};
+                base.plans.monthly = base.plans.monthly || {};
+                base.plans.yearly = base.plans.yearly || {};
+                base.services = base.services || {};
+                base.budgetTiers = base.budgetTiers || {};
+                base.contact = base.contact || {};
+                base.social = base.social || {};
+                base.about = base.about || {};
+                base.planSavings = base.planSavings || {};
+
+                base.payment.mtn = read('mtnNumber').trim();
+                base.payment.airtel = read('airtelNumber').trim();
+                base.payment.bank.name = read('bankName').trim();
+                base.payment.bank.account = read('bankAccount').trim();
+                base.payment.bank.accountName = read('bankAccountName').trim();
+                base.payment.supportPhone = read('supportPhone').trim();
+
+                base.plans.weekly.price = readNum('weeklyPrice');
+                base.plans.weekly.description = read('weeklyDescription').trim();
+                base.plans.monthly.price = readNum('monthlyPrice');
+                base.plans.monthly.description = read('monthlyDescription').trim();
+                base.plans.yearly.price = readNum('yearlyPrice');
+                base.plans.yearly.description = read('yearlyDescription').trim();
+
+                base.services.production = readNum('productionPrice');
+                base.services.mixing = readNum('mixingPrice');
+                base.services.mastering = readNum('masteringPrice');
+                base.services.vocal = readNum('vocalPrice');
+                base.services.hourlyRate = readNum('hourlyRate');
+                base.services.packagePrice = readNum('packagePrice');
+                base.services.songwriting = readNum('songwritingPrice');
+                base.services.restoration = readNum('restorationPrice');
+                base.services.sessionMusicianMin = readNum('sessionMusicianMin');
+                base.services.sessionMusicianMax = readNum('sessionMusicianMax');
+
+                base.budgetTiers.standard = readNum('budgetStandard');
+                base.budgetTiers.classic = readNum('budgetClassic');
+                base.budgetTiers.premium = readNum('budgetPremium');
+                base.budgetTiers.deluxe = readNum('budgetDeluxe');
+
+                base.contact.phone = read('contactPhone').trim();
+                base.contact.email = read('contactEmail').trim();
+                base.contact.location = read('contactLocation').trim();
+
+                base.planSavings.monthly = read('monthlySavings').trim();
+                base.planSavings.yearly = read('yearlySavings').trim();
+
+                base.about.projects = read('statProjects').trim();
+                base.about.artists = read('statArtists').trim();
+                base.about.streams = read('statStreams').trim();
+
+                base.social.instagram = read('socialInstagram').trim();
+                base.social.youtube = read('socialYouTube').trim();
+                base.social.tiktok = read('socialTikTok').trim();
+                base.social.twitter = read('socialTwitter').trim();
+                base.social.spotify = read('socialSpotify').trim();
+                base.social.whatsapp = read('socialWhatsApp').trim();
+
+                try {
+                    const mod = await import('../scripts/config-loader.js');
+                    const ok = await mod.saveSettings(base);
+                    if (ok) {
+                        window.studioConfig = base;
+                        this.settingsDirty = false;
+                        this.showNotification('Settings saved successfully!', 'success');
+                    } else {
+                        this.showNotification('Failed to save settings. Please try again.', 'error');
+                    }
+                } catch (err) {
+                    console.error('Error saving settings:', err);
+                    this.showNotification('Error saving settings: ' + (err?.message || String(err)), 'error');
+                }
+            });
+        };
+
+        bindDirtyTracking();
+        bindSaveButton();
+
+        const cfg = window.studioConfig;
+        if (cfg) {
+            populateFromConfig(cfg);
+        }
+
+        if (!window.__adminSettingsUpdatedBound) {
+            window.__adminSettingsUpdatedBound = true;
+            window.addEventListener('settingsUpdated', (e) => {
+                if (this.currentSection !== 'settings') return;
+                if (this.settingsDirty) return;
+                populateFromConfig(e.detail);
+            });
+        }
+    }
+
+    async loadTeam() {
+        console.log('Loading team members...');
+        const table = document.getElementById('teamTable');
+        if (!table) {
+            console.error('Team table container not found');
+            return;
+        }
+
+        try {
+            const { db } = await import('../scripts/firebase-init.js');
+            const { collection, getDocs, query, orderBy } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
+            
+            const teamQuery = query(collection(db, 'team'), orderBy('name'));
+            const querySnapshot = await getDocs(teamQuery);
+            
+            const teamMembers = [];
+            querySnapshot.forEach((doc) => {
+                teamMembers.push({ id: doc.id, ...doc.data() });
+            });
+
+            if (teamMembers.length === 0) {
+                table.innerHTML = '<tr><td colspan="5" class="text-center">No team members found</td></tr>';
+                return;
+            }
+
+            table.innerHTML = teamMembers.map(member => `
+                <tr>
+                    <td>
+                        <div class="member-cell">
+                            <img src="${member.image || 'https://via.placeholder.com/40'}" alt="${member.name}" class="member-avatar">
+                            <div>
+                                <strong>${member.name}</strong>
+                                <small>${member.badge || ''}</small>
+                            </div>
+                        </div>
+                    </td>
+                    <td>${member.role}</td>
+                    <td>${(member.skills || []).join(', ')}</td>
+                    <td><span class="status-badge status-${member.status || 'active'}">${member.status || 'active'}</span></td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn btn-primary" onclick="adminPanel.editTeamMember('${member.id}')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-danger" onclick="adminPanel.deleteTeamMember('${member.id}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        } catch (error) {
+            console.error('Error loading team members:', error);
+            table.innerHTML = '<tr><td colspan="5" class="text-center">Error loading team members</td></tr>';
+        }
+    }
+
+    addNewTeamMember() {
+        this.openTeamForm(null);
+    }
+
+    editTeamMember(memberId) {
+        this.loadTeamMemberForEdit(memberId);
+    }
+
+    async loadTeamMemberForEdit(memberId) {
+        try {
+            const { db } = await import('../scripts/firebase-init.js');
+            const { doc, getDoc } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
+            
+            const docRef = doc(db, 'team', memberId);
+            const docSnap = await getDoc(docRef);
+            
+            if (docSnap.exists()) {
+                const member = { id: docSnap.id, ...docSnap.data() };
+                this.openTeamForm(member);
+            } else {
+                this.showNotification('Team member not found', 'error');
+            }
+        } catch (error) {
+            console.error('Error loading team member:', error);
+            this.showNotification('Error loading team member: ' + error.message, 'error');
+        }
+    }
+
+    async deleteTeamMember(memberId) {
+        let ok = false;
+        if (window.notifications && window.notifications.confirm) {
+            ok = await window.notifications.confirm('Are you sure you want to delete this team member?', 'Delete Team Member', 'warning');
+        } else {
+            ok = confirm('Are you sure you want to delete this team member?');
+        }
+        if (ok) {
+            try {
+                const { db } = await import('../scripts/firebase-init.js');
+                const { doc, deleteDoc } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
+
+                await deleteDoc(doc(db, 'team', memberId));
+                this.showNotification('Team member deleted successfully!', 'success');
+                this.loadTeam();
+            } catch (error) {
+                console.error('Error deleting team member:', error);
+                this.showNotification('Error deleting team member: ' + error.message, 'error');
+            }
+        }
+    }
+
+    async handleImageUpload(file) {
+        // For demo purposes, convert to data URL
+        // In production, upload to Firebase Storage
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    }
+
+    async deleteArtist(artistId) {
+        let ok = false;
+        if (window.notifications && window.notifications.confirm) {
+            ok = await window.notifications.confirm('Are you sure you want to delete this artist?', 'Delete Artist', 'warning');
+        } else {
+            ok = confirm('Are you sure you want to delete this artist?');
+        }
+        if (!ok) return;
+        try {
+            await window.deleteArtistFromFirestore(artistId);
+            this.showNotification('Artist deleted successfully!', 'success');
+            await this.loadArtists();
+        } catch (error) {
+            console.error('Error deleting artist:', error);
+            this.showNotification('Failed to delete artist: ' + error.message, 'error');
+        }
+    }
+
+    async editTrack(trackId) {
+        try {
+            const tracks = await window.fetchTracks();
+            const track = tracks.find(t => t.id === trackId);
+            if (!track) {
+                this.showNotification('Track not found', 'error');
+                return;
+            }
+            this.openTrackEditForm(track);
+        } catch (error) {
+            console.error('Error fetching track:', error);
+            this.showNotification('Error loading track: ' + error.message, 'error');
+        }
+    }
+
+    openTrackEditForm(track) {
+        // Navigate to music-management section and populate form
+        this.showSection('music-management');
+
+        // Use longer delay to ensure section is visible and form is rendered
+        const populateForm = () => {
+            const titleInput = document.getElementById('trackTitle');
+            const artistInput = document.getElementById('trackArtist');
+            const genreInput = document.getElementById('trackGenre');
+            const durationInput = document.getElementById('trackDuration');
+            const releaseDateInput = document.getElementById('releaseDate');
+            const descriptionInput = document.getElementById('trackDescription');
+            const audioUrlInput = document.getElementById('audioUrl');
+            const artworkPreview = document.getElementById('artworkPreview');
+
+            if (titleInput) titleInput.value = track.title || '';
+            if (artistInput) artistInput.value = track.artist || '';
+            if (genreInput) genreInput.value = track.genre || '';
+            if (durationInput) durationInput.value = track.duration || '';
+            if (releaseDateInput) releaseDateInput.value = track.releaseDate || '';
+            if (descriptionInput) descriptionInput.value = track.description || '';
+
+            // Populate audio URL and show link preview
+            if (audioUrlInput) {
+                const fromPlatformLinks = (() => {
+                    const pl = track.platformLinks || {};
+                    const candidates = [pl.audioUrl, pl.youtube, pl.spotify, pl.soundcloud, pl.appleMusic, pl.url, pl.link];
+                    for (const c of candidates) {
+                        if (typeof c === 'string' && c.trim()) return c.trim();
+                    }
+                    // Any string value
+                    for (const v of Object.values(pl)) {
+                        if (typeof v === 'string' && v.trim()) return v.trim();
+                    }
+                    return '';
+                })();
+
+                let existingUrl = track.audioUrl || track.audioLink || track.url || track.link || fromPlatformLinks || '';
+                if (existingUrl && !/^https?:\/\//i.test(existingUrl)) {
+                    existingUrl = `https://${existingUrl}`;
+                }
+
+                audioUrlInput.value = existingUrl;
+                if (existingUrl) {
+                    audioUrlInput.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            }
+
+            if (track.artwork && artworkPreview) {
+                artworkPreview.classList.add('has-image');
+                artworkPreview.style.backgroundImage = `url('${track.artwork}')`;
+            }
+
+            // Set editing state
+            this.editingItem = { type: 'track', id: track.id, data: track };
+
+            // Change button text to indicate edit mode
+            const submitBtn = document.querySelector('#audioUploadForm button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.innerHTML = '<i class="fas fa-save"></i> Save Track';
+            }
+
+            this.showNotification('Editing track: ' + track.title, 'info');
+        };
+
+        // Wait for section to be visible, then populate
+        setTimeout(populateForm, 500);
+    }
+
+    async viewTrack(trackId) {
+        // View redirects to edit (same as edit track pattern)
+        await this.editTrack(trackId);
+    }
+
+    async deleteTrack(trackId) {
+        let ok = false;
+        if (window.notifications && window.notifications.confirm) {
+            ok = await window.notifications.confirm('Are you sure you want to delete this track?', 'Delete Track', 'warning');
+        } else {
+            ok = confirm('Are you sure you want to delete this track?');
+        }
+        if (ok) {
+            try {
+                await window.deleteTrackFromFirestore(trackId);
+                this.showNotification('Track deleted successfully!', 'success');
+                this.loadTracks();
+            } catch (error) {
+                console.error('Error deleting track:', error);
+                this.showNotification('Failed to delete track: ' + error.message, 'error');
+            }
+        }
+    }
+
+    async viewPayment(paymentId) {
+        try {
+            const { db } = await import('../scripts/firebase-init.js');
+            const { doc, getDoc } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
+
+            const snap = await getDoc(doc(db, 'payments', paymentId));
+            if (!snap.exists()) {
+                this.showNotification('Payment not found', 'error');
+                return;
+            }
+
+            const p = { id: snap.id, ...snap.data() };
+            const createdAt = p.createdAt ? new Date(p.createdAt).toLocaleDateString() : 'N/A';
+            const reviewedAt = p.reviewedAt ? new Date(p.reviewedAt).toLocaleDateString() : 'N/A';
+            const details = [
+                `User: ${p.userName || 'Unknown'} ${p.userEmail ? `(${p.userEmail})` : ''}`,
+                `Plan: ${p.plan || 'Unknown'}`,
+                `Amount: UGX ${this.formatNumber(p.amount || 0)}`,
+                `Method: ${p.paymentMethod || 'Unknown'}`,
+                `Phone: ${p.phoneNumber || 'N/A'}`,
+                `Transaction: ${p.transactionId || 'N/A'}`,
+                `Status: ${p.status || 'unknown'}`,
+                `Created: ${createdAt}`,
+                `Reviewed: ${reviewedAt} ${p.reviewedBy ? `by ${p.reviewedBy}` : ''}`,
+                p.rejectionReason ? `Rejection Reason: ${p.rejectionReason}` : ''
+            ].filter(Boolean).join('\n');
+
+            if (window.notifications) {
+                window.notifications.show(details, 'info');
+            } else {
+                alert(details);
+            }
+        } catch (error) {
+            console.error('Error viewing payment:', error);
+            this.showNotification('Error loading payment details', 'error');
+        }
+    }
+
+    async loadUsers() {
+        const table = document.getElementById('usersTable');
+        if (!table) return;
+
+        try {
+            const { db } = await import('../scripts/firebase-init.js');
+            const { collection, getDocs, query, orderBy, limit } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
+
+            const q = query(collection(db, 'users'), orderBy('createdAt', 'desc'), limit(200));
+            const snap = await getDocs(q);
+
+            let adminIds = new Set();
+            let adminEmails = new Set();
+            try {
+                const adminsSnap = await getDocs(collection(db, 'admins'));
+                adminsSnap.docs.forEach((d) => {
+                    adminIds.add(d.id);
+                    const email = d.data()?.email;
+                    if (email) adminEmails.add(String(email).toLowerCase());
+                });
+            } catch (e) {
+                console.warn('Unable to load admins for filtering users list:', e);
+            }
+
+            const users = snap.docs
+                .map((d) => ({ id: d.id, ...d.data() }))
+                .filter((u) => {
+                    const uidMatch = adminIds.has(u.id);
+                    const emailMatch = u.email && adminEmails.has(String(u.email).toLowerCase());
+                    return !uidMatch && !emailMatch;
+                });
+
+            if (users.length === 0) {
+                table.innerHTML = '<tr><td colspan="5" class="text-center">No users found</td></tr>';
+                return;
+            }
+
+            table.innerHTML = users.map((u) => {
+                const name = u.displayName || u.name || 'Unnamed';
+                const email = u.email || '';
+                const status = u.status || 'active';
+                const plan = u.membership?.plan || u.plan || 'N/A';
+                const created = u.createdAt && u.createdAt.toDate
+                    ? u.createdAt.toDate().toLocaleDateString()
+                    : (u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '');
+
+                return `
+                    <tr>
+                        <td>
+                            <div class="user-cell">
+                                <div class="user-name">${name}</div>
+                                <div class="user-email">${email}</div>
+                            </div>
+                        </td>
+                        <td>${plan}</td>
+                        <td>${created}</td>
+                        <td><span class="status-badge status-${status}">${status}</span></td>
+                        <td>
+                            <button class="btn btn-secondary btn-sm" type="button" onclick="adminPanel.viewUser('${u.id}')" title="View">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        } catch (error) {
+            console.error('Error loading users:', error);
+            table.innerHTML = '<tr><td colspan="5" class="text-center">Unable to load users (Firestore rules may restrict admin access)</td></tr>';
+        }
+    }
+
+    async viewUser(userId) {
+        try {
+            const { db } = await import('../scripts/firebase-init.js');
+            const { doc, getDoc } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
+            const snap = await getDoc(doc(db, 'users', userId));
+            if (!snap.exists()) {
+                this.showNotification('User not found', 'error');
+                return;
+            }
+            const u = { id: snap.id, ...snap.data() };
+            const details = [
+                `User: ${u.displayName || u.name || 'Unnamed'}`,
+                u.email ? `Email: ${u.email}` : '',
+                u.phoneNumber ? `Phone: ${u.phoneNumber}` : '',
+                u.status ? `Status: ${u.status}` : '',
+                u.membership?.plan ? `Plan: ${u.membership.plan}` : (u.plan ? `Plan: ${u.plan}` : ''),
+            ].filter(Boolean).join('\n');
+
+            if (window.notifications) {
+                window.notifications.show(details, 'info');
+            } else {
+                alert(details);
+            }
+        } catch (error) {
+            console.error('Error viewing user:', error);
+            this.showNotification('Unable to view user (Firestore rules may restrict access)', 'error');
+        }
+    }
+
+    addNewTrack() {
+        this.showSection('music-management');
+        this.resetUploadForm();
+    }
+
+    showLinkPreview(url) {
+        const preview = document.getElementById("audioUrlPreview");
+        const previewLink = document.getElementById("audioUrlPreviewLink");
+        const status = document.getElementById("audioUrlStatus");
+        if (!preview || !previewLink) return;
+
+        try {
+            new URL(url); // validate URL format
+            previewLink.href = url;
+            previewLink.textContent = url.length > 60 ? url.substring(0, 57) + "..." : url;
+            preview.style.display = "block";
+
+            if (status) {
+                const isHttp = url.startsWith("http://") || url.startsWith("https://");
+                status.textContent = isHttp ? "URL format looks valid" : "URL should start with http:// or https://";
+                status.className = "link-preview-status " + (isHttp ? "valid" : "invalid");
+            }
+        } catch (e) {
+            if (status) {
+                status.textContent = "Invalid URL format";
+                status.className = "link-preview-status invalid";
+            }
+            preview.style.display = "block";
+            previewLink.textContent = url;
+            previewLink.href = "#";
+        }
+    }
+
+    hideLinkPreview() {
+        const preview = document.getElementById("audioUrlPreview");
+        if (preview) preview.style.display = "none";
+    }
+
+
+    resetUploadForm() {
+        const form = document.getElementById('audioUploadForm');
+        if (form) {
+            form.reset();
+        }
+        
+        // Reset artwork preview
+        const artworkPreview = document.getElementById('artworkPreview');
+        if (artworkPreview) {
+            artworkPreview.classList.remove('has-image');
+            artworkPreview.style.backgroundImage = '';
+        }
+        
+        // Reset file info
+        const fileInfo = document.getElementById('fileInfo');
+        if (fileInfo) {
+            fileInfo.classList.remove('show');
+            fileInfo.textContent = '';
+        }
+        
+        // Clear editing state
+        this.editingItem = null;
+
+        // Hide link preview
+        this.hideLinkPreview();
+        
+        // Reset button text
+        const submitBtn = document.querySelector('#audioUploadForm button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.innerHTML = '<i class="fas fa-save"></i> Save Track';
+        }
+        
+        // Reload artists select
+        this.loadArtistsForSelect();
+    }
+
+    async handleAudioUpload() {
+        const title = document.getElementById('trackTitle').value.trim();
+        const artist = document.getElementById('trackArtist').value;
+        const genre = document.getElementById('trackGenre').value;
+        const duration = document.getElementById('trackDuration').value;
+        const releaseDate = document.getElementById('releaseDate').value;
+        const description = document.getElementById('trackDescription').value;
+        const audioUrlInput = document.getElementById('audioUrl')?.value?.trim() || '';
+        const artworkFile = document.getElementById('trackArtwork').files[0];
+        const spotifyArtworkUrl = document.getElementById('spotifyArtworkUrl')?.value;
+        
+        if (!title) {
+            this.showNotification('Track title is required', 'error');
+            return;
+        }
+        
+        if (!artist) {
+            this.showNotification('Please select an artist', 'error');
+            return;
+        }
+        
+        const isEdit = Boolean(this.editingItem && this.editingItem.id);
+        if (!isEdit && !audioUrlInput) {
+            this.showNotification('Please provide an audio link (URL).', 'error');
+            return;
+        }
+        
+        try {
+            let artworkUrl = spotifyArtworkUrl || 'https://via.placeholder.com/300?text=Track';
+            
+            // Handle artwork upload
+            if (artworkFile) {
+                artworkUrl = await this.handleImageUpload(artworkFile);
+            }
+
+            const existingAudioUrl = this.editingItem?.data?.audioUrl || '';
+            const audioUrl = audioUrlInput || existingAudioUrl;
+            
+            const trackData = {
+                title,
+                artist,
+                genre,
+                duration,
+                releaseDate,
+                description,
+                artwork: artworkUrl,
+                audioUrl,
+                streams: 0,
+                status: 'published'
+            };
+            
+            if (this.editingItem && this.editingItem.id) {
+                // Update existing track
+                trackData.id = this.editingItem.id;
+                trackData.streams = this.editingItem.data.streams;
+                if (window.updateTrackInFirestore) {
+                    await window.updateTrackInFirestore(this.editingItem.id, trackData);
+                    this.showNotification('Track updated successfully!', 'success');
+                } else {
+                    this.showNotification('Firestore integration is not available. Please refresh the page.', 'error');
+                    return;
+                }
+            } else {
+                // Add new track
+                if (window.saveTrackToFirestore) {
+                    await window.saveTrackToFirestore(trackData);
+                    this.showNotification('Track saved successfully!', 'success');
+                } else {
+                    this.showNotification('Firestore integration is not available. Please refresh the page.', 'error');
+                    return;
+                }
+            }
+
+            this.resetUploadForm();
+            this.loadTracks();
+        } catch (error) {
+            console.error('Error adding external track:', error);
+            this.showNotification('Error adding track: ' + error.message, 'error');
+        }
+    }
+
+    async searchExternalPlatform() {
+        const platform = document.querySelector('input[name="platform"]:checked')?.value;
+        const searchInput = document.getElementById('externalSearch');
+        const resultsContainer = document.getElementById('externalResults');
+        const query = searchInput?.value?.trim();
+
+        if (!platform) {
+            this.showNotification('Please select a platform first', 'error');
+            return;
+        }
+
+        if (!query) {
+            this.showNotification('Please enter a search query', 'warning');
+            return;
+        }
+
+        if (resultsContainer) {
+            resultsContainer.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Searching web for track links...</div>';
+            resultsContainer.classList.add('show');
+        }
+
+        try {
+            await this.searchWebForExternalLinks(query, platform);
+        } catch (error) {
+            console.error('External platform search error:', error);
+            if (resultsContainer) {
+                resultsContainer.innerHTML = `
+                    <div class="spotify-error">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <p>Search failed. Please paste the track URL directly.</p>
+                    </div>
+                `;
+            }
+        }
+    }
+
+    async searchWebForExternalLinks(query, platform) {
+        const resultsContainer = document.getElementById('externalResults');
+
+        const platformDomains = {
+            'youtube': 'youtube.com',
+            'apple-music': 'music.apple.com',
+            'soundcloud': 'soundcloud.com',
+            'other': ''
+        };
+
+        const domain = platformDomains[platform] || '';
+        const platformName = platform === 'apple-music' ? 'Apple Music' :
+                            platform === 'soundcloud' ? 'SoundCloud' :
+                            platform === 'youtube' ? 'YouTube' : 'External Platform';
+
+        try {
+            const searchQueries = domain
+                ? [
+                    `${query} site:${domain}`,
+                    `"${query}" site:${domain}`,
+                    `${query.replace(/\s+/g, ' ')} ${platformName}`
+                ]
+                : [
+                    `${query} music`,
+                    `"${query}" song`,
+                    `${query} official`
+                ];
+
+            let allResults = [];
+
+            for (const searchQuery of searchQueries) {
+                const encodedQuery = encodeURIComponent(searchQuery);
+                const searchUrl = `https://api.duckduckgo.com/?q=${encodedQuery}&format=json&pretty=1`;
+
+                try {
+                    const response = await fetch(searchUrl);
+                    const data = await response.json();
+
+                    const results = this.extractExternalUrlsFromResults(data, query, platform);
+                    allResults = allResults.concat(results);
+                } catch (e) {
+                    console.log('Search query failed:', searchQuery, e);
+                }
+            }
+
+            const uniqueResults = [];
+            const seenUrls = new Set();
+            for (const result of allResults) {
+                if (!seenUrls.has(result.url)) {
+                    seenUrls.add(result.url);
+                    uniqueResults.push(result);
+                }
+            }
+
+            const searchResults = uniqueResults.slice(0, 8);
+
+            if (searchResults.length > 0) {
+                const platformIcon = platform === 'youtube' ? 'fab fa-youtube' :
+                                   platform === 'apple-music' ? 'fab fa-apple' :
+                                   platform === 'soundcloud' ? 'fab fa-soundcloud' :
+                                   'fas fa-globe';
+
+                resultsContainer.innerHTML = `
+                    <div class="spotify-search-info">
+                        <p><i class="fas fa-check-circle" style="color: #10b981;"></i> Found ${searchResults.length} result(s) on ${platformName} for "${query}":</p>
+                        <p class="text-muted">Click on a result to auto-fill the form</p>
+                    </div>
+                    ${searchResults.map(result => `
+                        <div class="spotify-track" onclick="adminPanel.selectExternalResult('${result.url}', '${result.title}', '${result.artist}')">
+                            <div class="spotify-track-info">
+                                <i class="${platformIcon}"></i>
+                                <div class="spotify-track-name">${result.title}</div>
+                                <div class="spotify-track-url">
+                                    <i class="fas fa-link"></i> Click to select
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                `;
+            } else {
+                const platformSearchUrls = {
+                    'youtube': `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`,
+                    'apple-music': `https://music.apple.com/search?term=${encodeURIComponent(query)}`,
+                    'soundcloud': `https://soundcloud.com/search?q=${encodeURIComponent(query)}`,
+                    'other': `https://www.google.com/search?q=${encodeURIComponent(query + ' music')}`
+                };
+                
+                const searchUrl = platformSearchUrls[platform] || platformSearchUrls['other'];
+                const platformIcon = platform === 'youtube' ? 'fab fa-youtube' :
+                                   platform === 'apple-music' ? 'fab fa-apple' :
+                                   platform === 'soundcloud' ? 'fab fa-soundcloud' :
+                                   'fas fa-globe';
+                const platformColor = platform === 'youtube' ? '#FF0000' :
+                                      platform === 'apple-music' ? '#FA2D48' :
+                                      platform === 'soundcloud' ? '#FF5500' :
+                                      '#666666';
+
+                resultsContainer.innerHTML = `
+                    <div class="spotify-search-info">
+                        <p><i class="fas fa-info-circle"></i> No direct links found for "${query}" on ${platformName}</p>
+                        <p class="text-muted">Search directly on ${platformName}:</p>
+                        <div class="spotify-track" onclick="window.open('${searchUrl}', '_blank')">
+                            <div class="spotify-track-info">
+                                <i class="${platformIcon}" style="font-size: 24px; color: ${platformColor};"></i>
+                                <div class="spotify-track-details">
+                                    <div class="spotify-track-name">Search "${query}" on ${platformName}</div>
+                                    <div class="spotify-track-url">
+                                        <i class="fas fa-external-link-alt"></i> Opens in new tab
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-muted" style="margin-top: 12px;">After finding your track, copy the URL and paste it in the "Track URL" field below, then fill in the title and artist.</p>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            console.error('Web search error:', error);
+            const platformSearchUrls = {
+                'youtube': `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`,
+                'apple-music': `https://music.apple.com/search?term=${encodeURIComponent(query)}`,
+                'soundcloud': `https://soundcloud.com/search?q=${encodeURIComponent(query)}`,
+                'other': `https://www.google.com/search?q=${encodeURIComponent(query + ' music')}`
+            };
+            
+            const searchUrl = platformSearchUrls[platform] || platformSearchUrls['other'];
+            const platformIcon = platform === 'youtube' ? 'fab fa-youtube' :
+                               platform === 'apple-music' ? 'fab fa-apple' :
+                               platform === 'soundcloud' ? 'fab fa-soundcloud' :
+                               'fas fa-globe';
+            const platformColor = platform === 'youtube' ? '#FF0000' :
+                                  platform === 'apple-music' ? '#FA2D48' :
+                                  platform === 'soundcloud' ? '#FF5500' :
+                                  '#666666';
+
+            resultsContainer.innerHTML = `
+                <div class="spotify-search-info">
+                    <p><i class="fas fa-info-circle"></i> Web search unavailable</p>
+                    <p class="text-muted">Search directly on ${platformName}:</p>
+                    <div class="spotify-track" onclick="window.open('${searchUrl}', '_blank')">
+                        <div class="spotify-track-info">
+                            <i class="${platformIcon}" style="font-size: 24px; color: ${platformColor};"></i>
+                            <div class="spotify-track-details">
+                                <div class="spotify-track-name">Search "${query}" on ${platformName}</div>
+                                <div class="spotify-track-url">
+                                    <i class="fas fa-external-link-alt"></i> Opens in new tab
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-muted" style="margin-top: 12px;">After finding your track, copy the URL and paste it in the "Track URL" field below, then fill in the title and artist.</p>
+                </div>
+            `;
+        }
+    }
+
+    extractExternalUrlsFromResults(data, query, platform) {
+        const results = [];
+
+        if (data.RelatedTopics) {
+            for (const topic of data.RelatedTopics) {
+                if (topic.FirstURL && this.isValidPlatformUrl(topic.FirstURL, platform)) {
+                    const url = topic.FirstURL;
+                    const title = topic.Text || topic.Result || `Track from ${platform}`;
+                    results.push({ url, title: this.cleanTitle(title, query), artist: this.extractArtist(title) });
+                }
+            }
+        }
+
+        if (data.AbstractURL && this.isValidPlatformUrl(data.AbstractURL, platform)) {
+            results.push({
+                url: data.AbstractURL,
+                title: data.Abstract || data.Heading || `Track from ${platform}`,
+                artist: this.extractArtist(data.Abstract || data.Heading || '')
+            });
+        }
+
+        const uniqueResults = [];
+        const seenUrls = new Set();
+        for (const result of results) {
+            if (!seenUrls.has(result.url)) {
+                seenUrls.add(result.url);
+                uniqueResults.push(result);
+            }
+        }
+
+        return uniqueResults.slice(0, 5);
+    }
+
+    isValidPlatformUrl(url, platform) {
+        const patterns = {
+            'youtube': /youtube\.com|youtu\.be/,
+            'apple-music': /music\.apple\.com/,
+            'soundcloud': /soundcloud\.com/,
+            'other': /.*/
+        };
+        return patterns[platform]?.test(url) || false;
+    }
+
+    extractArtist(title) {
+        if (!title) return 'Unknown Artist';
+        const match = title.match(/^by\s+(.+?)(?:\s+-\s+|$)/i);
+        if (match) return match[1].trim();
+        const dashMatch = title.match(/^(.+?)\s*-\s*.+$/);
+        if (dashMatch) return dashMatch[1].trim();
+        return 'Unknown Artist';
+    }
+
+    selectExternalResult(url, title, artist) {
+        document.getElementById('externalUrl').value = url;
+        document.getElementById('externalTitle').value = title;
+        document.getElementById('externalArtist').value = artist;
+
+        const resultsContainer = document.getElementById('externalResults');
+        if (resultsContainer) {
+            resultsContainer.innerHTML = '';
+            resultsContainer.classList.remove('show');
+        }
+
+        this.showNotification('Track details filled in. Please complete the form.', 'success');
+    }
+
+    async fetchExternalTrackMetadata(url) {
+        // Detect platform from URL
+        let platform = 'other';
+        if (this.isValidPlatformUrl(url, 'youtube')) {
+            platform = 'youtube';
+        } else if (this.isValidPlatformUrl(url, 'apple-music')) {
+            platform = 'apple-music';
+        } else if (this.isValidPlatformUrl(url, 'soundcloud')) {
+            platform = 'soundcloud';
+        }
+
+        if (platform === 'other') {
+            return; // Not a supported platform
+        }
+
+        try {
+            let metadata = null;
+            
+            switch (platform) {
+                case 'youtube':
+                    metadata = await this.fetchYouTubeMetadata(url);
+                    break;
+                case 'apple-music':
+                    metadata = await this.fetchAppleMusicMetadata(url);
+                    break;
+                case 'soundcloud':
+                    metadata = await this.fetchSoundCloudMetadata(url);
+                    break;
+            }
+
+            if (metadata) {
+                this.autoFillExternalForm(metadata);
+                this.showNotification(`Track info fetched from ${platform === 'youtube' ? 'YouTube' : platform === 'apple-music' ? 'Apple Music' : 'SoundCloud'}!`, 'success');
+            }
+        } catch (error) {
+            console.error('Error fetching external track metadata:', error);
+            // Don't show error notification - let user manually fill
+        }
+    }
+
+    async fetchYouTubeMetadata(url) {
+        try {
+            // Extract video ID from URL
+            const videoIdMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]+)/);
+            const videoId = videoIdMatch ? videoIdMatch[1] : null;
+            
+            if (!videoId) {
+                return null;
+            }
+
+            // Try to fetch from oEmbed API
+            const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`;
+            
+            try {
+                const response = await fetch(oembedUrl);
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // Extract duration from YouTube page
+                    let duration = await this.fetchYouTubeDuration(videoId);
+                    
+                    return {
+                        title: data.title || 'Unknown Track',
+                        artist: data.author_name || 'Unknown Artist',
+                        artwork: data.thumbnail_url || `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
+                        duration: duration || null,
+                        genre: 'Unknown'
+                    };
+                }
+            } catch (e) {
+                console.log('YouTube oEmbed failed, trying fallback');
+            }
+
+            // Fallback: Extract basic info from URL
+            return {
+                title: 'YouTube Track',
+                artist: 'Unknown Artist',
+                artwork: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
+                duration: null,
+                genre: 'Unknown'
+            };
+        } catch (error) {
+            console.error('Error fetching YouTube metadata:', error);
+            return null;
+        }
+    }
+
+    async fetchYouTubeDuration(videoId) {
+        try {
+            // Use noembed as a fallback for basic info
+            const response = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`);
+            if (response.ok) {
+                const data = await response.json();
+                // Try to extract duration if available
+                if (data.html) {
+                    const durationMatch = data.html.match(/(\d+):(\d+)/);
+                    if (durationMatch) {
+                        return durationMatch[0];
+                    }
+                }
+            }
+        } catch (e) {
+            console.log('Could not fetch duration');
+        }
+        return null;
+    }
+
+    async fetchAppleMusicMetadata(url) {
+        try {
+            // Try oEmbed API
+            const oembedUrl = `https://embed.music.apple.com/oembed?url=${encodeURIComponent(url)}`;
+            
+            try {
+                const response = await fetch(oembedUrl);
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    return {
+                        title: data.title || 'Unknown Track',
+                        artist: data.author_name || 'Unknown Artist',
+                        artwork: data.thumbnail_url || 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4a/Apple_Music_icon.svg/1024px-Apple_Music_icon.svg.png',
+                        duration: null,
+                        genre: 'Unknown'
+                    };
+                }
+            } catch (e) {
+                console.log('Apple Music oEmbed failed');
+            }
+
+            // Fallback
+            return {
+                title: 'Apple Music Track',
+                artist: 'Unknown Artist',
+                artwork: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4a/Apple_Music_icon.svg/1024px-Apple_Music_icon.svg.png',
+                duration: null,
+                genre: 'Unknown'
+            };
+        } catch (error) {
+            console.error('Error fetching Apple Music metadata:', error);
+            return null;
+        }
+    }
+
+    async fetchSoundCloudMetadata(url) {
+        try {
+            // Try oEmbed API
+            const oembedUrl = `https://soundcloud.com/oembed?url=${encodeURIComponent(url)}&format=json`;
+            
+            try {
+                const response = await fetch(oembedUrl);
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // Extract duration if available
+                    let duration = null;
+                    if (data.html) {
+                        const durationMatch = data.html.match(/(\d+):(\d+)/);
+                        if (durationMatch) {
+                            duration = durationMatch[0];
+                        }
+                    }
+                    
+                    return {
+                        title: data.title || 'Unknown Track',
+                        artist: data.author_name || 'Unknown Artist',
+                        artwork: data.thumbnail_url || 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/SoundCloud_logo.svg/1024px-SoundCloud_logo.svg.png',
+                        duration: duration || null,
+                        genre: 'Unknown'
+                    };
+                }
+            } catch (e) {
+                console.log('SoundCloud oEmbed failed');
+            }
+
+            // Fallback
+            return {
+                title: 'SoundCloud Track',
+                artist: 'Unknown Artist',
+                artwork: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/SoundCloud_logo.svg/1024px-SoundCloud_logo.svg.png',
+                duration: null,
+                genre: 'Unknown'
+            };
+        } catch (error) {
+            console.error('Error fetching SoundCloud metadata:', error);
+            return null;
+        }
+    }
+
+    autoFillExternalForm(metadata) {
+        // Fill in the form fields
+        const titleInput = document.getElementById('externalTitle');
+        const artistInput = document.getElementById('externalArtist');
+        const genreSelect = document.getElementById('externalGenre');
+
+        if (titleInput && metadata.title) {
+            titleInput.value = metadata.title;
+        }
+
+        if (artistInput && metadata.artist) {
+            artistInput.value = metadata.artist;
+        }
+
+        if (genreSelect && metadata.genre && metadata.genre !== 'Unknown') {
+            // Try to match genre to available options
+            const genreOptions = Array.from(genreSelect.options).map(opt => opt.value);
+            const matchedGenre = genreOptions.find(g => g.toLowerCase().includes(metadata.genre.toLowerCase()));
+            if (matchedGenre) {
+                genreSelect.value = matchedGenre;
+            }
+        }
+
+        // Store artwork and duration for later use
+        this.fetchedExternalMetadata = metadata;
     }
 
     async handleExternalTrack() {
@@ -1075,13 +2733,12 @@ class AdminPanel {
                 }
             }
 
-            // Switch to Audio Link method so you can complete missing info and save normally.
-            this.switchUploadMethod('upload');
-
-            // Trigger preview rendering immediately (admin-firebase.js listens to input/paste events)
-            if (audioUrlInput && normalizedUrl) {
+            if (audioUrlInput) {
                 audioUrlInput.dispatchEvent(new Event('input', { bubbles: true }));
             }
+
+            // Switch to Audio Link method so you can complete missing info and save normally.
+            this.switchUploadMethod('upload');
 
             // Clean up external form state
             this.resetExternalForm();
