@@ -1004,6 +1004,7 @@ function initAdminFirebase() {
 
           if (trackDel) {
             const trackId = trackDel.dataset?.trackId || trackDel.closest('tr')?.dataset?.trackId
+            const trackTitle = trackDel.closest('tr')?.dataset?.trackTitle || trackDel.closest('tr')?.querySelector('.track-cell span')?.textContent || ''
             console.log('[admin-firebase] Delegated track delete click:', trackId)
             if (!trackId) {
               if (window.notifications) window.notifications.show('Delete failed: missing track id', 'error')
@@ -1015,10 +1016,11 @@ function initAdminFirebase() {
             e.stopPropagation()
 
             let ok = false
+            const confirmMsg = `Are you sure you want to delete track${trackTitle ? ` "${String(trackTitle).trim()}"` : ''}?`
             if (window.notifications && window.notifications.confirm) {
-              ok = await window.notifications.confirm('Are you sure you want to delete this track?', 'Delete Track', 'warning')
+              ok = await window.notifications.confirm(confirmMsg, 'Delete Track', 'warning')
             } else {
-              ok = confirm('Are you sure you want to delete this track?')
+              ok = confirm(confirmMsg)
             }
             if (!ok) return
 
