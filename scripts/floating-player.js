@@ -471,9 +471,33 @@ class PersistentFloatingPlayer {
     }
 
     detectPlatform(track) {
-        // Check for direct audio URL first
-        if (track.audioUrl && track.audioUrl.trim() !== '') {
-            return { platform: 'audio', url: track.audioUrl };
+        const rawAudioUrl = track.audioUrl && typeof track.audioUrl === 'string' ? track.audioUrl.trim() : '';
+        const audioUrl = rawAudioUrl;
+
+        const isDirectAudioUrl = (url) => {
+            const u = String(url || '').toLowerCase();
+            return Boolean(u.match(/\.(mp3|wav|ogg|m4a)(\?.*)?$/));
+        };
+
+        const looksLikeYouTubeUrl = (url) => {
+            const u = String(url || '').toLowerCase();
+            return u.includes('youtube.com') || u.includes('youtu.be') || u.includes('music.youtube.com');
+        };
+
+        const looksLikeSpotifyUrl = (url) => {
+            const u = String(url || '').toLowerCase();
+            return u.includes('open.spotify.com');
+        };
+
+        const looksLikeSoundCloudUrl = (url) => {
+            const u = String(url || '').toLowerCase();
+            return u.includes('soundcloud.com') || u.includes('on.soundcloud.com');
+        };
+
+        // Links-first: only treat audioUrl as an audio source when it is a direct audio file.
+        // Non-direct links are expected to be saved under platformLinks.
+        if (audioUrl && isDirectAudioUrl(audioUrl)) {
+            return { platform: 'audio', url: audioUrl };
         }
         
         // Check platform links
@@ -501,6 +525,23 @@ class PersistentFloatingPlayer {
         const soundcloudUrl = track.soundcloudUrl || links.soundcloud || '';
         if (soundcloudUrl) {
             return { platform: 'soundcloud', url: soundcloudUrl };
+        }
+
+        // Generic link fallback (helps when admin stores only platformLinks.url)
+        const genericUrl = links.url || links.link || '';
+        if (genericUrl) {
+            if (looksLikeYouTubeUrl(genericUrl)) {
+                if (String(genericUrl).toLowerCase().includes('music.youtube.com')) {
+                    return { platform: 'youtubemusic', url: genericUrl };
+                }
+                return { platform: 'youtube', url: genericUrl };
+            }
+            if (looksLikeSpotifyUrl(genericUrl)) {
+                return { platform: 'spotify', url: genericUrl };
+            }
+            if (looksLikeSoundCloudUrl(genericUrl)) {
+                return { platform: 'soundcloud', url: genericUrl };
+            }
         }
         
         return { platform: null, url: null };
