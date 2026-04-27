@@ -2677,53 +2677,69 @@ class AdminPanel {
             const artwork = metadata.artwork || this.getPlatformArtwork(platform);
             const duration = metadata.duration || '';
 
+            // Normalize URL and move everything into the Audio Link form.
+            // The Audio Link save flow (scripts/admin-firebase.js) already classifies platform links into platformLinks.
             const normalizedUrl = url && !/^https?:\/\//i.test(url) ? `https://${url}` : url;
-            const platformLinks = {};
-            let audioUrl = '';
 
-            if (/\.(mp3|wav|ogg|m4a|aac)(\?|#|$)/i.test(normalizedUrl)) {
-                audioUrl = normalizedUrl;
-            } else if (platform === 'youtube') {
-                platformLinks.youtube = normalizedUrl;
-            } else if (platform === 'soundcloud') {
-                platformLinks.soundcloud = normalizedUrl;
-            } else if (platform === 'apple-music') {
-                platformLinks.appleMusic = normalizedUrl;
-            } else if (platform === 'spotify') {
-                platformLinks.spotify = normalizedUrl;
-            } else {
-                audioUrl = normalizedUrl;
+            const audioUrlInput = document.getElementById('audioUrl');
+            const titleInput = document.getElementById('trackTitle');
+            const artistSelect = document.getElementById('trackArtist');
+            const genreInput = document.getElementById('trackGenre');
+            const durationInput = document.getElementById('trackDuration');
+            const releaseDateInput = document.getElementById('releaseDate');
+            const descriptionInput = document.getElementById('trackDescription');
+            const artworkPreview = document.getElementById('artworkPreview');
+
+            // Ensure hidden input for URL-based artwork exists (scripts/admin-firebase.js reads spotifyArtworkUrl)
+            let spotifyArtworkInput = document.getElementById('spotifyArtworkUrl');
+            if (!spotifyArtworkInput) {
+                spotifyArtworkInput = document.createElement('input');
+                spotifyArtworkInput.type = 'hidden';
+                spotifyArtworkInput.id = 'spotifyArtworkUrl';
+                spotifyArtworkInput.name = 'spotifyArtworkUrl';
+                document.getElementById('audioUploadForm')?.appendChild(spotifyArtworkInput);
             }
 
-            const trackData = {
-                title,
-                artist: artist,
-                artistName: artist,
-                genre: genre || 'Unknown',
-                duration: duration,
-                externalUrl: url,
-                platform,
-                artwork: artwork,
-                streams: 0,
-                likes: 0,
-                downloads: 0,
-                status: 'published',
-                audioUrl,
-                platformLinks,
-            };
+            if (audioUrlInput) audioUrlInput.value = normalizedUrl;
+            if (titleInput) titleInput.value = title;
+            if (genreInput) genreInput.value = genre || '';
+            if (durationInput) durationInput.value = duration;
 
-            // Save to Firestore if available
-            if (window.saveTrackToFirestore) {
-                await window.saveTrackToFirestore(trackData);
-                this.showNotification('External track added to Firestore successfully!', 'success');
-            } else {
-                this.showNotification('Firestore integration is not available. Please refresh the page.', 'error');
-                return;
+            if (releaseDateInput) {
+                releaseDateInput.value = new Date().toISOString().split('T')[0];
             }
 
-            // Reset form and refresh table
+            if (descriptionInput) {
+                descriptionInput.value = `Imported from ${platform}: ${normalizedUrl}`;
+            }
+
+            // Try to match artist by name into the select; fall back to add-new.
+            if (artistSelect) {
+                try {
+                    const artists = await window.fetchArtists();
+                    const externalArtist = String(artist || '').toLowerCase();
+                    const matchingArtist = (artists || []).find(a => String(a.name || '').toLowerCase() === externalArtist);
+                    artistSelect.value = matchingArtist ? matchingArtist.id : '__add_new__';
+                } catch (_) {
+                    artistSelect.value = '__add_new__';
+                }
+            }
+
+            if (artworkPreview && artwork) {
+                artworkPreview.classList.add('has-image');
+                artworkPreview.style.backgroundImage = `url('${artwork}')`;
+                if (spotifyArtworkInput) {
+                    spotifyArtworkInput.value = artwork;
+                }
+            }
+
+            // Switch to Audio Link method so you can complete missing info and save normally.
+            this.switchUploadMethod('upload');
+
+            // Clean up external form state
             this.resetExternalForm();
-            this.loadTracks();
+
+            this.showNotification('External track data imported. Please complete missing info and click Save Track.', 'success');
         } catch (error) {
             console.error('Error adding external track:', error);
             this.showNotification('Error adding track: ' + error.message, 'error');
