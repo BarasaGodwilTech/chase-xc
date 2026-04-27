@@ -1021,10 +1021,320 @@ class AdminPanel {
         }
     }
 
+    showSection(sectionId) {
+        document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+        document.querySelector(`[data-target="${sectionId}"]`)?.classList.add('active');
+
+        document.querySelectorAll('.admin-section').forEach(section => section.classList.remove('active'));
+
+        const activeSection = document.getElementById(sectionId);
+        if (!activeSection) {
+            console.error('Section not found:', sectionId);
+            return;
+        }
+        activeSection.classList.add('active');
+
+        this.updatePageTitle(sectionId);
+        this.currentSection = sectionId;
+        localStorage.setItem('admin:lastSection', sectionId);
+        this.loadSectionData(sectionId);
+
+        const searchInput = document.querySelector('.search-box input');
+        if (searchInput && !searchInput.value) {
+            this.applyTableSearch('');
+        } else if (searchInput) {
+            this.applyTableSearch(searchInput.value);
+        }
+    }
+
+    updatePageTitle(sectionId) {
+        const titles = {
+            dashboard: 'Dashboard',
+            payments: 'Payment Management',
+            users: 'User Management',
+            artists: 'Artist Management',
+            tracks: 'Track Management',
+            team: 'Team Management',
+            'music-management': 'Music Management',
+            projects: 'Projects',
+            settings: 'Studio Settings',
+            savings: 'Savings Goals',
+            reports: 'Reports'
+        };
+
+        const subtitles = {
+            dashboard: 'Welcome to your admin dashboard',
+            payments: 'Manage and track all payments',
+            users: 'View and manage app users',
+            artists: 'Manage artist profiles and content',
+            tracks: 'Manage music tracks and releases',
+            team: 'Manage team members and their profiles',
+            'music-management': 'Upload and manage music tracks',
+            projects: 'Manage studio projects and deliverables',
+            settings: 'Configure studio settings and pricing',
+            savings: 'Track and manage your savings goals',
+            reports: 'Generate and view financial reports'
+        };
+
+        const pageTitle = document.getElementById('pageTitle');
+        const pageSubtitle = document.getElementById('pageSubtitle');
+
+        if (pageTitle) pageTitle.textContent = titles[sectionId] || 'Admin Panel';
+        if (pageSubtitle) pageSubtitle.textContent = subtitles[sectionId] || 'Manage your studio operations';
+    }
+
+    async loadSectionData(sectionId) {
+        console.log('Loading section data:', sectionId);
+        try {
+            switch (sectionId) {
+                case 'dashboard':
+                    await this.renderDashboard();
+                    break;
+                case 'users':
+                    await this.loadUsers();
+                    break;
+                case 'artists':
+                    await this.loadArtists();
+                    break;
+                case 'tracks':
+                    await this.loadTracks();
+                    break;
+                case 'team':
+                    await this.loadTeam();
+                    break;
+                case 'music-management':
+                    await this.loadArtistsForSelect();
+                    break;
+                case 'projects':
+                    break;
+                case 'payments':
+                    await this.loadPayments();
+                    break;
+                case 'settings':
+                    await this.loadSettings();
+                    break;
+                case 'savings':
+                    break;
+                case 'reports':
+                    break;
+                case 'admin-management':
+                    await this.loadAdminManagement();
+                    break;
+            }
+        } catch (error) {
+            console.error('Error loading section data:', error);
+            this.showNotification('Error loading data: ' + error.message, 'error');
+        }
+    }
+
+    async renderDashboard() {
+        console.log('Rendering dashboard...');
+
+        const artists = await window.fetchArtists();
+        const tracks = await window.fetchTracks();
+        const payments = await window.fetchPayments();
+
+        const totalStreams = tracks.reduce((sum, track) => sum + (track.streams || 0), 0);
+        const totalRevenue = Math.round(totalStreams * 0.003);
+        const publishedTracks = tracks.filter(t => t.status === 'published');
+        const pendingPayments = payments.filter(p => p.status === 'pending').length;
+
+        const totalRevenueEl = document.getElementById('totalRevenue');
+        const totalArtistsEl = document.getElementById('totalArtists');
+        const activeProjectsEl = document.getElementById('activeProjects');
+        const pendingPaymentsEl = document.getElementById('pendingPayments');
+
+        const totalTracksValueEl = document.getElementById('totalTracksValue');
+        const streamsValueEl = document.getElementById('streamsValue');
+        const bookingsValueEl = document.getElementById('bookingsValue');
+        const ratingValueEl = document.getElementById('ratingValue');
+
+        if (totalRevenueEl) totalRevenueEl.textContent = `UGX ${this.formatNumber(totalRevenue)}`;
+        if (totalArtistsEl) totalArtistsEl.textContent = artists.length;
+        if (activeProjectsEl) activeProjectsEl.textContent = publishedTracks.length;
+        if (pendingPaymentsEl) pendingPaymentsEl.textContent = pendingPayments;
+
+        // Update quick stats
+        if (totalTracksValueEl) totalTracksValueEl.textContent = tracks.length;
+        if (streamsValueEl) streamsValueEl.textContent = this.formatNumber(totalStreams);
+        if (bookingsValueEl) bookingsValueEl.textContent = '0';
+        if (ratingValueEl) ratingValueEl.textContent = 'N/A';
+    }
+
+    async loadArtists() {
+        console.log('Loading artists...');
+        const container = document.getElementById('artistsTable');
+        if (!container) {
+            console.error('Artists table container not found');
+            return;
+        }
+
+        const artists = await window.fetchArtists();
+        const tracks = await window.fetchTracks();
+
+        if (artists.length === 0) {
+            container.innerHTML = '<tr><td colspan="7" class="text-center">No artists found</td></tr>';
+            return;
+        }
+
+        // Calculate stats for each artist
+        const statsByArtist = new Map();
+        for (const t of tracks || []) {
+            const artistId = String(t.artist || '');
+            if (!artistId) continue;
+            if (!statsByArtist.has(artistId)) statsByArtist.set(artistId, { tracks: 0, streams: 0 });
+            const s = statsByArtist.get(artistId);
+            s.tracks += 1;
+            s.streams += Number(t.streams || 0);
+        }
+
+        container.innerHTML = artists.map(artist => {
+            const stats = statsByArtist.get(artist.id) || { tracks: 0, streams: 0 };
+            const since = artist.createdAt && artist.createdAt.toDate ? String(artist.createdAt.toDate().getFullYear()) : artist.since || '';
+
+            return `
+                <tr>
+                    <td>
+                        <div class="artist-cell">
+                            <img src="${artist.image}" alt="${artist.name}" class="artist-avatar">
+                            <span>${artist.name}</span>
+                        </div>
+                    </td>
+                    <td>${artist.genre}</td>
+                    <td>${stats.tracks}</td>
+                    <td>${this.formatNumber(stats.streams)}</td>
+                    <td>${since}</td>
+                    <td><span class="status-badge status-${artist.status}">${artist.status}</span></td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn btn-primary btn-sm js-edit-artist" type="button" data-artist-id="${artist.id}">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-secondary btn-sm js-view-artist" type="button" data-artist-id="${artist.id}">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn btn-danger btn-sm js-delete-artist" type="button" data-artist-id="${artist.id}">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        if (!container.dataset.actionsBound) {
+            container.dataset.actionsBound = 'true';
+            container.addEventListener('click', async (e) => {
+                const editBtn = e.target.closest('.js-edit-artist');
+                const viewBtn = e.target.closest('.js-view-artist');
+                const delBtn = e.target.closest('.js-delete-artist');
+
+                const artistId = editBtn?.dataset?.artistId || viewBtn?.dataset?.artistId || delBtn?.dataset?.artistId;
+                if (!artistId) return;
+
+                try {
+                    if (editBtn) await this.editArtist(artistId);
+                    if (viewBtn) await this.viewArtist(artistId);
+                    if (delBtn) await this.deleteArtist(artistId);
+                } catch (error) {
+                    console.error('Artist action failed:', error);
+                    this.showNotification('Action failed: ' + (error?.message || String(error)), 'error');
+                }
+            });
+        }
+    }
+
+    async loadTracks() {
+        console.log('Loading tracks...');
+        const container = document.getElementById('tracksTable');
+        if (!container) {
+            console.error('Tracks table container not found');
+            return;
+        }
+
+        const tracks = await window.fetchTracks();
+        const artists = await window.fetchArtists();
+
+        if (tracks.length === 0) {
+            container.innerHTML = '<tr><td colspan="7" class="text-center">No tracks found</td></tr>';
+            return;
+        }
+
+        // Create artist lookup map
+        const artistMap = new Map();
+        for (const a of artists || []) {
+            artistMap.set(a.id, a.name || 'Unknown Artist');
+        }
+
+        container.innerHTML = tracks.map(track => {
+            const artistName = artistMap.get(track.artist) || track.artistName || 'Unknown Artist';
+            return `
+                <tr>
+                    <td>
+                        <div class="track-cell">
+                            <img src="${track.artwork}" alt="${track.title}" class="track-artwork-small">
+                            <span>${track.title}</span>
+                        </div>
+                    </td>
+                    <td>${artistName}</td>
+                    <td>${track.genre}</td>
+                    <td>${this.formatNumber(track.streams)}</td>
+                    <td>${track.duration}</td>
+                    <td><span class="status-badge status-${track.status}">${track.status}</span></td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn btn-primary btn-sm js-edit-track" type="button" data-track-id="${track.id}">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-secondary btn-sm js-view-track" type="button" data-track-id="${track.id}">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn btn-danger btn-sm js-delete-track" type="button" data-track-id="${track.id}">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        if (!container.dataset.actionsBound) {
+            container.dataset.actionsBound = 'true';
+            container.addEventListener('click', async (e) => {
+                const editBtn = e.target.closest('.js-edit-track');
+                const viewBtn = e.target.closest('.js-view-track');
+                const delBtn = e.target.closest('.js-delete-track');
+
+                const trackId = editBtn?.dataset?.trackId || viewBtn?.dataset?.trackId || delBtn?.dataset?.trackId;
+                if (!trackId) return;
+
+                try {
+                    if (editBtn) await this.editTrack(trackId);
+                    if (viewBtn) await this.viewTrack(trackId);
+                    if (delBtn) await this.deleteTrack(trackId);
+                } catch (error) {
+                    console.error('Track action failed:', error);
+                    this.showNotification('Action failed: ' + (error?.message || String(error)), 'error');
+                }
+            });
+        }
+    }
+
+    async loadArtistsForSelect() {
+        const artistSelect = document.getElementById('trackArtist');
+        if (!artistSelect) return;
+
+        const artists = await window.fetchArtists();
+        artistSelect.innerHTML = '<option value="">Select Artist</option>' +
+            '<option value="__add_new__">+ Add new artist...</option>' +
+            artists.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+    }
+
     async handleExternalTrack() {
         const platform = document.querySelector('input[name="platform"]:checked')?.value;
         const url = document.getElementById('externalUrl').value.trim();
         const title = document.getElementById('externalTitle').value.trim();
+
         const artist = document.getElementById('externalArtist').value.trim();
         const genre = document.getElementById('externalGenre').value;
 
