@@ -43,6 +43,30 @@ class AdminPanel {
         console.log('AdminPanel initialized successfully');
     }
 
+    showSection(sectionId) {
+        const targetId = String(sectionId || '').trim() || 'dashboard';
+
+        document.querySelectorAll('.nav-item[data-target]').forEach(item => {
+            const t = item.getAttribute('data-target');
+            item.classList.toggle('active', t === targetId);
+        });
+
+        document.querySelectorAll('.admin-section').forEach(section => {
+            section.classList.toggle('active', section.id === targetId);
+        });
+
+        this.currentSection = targetId;
+        localStorage.setItem('admin:lastSection', targetId);
+
+        // Some builds of this file include a data loader; keep this safe in the simplified build.
+        if (typeof this.loadSectionData === 'function') {
+            this.loadSectionData(targetId);
+        }
+    }
+
+    // Simplified build safety: avoid crashes if other parts call this.
+    loadSectionData() {}
+
     bindAdminAuthState() {
         if (this._adminAuthListenerBound) return;
         this._adminAuthListenerBound = true;
