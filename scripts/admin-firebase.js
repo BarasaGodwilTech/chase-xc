@@ -262,6 +262,8 @@ function closeAddArtistForm() {
   if (backTo && backTo !== 'artists' && typeof window.adminPanel?.showSection === 'function') {
     window.__returnToAdminSectionAfterArtistAdd = null
     window.adminPanel.showSection(backTo)
+  } else {
+    window.__returnToAdminSectionAfterArtistAdd = null
   }
 }
 
@@ -1098,6 +1100,10 @@ function initAdminFirebase() {
             return
           }
         }
+
+        // IMPORTANT: move away from the magic value so we don't re-trigger the add-new flow
+        // on future repopulates / navigation.
+        select.value = ''
 
         openAddArtistModal()
       }
