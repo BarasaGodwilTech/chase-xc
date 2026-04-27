@@ -42,19 +42,6 @@ class AudioPlayer {
     this.init();
   }
 
-  loadTrackByData(trackId) {
-    if (!trackId) return;
-    const idx = this.tracks.findIndex(t => t.id === trackId);
-    if (idx === -1) return;
-    this.currentTrackIndex = idx;
-    this.loadTrack(idx);
-  }
-
-  isDirectAudioUrl(url) {
-    const u = String(url || '').toLowerCase();
-    return Boolean(u.match(/\.(mp3|wav|ogg|m4a)(\?.*)?$/));
-  }
-
   init() {
     this.loadTracksFromData();
     this.setupEventListeners();
@@ -83,8 +70,8 @@ class AudioPlayer {
       
       const { track, isPlaying, currentTime } = e.detail;
       
-      // Only sync if it's a direct audio URL (not an embed/platform link)
-      if (track.audioUrl && track.audioUrl.trim() !== '' && this.isDirectAudioUrl(track.audioUrl)) {
+      // Only sync if it's an audio track (not embed)
+      if (track.audioUrl && track.audioUrl.trim() !== '') {
         // Find track index
         const trackIndex = this.tracks.findIndex(t => t.id === track.id);
         if (trackIndex !== -1 && trackIndex !== this.currentTrackIndex) {
@@ -120,7 +107,7 @@ class AudioPlayer {
         title: track.title,
         artist: track.artistName || 'Unknown Artist',
         cover: track.artwork,
-        src: (track.audioUrl && this.isDirectAudioUrl(track.audioUrl)) ? track.audioUrl : (this.getFallbackAudioUrl(track.id)),
+        src: track.audioUrl || this.getFallbackAudioUrl(track.id),
         duration: track.duration,
         likes: track.likes || 0,
         streams: track.streams || 0,
@@ -138,7 +125,7 @@ class AudioPlayer {
           title: track.title,
           artist: artist?.name || track.artistName || 'Unknown Artist',
           cover: track.artwork,
-          src: (track.audioUrl && this.isDirectAudioUrl(track.audioUrl)) ? track.audioUrl : (this.getFallbackAudioUrl(track.id)),
+          src: track.audioUrl || this.getFallbackAudioUrl(track.id),
           duration: track.duration,
           likes: track.likes || 0,
           streams: track.streams || 0,

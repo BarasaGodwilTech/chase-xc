@@ -23,19 +23,6 @@ function normalizeGenre(genre) {
   return (genre || '').trim()
 }
 
-function classifyTrackLink(url) {
-  const u = String(url || '').trim()
-  const lower = u.toLowerCase()
-  if (!u) return { kind: 'none' }
-  if (lower.match(/\.(mp3|wav|ogg|m4a)(\?.*)?$/)) return { kind: 'directAudio' }
-  if (lower.includes('music.youtube.com')) return { kind: 'youtubemusic' }
-  if (lower.includes('youtube.com') || lower.includes('youtu.be')) return { kind: 'youtube' }
-  if (lower.includes('open.spotify.com')) return { kind: 'spotify' }
-  if (lower.includes('soundcloud.com') || lower.includes('on.soundcloud.com')) return { kind: 'soundcloud' }
-  if (lower.includes('music.apple.com') || lower.includes('itunes.apple.com')) return { kind: 'appleMusic' }
-  return { kind: 'other' }
-}
-
 async function fetchArtists() {
   const artistsRef = collection(db, 'artists')
   const q = query(artistsRef, orderBy('name', 'asc'))
@@ -472,7 +459,7 @@ async function handleAudioUploadSubmit(e) {
     return
   }
 
-  // Links-first workflow: require a link on create; allow keeping existing link on edit.
+  // Links-only workflow: require an audio link on create; allow keeping existing link on edit.
   if (!isEdit && !audioUrlInput) {
     if (window.notifications) {
       window.notifications.show('Please provide an audio link (URL).', 'error')
@@ -482,11 +469,44 @@ async function handleAudioUploadSubmit(e) {
     return
   }
 
-  // Determine the actual link that will be saved.
-  const effectiveLinkForSave = audioUrlInput || existingTrack?.audioUrl || existingTrack?.platformLinks?.url || ''
+  // Determine the actual URL that will be saved.
+  const effectiveAudioUrlForSave = audioUrlInput || existingTrack?.audioUrl || ''
+
+  function normalizePlatformUrl(url) {
+    const u = String(url || '').trim()
+    if (!u) return ''
+    return !/^https?:\/\//i.test(u) ? `https://${u}` : u
+  }
+
+  function classifyLink(url) {
+    const u = normalizePlatformUrl(url)
+    if (!u) return { kind: 'none', url: '' }
+
+    // Direct audio file links
+    if (/\.(mp3|wav|ogg|m4a|aac)(\?|#|$)/i.test(u)) {
+      return { kind: 'audio', url: u }
+    }
+
+    // Platform detection
+    if (/^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\//i.test(u)) {
+      return { kind: 'youtube', url: u }
+    }
+    if (/^(https?:\/\/)?(open\.)?spotify\.com\//i.test(u)) {
+      return { kind: 'spotify', url: u }
+    }
+    if (/^(https?:\/\/)?(www\.)?soundcloud\.com\//i.test(u)) {
+      return { kind: 'soundcloud', url: u }
+    }
+    if (/^(https?:\/\/)?(music\.)?apple\.com\//i.test(u)) {
+      return { kind: 'appleMusic', url: u }
+    }
+
+    // Unknown link type: keep as audioUrl so it can still be opened/handled elsewhere
+    return { kind: 'audio', url: u }
+  }
 
   // Ask for confirmation if the current audio link hasn't been tested in this session.
-  if (effectiveLinkForSave && window.__lastTestedAudioUrl !== effectiveLinkForSave) {
+  if (effectiveAudioUrlForSave && window.__lastTestedAudioUrl !== effectiveAudioUrlForSave) {
     const msg = 'You have not tested the current audio link in this session. Use the inline preview below the field (recommended) or continue anyway?'
     let ok = false
     if (window.notifications && window.notifications.confirm) {
@@ -503,9 +523,9 @@ async function handleAudioUploadSubmit(e) {
   try {
     const artistName = await resolveArtistName(artistId)
 
-    // Links-first: treat the field as a generic link.
-    const link = effectiveLinkForSave
-    const linkKind = classifyTrackLink(link)
+    // Links-only: use input if provided, otherwise keep existing.
+    const linkInfo = classifyLink(effectiveAudioUrlForSave)
+    const audioUrl = linkInfo.kind === 'audio' ? linkInfo.url : ''
 
     // Handle artwork - either upload file or use Spotify URL
     let artworkUrl = existingTrack?.artwork || ''
@@ -518,31 +538,15 @@ async function handleAudioUploadSubmit(e) {
       artworkUrl = await uploadFileToStorage(artPath, artworkFile)
     }
 
-    const platformLinks = (() => {
-      // Only overwrite platformLinks when user provides a link in this submit.
-      // For edit without changing the link field, preserve existing platformLinks.
-      if (isEdit && !audioUrlInput) return existingTrack?.platformLinks || {}
+    const existingPlatformLinks = (existingTrack?.platformLinks && typeof existingTrack.platformLinks === 'object')
+      ? existingTrack.platformLinks
+      : {}
 
-      if (!link) return existingTrack?.platformLinks || {}
-
-      const base = {
-        youtube: '',
-        youtubeMusic: '',
-        spotify: '',
-        soundcloud: '',
-        appleMusic: '',
-        url: link,
-      }
-
-      if (linkKind.kind === 'youtube') base.youtube = link
-      if (linkKind.kind === 'youtubemusic') base.youtubeMusic = link
-      if (linkKind.kind === 'spotify') base.spotify = link
-      if (linkKind.kind === 'soundcloud') base.soundcloud = link
-      if (linkKind.kind === 'appleMusic') base.appleMusic = link
-
-      // Keep any extra keys already present (future-proofing)
-      return { ...(existingTrack?.platformLinks || {}), ...base }
-    })()
+    const platformLinks = { ...existingPlatformLinks }
+    if (linkInfo.kind === 'youtube') platformLinks.youtube = linkInfo.url
+    if (linkInfo.kind === 'spotify') platformLinks.spotify = linkInfo.url
+    if (linkInfo.kind === 'soundcloud') platformLinks.soundcloud = linkInfo.url
+    if (linkInfo.kind === 'appleMusic') platformLinks.appleMusic = linkInfo.url
 
     const payload = {
       title,
@@ -551,7 +555,7 @@ async function handleAudioUploadSubmit(e) {
       genre,
       duration,
       artwork: artworkUrl,
-      audioUrl: linkKind.kind === 'directAudio' ? link : (isEdit && !audioUrlInput ? (existingTrack?.audioUrl || '') : ''),
+      audioUrl,
       releaseDate: releaseDate || '',
       description,
       status: existingTrack?.status || 'published',

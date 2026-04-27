@@ -471,33 +471,26 @@ class PersistentFloatingPlayer {
     }
 
     detectPlatform(track) {
-        const rawAudioUrl = track.audioUrl && typeof track.audioUrl === 'string' ? track.audioUrl.trim() : '';
-        const audioUrl = rawAudioUrl;
+        // Check for direct audio URL first
+        // Backwards compatibility: historically, some platform links may have been stored in audioUrl.
+        if (track.audioUrl && track.audioUrl.trim() !== '') {
+            const u = track.audioUrl.trim();
 
-        const isDirectAudioUrl = (url) => {
-            const u = String(url || '').toLowerCase();
-            return Boolean(u.match(/\.(mp3|wav|ogg|m4a)(\?.*)?$/));
-        };
+            // If it's a platform link, route to embed player instead of HTML5 audio
+            if (/^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\//i.test(u)) {
+                return { platform: 'youtube', url: u };
+            }
+            if (/^(https?:\/\/)?(open\.)?spotify\.com\//i.test(u)) {
+                return { platform: 'spotify', url: u };
+            }
+            if (/^(https?:\/\/)?(www\.)?soundcloud\.com\//i.test(u)) {
+                return { platform: 'soundcloud', url: u };
+            }
 
-        const looksLikeYouTubeUrl = (url) => {
-            const u = String(url || '').toLowerCase();
-            return u.includes('youtube.com') || u.includes('youtu.be') || u.includes('music.youtube.com');
-        };
-
-        const looksLikeSpotifyUrl = (url) => {
-            const u = String(url || '').toLowerCase();
-            return u.includes('open.spotify.com');
-        };
-
-        const looksLikeSoundCloudUrl = (url) => {
-            const u = String(url || '').toLowerCase();
-            return u.includes('soundcloud.com') || u.includes('on.soundcloud.com');
-        };
-
-        // Links-first: only treat audioUrl as an audio source when it is a direct audio file.
-        // Non-direct links are expected to be saved under platformLinks.
-        if (audioUrl && isDirectAudioUrl(audioUrl)) {
-            return { platform: 'audio', url: audioUrl };
+            // Treat as direct audio only if it looks like an actual audio file URL
+            if (/\.(mp3|wav|ogg|m4a|aac)(\?|#|$)/i.test(u)) {
+                return { platform: 'audio', url: u };
+            }
         }
         
         // Check platform links
@@ -525,23 +518,6 @@ class PersistentFloatingPlayer {
         const soundcloudUrl = track.soundcloudUrl || links.soundcloud || '';
         if (soundcloudUrl) {
             return { platform: 'soundcloud', url: soundcloudUrl };
-        }
-
-        // Generic link fallback (helps when admin stores only platformLinks.url)
-        const genericUrl = links.url || links.link || '';
-        if (genericUrl) {
-            if (looksLikeYouTubeUrl(genericUrl)) {
-                if (String(genericUrl).toLowerCase().includes('music.youtube.com')) {
-                    return { platform: 'youtubemusic', url: genericUrl };
-                }
-                return { platform: 'youtube', url: genericUrl };
-            }
-            if (looksLikeSpotifyUrl(genericUrl)) {
-                return { platform: 'spotify', url: genericUrl };
-            }
-            if (looksLikeSoundCloudUrl(genericUrl)) {
-                return { platform: 'soundcloud', url: genericUrl };
-            }
         }
         
         return { platform: null, url: null };

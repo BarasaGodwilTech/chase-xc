@@ -2677,6 +2677,24 @@ class AdminPanel {
             const artwork = metadata.artwork || this.getPlatformArtwork(platform);
             const duration = metadata.duration || '';
 
+            const normalizedUrl = url && !/^https?:\/\//i.test(url) ? `https://${url}` : url;
+            const platformLinks = {};
+            let audioUrl = '';
+
+            if (/\.(mp3|wav|ogg|m4a|aac)(\?|#|$)/i.test(normalizedUrl)) {
+                audioUrl = normalizedUrl;
+            } else if (platform === 'youtube') {
+                platformLinks.youtube = normalizedUrl;
+            } else if (platform === 'soundcloud') {
+                platformLinks.soundcloud = normalizedUrl;
+            } else if (platform === 'apple-music') {
+                platformLinks.appleMusic = normalizedUrl;
+            } else if (platform === 'spotify') {
+                platformLinks.spotify = normalizedUrl;
+            } else {
+                audioUrl = normalizedUrl;
+            }
+
             const trackData = {
                 title,
                 artist: artist,
@@ -2690,7 +2708,8 @@ class AdminPanel {
                 likes: 0,
                 downloads: 0,
                 status: 'published',
-                audioUrl: '', // External tracks don't have local audio
+                audioUrl,
+                platformLinks,
             };
 
             // Save to Firestore if available
