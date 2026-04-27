@@ -1330,6 +1330,59 @@ class AdminPanel {
             artists.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
     }
 
+    async loadUsers() {
+        const container = document.getElementById('usersTable');
+        if (!container) return;
+        container.innerHTML = '<tr><td colspan="10" class="text-center">Users loading is not configured yet.</td></tr>';
+    }
+
+    async loadSettings() {
+        // Settings are loaded globally by scripts/config-loader.js.
+        // Keep this method as a safe no-op to avoid breaking navigation.
+        return;
+    }
+
+    async loadTeam() {
+        const container = document.getElementById('teamTable');
+        if (!container) return;
+        container.innerHTML = '<tr><td colspan="10" class="text-center">Team loading is not configured yet.</td></tr>';
+    }
+
+    async loadPayments() {
+        const container = document.getElementById('paymentsTable');
+        if (!container) return;
+
+        try {
+            if (typeof window.fetchPayments !== 'function') {
+                container.innerHTML = '<tr><td colspan="10" class="text-center">Payments loader unavailable.</td></tr>';
+                return;
+            }
+            const payments = await window.fetchPayments();
+            if (!payments || payments.length === 0) {
+                container.innerHTML = '<tr><td colspan="10" class="text-center">No payments found</td></tr>';
+                return;
+            }
+
+            container.innerHTML = payments.map((p) => {
+                const amount = p.amount != null ? p.amount : '';
+                const status = p.status || '';
+                const date = p.createdAt && p.createdAt.toDate ? p.createdAt.toDate().toLocaleDateString() : (p.createdAt || '');
+                const user = p.userEmail || p.userId || '';
+                return `
+                    <tr>
+                        <td>${user}</td>
+                        <td>${amount}</td>
+                        <td>${status}</td>
+                        <td>${date}</td>
+                    </tr>
+                `;
+            }).join('');
+        } catch (error) {
+            console.error('Error loading payments:', error);
+            container.innerHTML = '<tr><td colspan="10" class="text-center">Failed to load payments</td></tr>';
+        }
+    }
+
     async handleExternalTrack() {
         const platform = document.querySelector('input[name="platform"]:checked')?.value;
         const url = document.getElementById('externalUrl').value.trim();
