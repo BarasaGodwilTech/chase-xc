@@ -373,7 +373,7 @@
     right: 40px;
     background: none;
     border: none;
-    color: rgba(255, 255, 255, 0.5);
+    color: rgba(255, 255, 255, 0.9);
     cursor: pointer;
     font-size: 14px;
     z-index: 10;
@@ -714,53 +714,6 @@ a[href*="whatsapp"] {
 @media (min-width: 481px) and (max-width: 768px) {
     .persistent-floating-player {
         width: 320px;
-    }
-}
-
-/* Dark mode support */
-@media (prefers-color-scheme: light) {
-    .persistent-floating-player {
-        background: rgba(255, 255, 255, 0.95);
-        border-color: rgba(0, 0, 0, 0.1);
-    }
-    
-    .flp-drag-handle {
-        color: rgba(0, 0, 0, 0.4);
-        background: linear-gradient(180deg, rgba(0,0,0,0.03) 0%, transparent 100%);
-    }
-    
-    .flp-close {
-        color: rgba(0, 0, 0, 0.5);
-    }
-    
-    .flp-close:hover {
-        color: #000;
-        background: rgba(0, 0, 0, 0.05);
-    }
-    
-    .flp-info h4 {
-        color: #1a1a2e;
-    }
-    
-    .flp-info p {
-        color: rgba(0, 0, 0, 0.6);
-    }
-    
-    .flp-btn {
-        color: rgba(0, 0, 0, 0.7);
-    }
-    
-    .flp-btn:hover {
-        background: rgba(0, 0, 0, 0.05);
-        color: #000;
-    }
-    
-    .flp-progress-bar {
-        background: rgba(0, 0, 0, 0.15);
-    }
-    
-    .flp-time {
-        color: rgba(0, 0, 0, 0.5);
     }
 }
 
