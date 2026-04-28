@@ -159,11 +159,26 @@
   color: #ff6b6b;
 }
 
-/* Responsive Design */
+/* Team Section Responsive Design */
+@media (max-width: 1024px) {
+  .about-team-grid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1.5rem;
+  }
+  
+  .team-member-name {
+    font-size: 1.2rem;
+  }
+  
+  .team-member-role {
+    font-size: 0.9rem;
+  }
+}
+
 @media (max-width: 768px) {
   .about-team-grid {
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1.25rem;
   }
   
   .team-member-card {
@@ -184,8 +199,46 @@
   .team-member-role {
     font-size: 0.85rem;
   }
+  
+  .team-member-bio {
+    font-size: 0.9rem;
+  }
 }
 
+@media (max-width: 480px) {
+  .about-team-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 1rem;
+  }
+  
+  .team-member-image-wrapper {
+    aspect-ratio: 5 / 4;
+    border-radius: 8px;
+  }
+  
+  .team-member-name {
+    font-size: 1rem;
+  }
+  
+  .team-member-role {
+    font-size: 0.8rem;
+  }
+  
+  .team-member-bio {
+    font-size: 0.85rem;
+  }
+  
+  .team-member-socials {
+    gap: 0.75rem;
+  }
+  
+  .team-social-link {
+    width: 35px;
+    height: 35px;
+  }
+}
+
+/* Our Talent Section Styles */
 .home-talent-section {
   padding: 4.5rem 0 2.5rem;
   background:
@@ -281,6 +334,84 @@
 @keyframes talentMarqueeScroll {
   0% { transform: translateX(0); }
   100% { transform: translateX(-50%); }
+}
+
+/* Our Talent Responsive Design */
+@media (max-width: 1024px) {
+  .home-talent-section {
+    padding: 3.5rem 0 2rem;
+  }
+  
+  .talent-card {
+    width: 220px;
+  }
+  
+  .talent-track {
+    gap: 1.5rem;
+    padding: 0 1.5rem;
+  }
+  
+  .talent-card-name {
+    font-size: 0.85rem;
+    margin-top: 0.75rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .home-talent-section {
+    padding: 2.5rem 0 1.5rem;
+  }
+  
+  .home-talent-section .section-title {
+    margin-bottom: 1.5rem;
+    font-size: 1.5rem;
+  }
+  
+  .talent-marquee {
+    padding: 0.25rem 0 1rem;
+  }
+  
+  .talent-marquee::before,
+  .talent-marquee::after {
+    width: 60px;
+  }
+  
+  .talent-track {
+    gap: 1.25rem;
+    padding: 0 1rem;
+  }
+  
+  .talent-card {
+    width: 180px;
+  }
+  
+  .talent-card-media {
+    border-radius: 12px;
+  }
+  
+  .talent-card-name {
+    font-size: 0.8rem;
+    margin-top: 0.6rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .home-talent-section {
+    padding: 2rem 0 1rem;
+  }
+  
+  .talent-card {
+    width: 160px;
+  }
+  
+  .talent-track {
+    gap: 1rem;
+    padding: 0 0.75rem;
+  }
+  
+  .talent-card-name {
+    font-size: 0.75rem;
+  }
 }
 
 /* Audio Player Styles */

@@ -1,23 +1,11 @@
 // Enhanced Audio Player with Data Integration
 class AudioPlayer {
   constructor() {
-    this.audio = document.getElementById("audioElement");
-    this.playBtn = document.getElementById("playBtn");
-    this.prevBtn = document.getElementById("prevBtn");
-    this.nextBtn = document.getElementById("nextBtn");
-    this.seekBar = document.getElementById("seekBar");
-    this.volumeControl = document.getElementById("volumeControl");
-    this.progressBar = document.getElementById("progressBar");
-    this.currentTimeDisplay = document.getElementById("currentTime");
-    this.durationDisplay = document.getElementById("duration");
-    this.playerTitle = document.getElementById("playerTitle");
-    this.playerArtist = document.getElementById("playerArtist");
-    this.playerCover = document.getElementById("playerCover");
-    
-    // Repeat and Shuffle buttons
-    this.repeatBtn = document.getElementById("repeatBtn");
-    this.shuffleBtn = document.getElementById("shuffleBtn");
-    this.likeBtn = document.getElementById("likeBtn");
+    this._abortController = null;
+    this._saveStateRaf = 0;
+    this._pendingRestore = null;
+
+    this.bindElements();
 
     // Only initialize if audio element exists on the page
     if (!this.audio) return;
@@ -42,12 +30,48 @@ class AudioPlayer {
     this.init();
   }
 
+  bindElements() {
+    this.audio = document.getElementById("audioElement");
+    this.playBtn = document.getElementById("playBtn");
+    this.prevBtn = document.getElementById("prevBtn");
+    this.nextBtn = document.getElementById("nextBtn");
+    this.seekBar = document.getElementById("seekBar");
+    this.volumeControl = document.getElementById("volumeControl");
+    this.progressBar = document.getElementById("progressBar");
+    this.currentTimeDisplay = document.getElementById("currentTime");
+    this.durationDisplay = document.getElementById("duration");
+    this.playerTitle = document.getElementById("playerTitle");
+    this.playerArtist = document.getElementById("playerArtist");
+    this.playerCover = document.getElementById("playerCover");
+    
+    // Repeat and Shuffle buttons
+    this.repeatBtn = document.getElementById("repeatBtn");
+    this.shuffleBtn = document.getElementById("shuffleBtn");
+    this.likeBtn = document.getElementById("likeBtn");
+  }
+
   init() {
     this.loadTracksFromData();
+    this._pendingRestore = this.loadPlayerStateFromStorage();
+    if (this._pendingRestore && typeof this._pendingRestore.volume === 'number' && this.volumeControl) {
+      this.volumeControl.value = String(this._pendingRestore.volume);
+    }
     this.setupEventListeners();
+
+    if (this._pendingRestore && this.tracks.length > 0) {
+      const restoredIndex = this.tracks.findIndex(t => t.id === this._pendingRestore.trackId);
+      if (restoredIndex !== -1) {
+        this.currentTrackIndex = restoredIndex;
+      }
+    }
+
     this.loadTrack(this.currentTrackIndex);
     this.updateVolume();
     this.updateButtonStates();
+
+    if (this._pendingRestore) {
+      this.applyPendingRestore();
+    }
 
     // Listen for data updates
     window.addEventListener('dataUpdated', () => {
@@ -61,6 +85,88 @@ class AudioPlayer {
     
     // Sync with floating player when it changes
     this.setupFloatingPlayerSync();
+  }
+
+  rebind() {
+    this.bindElements();
+    if (!this.audio) return;
+    if (!this.isPlayingExternal) {
+      this.isPlaying = !this.audio.paused && !this.audio.ended;
+    }
+    this.setupEventListeners();
+    this.updatePlayButton();
+    this.updateButtonStates();
+    this.updateVolume();
+  }
+
+  loadPlayerStateFromStorage() {
+    try {
+      const raw = localStorage.getItem('audioPlayerState');
+      if (!raw) return null;
+      const state = JSON.parse(raw);
+      if (!state || typeof state !== 'object') return null;
+      if (!state.timestamp || Date.now() - state.timestamp > 3600000) return null;
+      return state;
+    } catch (e) {
+      console.error('[AudioPlayer] Failed to load state:', e);
+      return null;
+    }
+  }
+
+  savePlayerStateToStorage() {
+    try {
+      const track = this.tracks[this.currentTrackIndex];
+      if (!track) return;
+      const state = {
+        trackId: track.id,
+        currentTime: (!this.isPlayingExternal && this.audio) ? (this.audio.currentTime || 0) : 0,
+        isPlaying: !!this.isPlaying,
+        volume: this.volumeControl ? Number(this.volumeControl.value) : undefined,
+        timestamp: Date.now()
+      };
+      localStorage.setItem('audioPlayerState', JSON.stringify(state));
+    } catch (e) {
+      console.error('[AudioPlayer] Failed to save state:', e);
+    }
+  }
+
+  scheduleSaveState() {
+    if (this._saveStateRaf) return;
+    this._saveStateRaf = requestAnimationFrame(() => {
+      this._saveStateRaf = 0;
+      this.savePlayerStateToStorage();
+    });
+  }
+
+  applyPendingRestore() {
+    const state = this._pendingRestore;
+    this._pendingRestore = null;
+    if (!state) return;
+
+    if (!this.isPlayingExternal && this.audio && typeof state.currentTime === 'number' && state.currentTime > 0) {
+      const targetTime = state.currentTime;
+      const setTime = () => {
+        try {
+          if (!isNaN(this.audio.duration) && this.audio.duration > 0) {
+            this.audio.currentTime = Math.min(targetTime, this.audio.duration - 0.25);
+          } else {
+            this.audio.currentTime = targetTime;
+          }
+        } catch (_) {}
+      };
+
+      if (this.audio.readyState >= 1) {
+        setTime();
+      } else {
+        this.audio.addEventListener('loadedmetadata', setTime, { once: true });
+      }
+    }
+
+    if (state.isPlaying) {
+      this.play();
+    } else {
+      this.pause();
+    }
   }
   
   setupFloatingPlayerSync() {
@@ -148,20 +254,26 @@ class AudioPlayer {
   }
 
   setupEventListeners() {
-    if (this.playBtn) this.playBtn.addEventListener("click", () => this.togglePlay());
-    if (this.nextBtn) this.nextBtn.addEventListener("click", () => this.nextTrack());
-    if (this.prevBtn) this.prevBtn.addEventListener("click", () => this.prevTrack());
-    if (this.seekBar) this.seekBar.addEventListener("input", (e) => this.seek(e));
-    if (this.volumeControl) this.volumeControl.addEventListener("input", (e) => this.updateVolume());
+    if (this._abortController) {
+      this._abortController.abort();
+    }
+    this._abortController = new AbortController();
+    const signal = this._abortController.signal;
+
+    if (this.playBtn) this.playBtn.addEventListener("click", () => this.togglePlay(), { signal });
+    if (this.nextBtn) this.nextBtn.addEventListener("click", () => this.nextTrack(), { signal });
+    if (this.prevBtn) this.prevBtn.addEventListener("click", () => this.prevTrack(), { signal });
+    if (this.seekBar) this.seekBar.addEventListener("input", (e) => this.seek(e), { signal });
+    if (this.volumeControl) this.volumeControl.addEventListener("input", (e) => this.updateVolume(), { signal });
     
     // Repeat and Shuffle buttons
-    if (this.repeatBtn) this.repeatBtn.addEventListener("click", () => this.toggleRepeat());
-    if (this.shuffleBtn) this.shuffleBtn.addEventListener("click", () => this.toggleShuffle());
-    if (this.likeBtn) this.likeBtn.addEventListener("click", () => this.toggleLike());
+    if (this.repeatBtn) this.repeatBtn.addEventListener("click", () => this.toggleRepeat(), { signal });
+    if (this.shuffleBtn) this.shuffleBtn.addEventListener("click", () => this.toggleShuffle(), { signal });
+    if (this.likeBtn) this.likeBtn.addEventListener("click", () => this.toggleLike(), { signal });
 
-    this.audio.addEventListener("timeupdate", () => this.updateProgress());
-    this.audio.addEventListener("loadedmetadata", () => this.updateDuration());
-    this.audio.addEventListener("ended", () => this.handleTrackEnd());
+    this.audio.addEventListener("timeupdate", () => this.updateProgress(), { signal });
+    this.audio.addEventListener("loadedmetadata", () => this.updateDuration(), { signal });
+    this.audio.addEventListener("ended", () => this.handleTrackEnd(), { signal });
 
     // Track card click handlers - updated for Spotify-style play button
     // On desktop: play button triggers playback
@@ -186,7 +298,7 @@ class AudioPlayer {
         this.play();
       }
       // On mobile/touch devices, card tap navigates to detail page (handled by music-page.js, home-page.js, music-data.js)
-    });
+    }, { signal });
 
     // Floating player controls
     const floatingPlayBtn = document.getElementById("floatingPlayBtn");
@@ -194,13 +306,13 @@ class AudioPlayer {
     const floatingNextBtn = document.getElementById("floatingNextBtn");
 
     if (floatingPlayBtn) {
-      floatingPlayBtn.addEventListener("click", () => this.togglePlay());
+      floatingPlayBtn.addEventListener("click", () => this.togglePlay(), { signal });
     }
     if (floatingPrevBtn) {
-      floatingPrevBtn.addEventListener("click", () => this.prevTrack());
+      floatingPrevBtn.addEventListener("click", () => this.prevTrack(), { signal });
     }
     if (floatingNextBtn) {
-      floatingNextBtn.addEventListener("click", () => this.nextTrack());
+      floatingNextBtn.addEventListener("click", () => this.nextTrack(), { signal });
     }
   }
 
@@ -262,6 +374,20 @@ class AudioPlayer {
           this.incrementLikes();
         }
       }
+    }
+
+    this.scheduleSaveState();
+  }
+
+  updatePlayButton() {
+    if (this.playBtn) {
+      this.playBtn.innerHTML = this.isPlaying ? '<i class="fas fa-pause"></i>' : '<i class="fas fa-play"></i>';
+      this.playBtn.classList.toggle("playing", this.isPlaying);
+    }
+
+    const floatingPlayBtn = document.getElementById("floatingPlayBtn");
+    if (floatingPlayBtn) {
+      floatingPlayBtn.innerHTML = this.isPlaying ? '<i class="fas fa-pause"></i>' : '<i class="fas fa-play"></i>';
     }
   }
 
@@ -442,6 +568,8 @@ class AudioPlayer {
     
     // Sync with persistent floating player
     this.syncWithPersistentPlayer();
+
+    this.scheduleSaveState();
   }
 
   togglePlay() {
@@ -457,14 +585,8 @@ class AudioPlayer {
     if (this.isPlayingExternal && this.ytPlayer && this.externalTrackData?.platform === 'youtube') {
       this.ytPlayer.playVideo();
       this.isPlaying = true;
-      if (this.playBtn) {
-        this.playBtn.innerHTML = '<i class="fas fa-pause"></i>';
-        this.playBtn.classList.add("playing");
-      }
-      const floatingPlayBtn = document.getElementById("floatingPlayBtn");
-      if (floatingPlayBtn) {
-        floatingPlayBtn.innerHTML = '<i class="fas fa-pause"></i>';
-      }
+      this.updatePlayButton();
+      this.scheduleSaveState();
       return;
     }
 
@@ -483,10 +605,15 @@ class AudioPlayer {
       
       // Sync with persistent floating player
       this.syncWithPersistentPlayer();
+
+      this.scheduleSaveState();
     }).catch(error => {
       console.error("Error playing audio:", error);
       // Fallback: try to load the track again
       this.loadTrack(this.currentTrackIndex);
+      this.isPlaying = false;
+      this.updatePlayButton();
+      this.scheduleSaveState();
     });
   }
 
@@ -495,14 +622,8 @@ class AudioPlayer {
     if (this.isPlayingExternal && this.ytPlayer && this.externalTrackData?.platform === 'youtube') {
       this.ytPlayer.pauseVideo();
       this.isPlaying = false;
-      if (this.playBtn) {
-        this.playBtn.innerHTML = '<i class="fas fa-play"></i>';
-        this.playBtn.classList.remove("playing");
-      }
-      const floatingPlayBtn = document.getElementById("floatingPlayBtn");
-      if (floatingPlayBtn) {
-        floatingPlayBtn.innerHTML = '<i class="fas fa-play"></i>';
-      }
+      this.updatePlayButton();
+      this.scheduleSaveState();
       return;
     }
 
@@ -621,6 +742,8 @@ class AudioPlayer {
       if (floatingProgressBar) {
         floatingProgressBar.style.width = progress + "%";
       }
+
+      this.scheduleSaveState();
     }
   }
 
@@ -923,14 +1046,18 @@ class AudioPlayer {
 }
 
 // Initialize player when DOM is ready and audio element exists
-document.addEventListener("DOMContentLoaded", () => {
+function initAudioPlayer() {
   // Make sure dataManager is available
   if (typeof window.dataManager === 'undefined') {
     console.warn('dataManager not found. Audio player will use default tracks.');
   }
 
   if (document.getElementById("audioElement")) {
-    window.audioPlayer = new AudioPlayer();
+    if (window.audioPlayer && typeof window.audioPlayer.rebind === 'function') {
+      window.audioPlayer.rebind();
+    } else {
+      window.audioPlayer = new AudioPlayer();
+    }
   }
   
   // Floating player close button
@@ -991,4 +1118,8 @@ document.addEventListener("DOMContentLoaded", () => {
       console.error('[AudioPlayer] Error parsing stored state:', e);
     }
   }
-});
+}
+
+document.addEventListener("DOMContentLoaded", initAudioPlayer);
+document.addEventListener('includes:loaded', initAudioPlayer);
+window.addEventListener('pageshow', initAudioPlayer);

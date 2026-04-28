@@ -53,10 +53,17 @@ async function loadTalentMarquee() {
     }
 
     const baseCards = activeArtists.map((a) => renderTalentCard(a)).join('')
-    trackEl.innerHTML = baseCards + baseCards
-
-    const duration = Math.min(55, Math.max(22, activeArtists.length * 4.5))
-    trackEl.style.setProperty('--marquee-duration', `${duration}s`)
+    
+    // Only enable scrolling if there are at least 4 artists
+    if (activeArtists.length >= 4) {
+      trackEl.innerHTML = baseCards + baseCards
+      const duration = Math.min(55, Math.max(22, activeArtists.length * 4.5))
+      trackEl.style.setProperty('--marquee-duration', `${duration}s`)
+    } else {
+      // Show artists once without scrolling
+      trackEl.innerHTML = baseCards
+      trackEl.style.setProperty('--marquee-duration', '0s')
+    }
   } catch (e) {
     console.error('[HomePage] Error loading talent marquee:', e)
     if (trackEl) trackEl.innerHTML = ''
