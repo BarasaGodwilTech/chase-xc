@@ -7,6 +7,7 @@ class PersistentFloatingPlayer {
         this.currentTrack = null;
         this.playerElement = null;
         this.videoWindow = null;
+        this._abortController = null;
         this.isDragging = false;
         this.wasDragged = false;
         this.dragOffsetX = 0;
@@ -41,6 +42,13 @@ class PersistentFloatingPlayer {
                 this.positionVideoWindow();
             }
         });
+    }
+
+    rebind() {
+        this.createPlayerElement();
+        this.createVideoWindow();
+        this.setupEventListeners();
+        this.updatePlayButton();
     }
 
     createPlayerElement() {
@@ -1061,6 +1069,12 @@ class PersistentFloatingPlayer {
     }
 
     setupEventListeners() {
+        if (this._abortController) {
+            this._abortController.abort();
+        }
+        this._abortController = new AbortController();
+        const signal = this._abortController.signal;
+
         const playBtn = document.getElementById('flpPlayBtn');
         const prevBtn = document.getElementById('flpPrevBtn');
         const nextBtn = document.getElementById('flpNextBtn');
@@ -1072,13 +1086,13 @@ class PersistentFloatingPlayer {
         const shuffleBtn = document.getElementById('flpShuffleBtn');
         const repeatBtn = document.getElementById('flpRepeatBtn');
         
-        if (playBtn) playBtn.addEventListener('click', () => this.togglePlay());
-        if (prevBtn) prevBtn.addEventListener('click', () => this.prevTrack());
-        if (nextBtn) nextBtn.addEventListener('click', () => this.nextTrack());
-        if (closeBtn) closeBtn.addEventListener('click', () => this.close());
-        if (seekBar) seekBar.addEventListener('input', (e) => this.seek(e.target.value));
-        if (videoToggleBtn) videoToggleBtn.addEventListener('click', () => this.toggleVideoWindow());
-        if (collapseBtn) collapseBtn.addEventListener('click', () => this.collapse());
+        if (playBtn) playBtn.addEventListener('click', () => this.togglePlay(), { signal });
+        if (prevBtn) prevBtn.addEventListener('click', () => this.prevTrack(), { signal });
+        if (nextBtn) nextBtn.addEventListener('click', () => this.nextTrack(), { signal });
+        if (closeBtn) closeBtn.addEventListener('click', () => this.close(), { signal });
+        if (seekBar) seekBar.addEventListener('input', (e) => this.seek(e.target.value), { signal });
+        if (videoToggleBtn) videoToggleBtn.addEventListener('click', () => this.toggleVideoWindow(), { signal });
+        if (collapseBtn) collapseBtn.addEventListener('click', () => this.collapse(), { signal });
         if (miniThumb) {
             // Use pointerup to detect click after potential drag
             miniThumb.addEventListener('pointerup', (e) => {
@@ -1087,22 +1101,22 @@ class PersistentFloatingPlayer {
                     this.expand();
                 }
                 this.wasDragged = false;
-            });
+            }, { signal });
         }
-        if (shuffleBtn) shuffleBtn.addEventListener('click', () => this.toggleShuffle());
-        if (repeatBtn) repeatBtn.addEventListener('click', () => this.toggleRepeat());
+        if (shuffleBtn) shuffleBtn.addEventListener('click', () => this.toggleShuffle(), { signal });
+        if (repeatBtn) repeatBtn.addEventListener('click', () => this.toggleRepeat(), { signal });
         
         // Listen for page navigation to persist player
         window.addEventListener('beforeunload', () => {
             this.saveState();
-        });
+        }, { signal });
         
         // Listen for track changes from main player
         document.addEventListener('trackChanged', (e) => {
             if (e.detail && e.detail.track) {
                 this.syncWithMainPlayer(e.detail.track, e.detail.isPlaying, e.detail.currentTime);
             }
-        });
+        }, { signal });
     }
 
     nextTrack() {
@@ -1259,6 +1273,11 @@ function initPersistentPlayer() {
     if (!persistentPlayer) {
         persistentPlayer = new PersistentFloatingPlayer();
         window.persistentPlayer = persistentPlayer;
+        return;
+    }
+
+    if (typeof persistentPlayer.rebind === 'function') {
+        persistentPlayer.rebind();
     }
 }
 
@@ -1271,3 +1290,6 @@ if (document.readyState === 'loading') {
 
 // Re-initialize after includes are loaded
 document.addEventListener('includes:loaded', initPersistentPlayer);
+
+// Re-initialize after BFCache restores a page
+window.addEventListener('pageshow', initPersistentPlayer);
