@@ -19,6 +19,27 @@ import {
 
 import { db, storage, firebaseApp } from './firebase-init.js'
 
+let githubSettingsCache = null
+let githubSettingsCacheAt = 0
+
+async function getGithubSettings() {
+  const now = Date.now()
+  if (githubSettingsCache && (now - githubSettingsCacheAt) < 60_000) return githubSettingsCache
+
+  try {
+    const ref = doc(db, 'settings', 'github')
+    const snap = await getDoc(ref)
+    githubSettingsCache = snap.exists() ? snap.data() : null
+    githubSettingsCacheAt = now
+    return githubSettingsCache
+  } catch (e) {
+    console.warn('[admin-firebase] Failed to fetch GitHub settings from Firestore:', e)
+    githubSettingsCache = null
+    githubSettingsCacheAt = now
+    return null
+  }
+}
+
 function normalizeGenre(genre) {
   return (genre || '').trim()
 }
@@ -36,6 +57,10 @@ async function fileToBase64(file) {
 }
 
 async function uploadProfileImageToGithub(entityType, file) {
+  const githubSettings = await getGithubSettings()
+  const githubEnabled = Boolean(githubSettings && githubSettings.enabled)
+  if (!githubEnabled) return ''
+
   try {
     const { getFunctions, httpsCallable } = await import(
       'https://www.gstatic.com/firebasejs/10.12.5/firebase-functions.js'

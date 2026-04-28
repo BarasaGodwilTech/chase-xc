@@ -11,6 +11,9 @@ class AdminPanel {
 
         this._adminAuthListenerBound = false;
 
+        this._githubSettingsCache = null;
+        this._githubSettingsCacheAt = 0;
+
         this.init();
     }
 
@@ -41,42 +44,70 @@ class AdminPanel {
         console.log('AdminPanel initialized successfully');
     }
 
+    async getGithubSettings() {
+        const now = Date.now();
+        if (this._githubSettingsCache && (now - this._githubSettingsCacheAt) < 60_000) {
+            return this._githubSettingsCache;
+        }
+
+        try {
+            const { db } = await import('../scripts/firebase-init.js');
+            const { doc, getDoc } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
+            const ref = doc(db, 'settings', 'github');
+            const snap = await getDoc(ref);
+            const settings = snap.exists() ? snap.data() : null;
+            this._githubSettingsCache = settings;
+            this._githubSettingsCacheAt = now;
+            return settings;
+        } catch (e) {
+            console.warn('[AdminPanel] Failed to fetch GitHub settings from Firestore:', e);
+            this._githubSettingsCache = null;
+            this._githubSettingsCacheAt = now;
+            return null;
+        }
+    }
+
     async handleImageUpload(file, entityType = 'team') {
         if (!file) return '';
 
         // Prefer GitHub uploads (server-side token via Cloud Function). If not configured,
         // fall back to Firebase Storage.
-        try {
-            const { firebaseApp } = await import('../scripts/firebase-init.js');
-            const { getFunctions, httpsCallable } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-functions.js');
 
-            const base64 = await new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onerror = () => reject(reader.error || new Error('Failed to read file'));
-                reader.onload = () => {
-                    const dataUrl = String(reader.result || '');
-                    const idx = dataUrl.indexOf(',');
-                    resolve(idx >= 0 ? dataUrl.slice(idx + 1) : dataUrl);
-                };
-                reader.readAsDataURL(file);
-            });
+        const githubSettings = await this.getGithubSettings();
+        const githubEnabled = Boolean(githubSettings && githubSettings.enabled);
+        if (githubEnabled) {
+            try {
+                const { firebaseApp } = await import('../scripts/firebase-init.js');
+                const { getFunctions, httpsCallable } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-functions.js');
 
-            const functions = getFunctions(firebaseApp);
-            const upload = httpsCallable(functions, 'githubUploadProfileImage');
-            const res = await upload({
-                entityType: String(entityType || 'team'),
-                mimeType: file.type || 'image/jpeg',
-                fileName: file.name || 'image.jpg',
-                base64,
-            });
+                const base64 = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onerror = () => reject(reader.error || new Error('Failed to read file'));
+                    reader.onload = () => {
+                        const dataUrl = String(reader.result || '');
+                        const idx = dataUrl.indexOf(',');
+                        resolve(idx >= 0 ? dataUrl.slice(idx + 1) : dataUrl);
+                    };
+                    reader.readAsDataURL(file);
+                });
 
-            const url = res?.data?.url;
-            if (typeof url === 'string' && url.startsWith('http')) {
-                return url;
+                const functions = getFunctions(firebaseApp);
+                const upload = httpsCallable(functions, 'githubUploadProfileImage');
+                const res = await upload({
+                    entityType: String(entityType || 'team'),
+                    mimeType: file.type || 'image/jpeg',
+                    fileName: file.name || 'image.jpg',
+                    base64,
+                });
+
+                const url = res?.data?.url;
+                if (typeof url === 'string' && url.startsWith('http')) {
+                    return url;
+                }
+            } catch (e) {
+                // Not fatal — will fall back below.
+                console.warn('[AdminPanel] GitHub upload failed, falling back to Firebase Storage:', e);
             }
-        } catch (e) {
-            // Not fatal — will fall back below.
-            console.warn('[AdminPanel] GitHub upload failed, falling back to Firebase Storage:', e);
         }
 
         // Firebase Storage fallback
