@@ -6,8 +6,8 @@
 
 .about-team-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 2.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1.75rem;
   margin-top: 3rem;
 }
 
@@ -84,7 +84,7 @@
 
 .team-member-role {
   color: var(--text-secondary);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 400;
   margin: 0 0 0.75rem 0;
   opacity: 0.8;
@@ -162,7 +162,7 @@
 /* Responsive Design */
 @media (max-width: 768px) {
   .about-team-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 1.5rem;
   }
   
@@ -188,7 +188,10 @@
 
 .home-talent-section {
   padding: 4.5rem 0 2.5rem;
-  background: #000;
+  background:
+    radial-gradient(900px 420px at 18% 18%, rgba(0, 212, 255, 0.10), transparent 60%),
+    radial-gradient(900px 420px at 82% 72%, rgba(168, 85, 247, 0.10), transparent 60%),
+    var(--background);
 }
 
 .home-talent-section .section-title {
@@ -216,12 +219,12 @@
 
 .talent-marquee::before {
   left: 0;
-  background: linear-gradient(90deg, rgba(0,0,0,1), rgba(0,0,0,0));
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0));
 }
 
 .talent-marquee::after {
   right: 0;
-  background: linear-gradient(270deg, rgba(0,0,0,1), rgba(0,0,0,0));
+  background: linear-gradient(270deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0));
 }
 
 .talent-track {
@@ -249,7 +252,7 @@
 .talent-card-media {
   border-radius: 14px;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(0, 212, 255, 0.18);
   background: rgba(255, 255, 255, 0.04);
   aspect-ratio: 4 / 3;
 }
@@ -9699,7 +9702,7 @@ border-radius: 12px;
     }
 
     .about-team-grid {
-        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
     }
 
     .about-studio-grid {
