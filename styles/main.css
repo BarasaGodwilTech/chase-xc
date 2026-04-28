@@ -1655,6 +1655,7 @@ section {
     transform: scale(0.95);
 }
 
+/* Hide WhatsApp button when footer is visible on mobile */
 @media (max-width: 768px) {
     .whatsapp-float {
         bottom: 20px;
@@ -1662,5 +1663,12 @@ section {
         width: 50px;
         height: 50px;
         font-size: 24px;
+    }
+    
+    .whatsapp-float.footer-visible {
+        opacity: 0;
+        visibility: hidden;
+        transform: scale(0.8);
+        pointer-events: none;
     }
 }
