@@ -17,7 +17,6 @@ function initApp() {
     initVideoAutoplay()
     initClipboardSupport()
     initSocialLinks()
-    initWhatsAppFooterVisibility()
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -1797,43 +1796,4 @@ function initClipboardSupport() {
     };
 
     console.log('Clipboard support initialized for', textInputs.length, 'inputs');
-}
-
-// WhatsApp Footer Visibility - Hide when footer is visible on mobile
-function initWhatsAppFooterVisibility() {
-    const whatsappBtn = document.getElementById('whatsappFloat');
-    const footer = document.querySelector('.footer');
-    
-    if (!whatsappBtn || !footer) return;
-    
-    // Only apply on mobile devices
-    if (window.innerWidth > 768) return;
-    
-    const observer = new IntersectionObserver(
-        (entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    whatsappBtn.classList.add('footer-visible');
-                } else {
-                    whatsappBtn.classList.remove('footer-visible');
-                }
-            });
-        },
-        {
-            threshold: 0.1, // Trigger when 10% of footer is visible
-            rootMargin: '0px'
-        }
-    );
-    
-    observer.observe(footer);
-    
-    // Handle window resize
-    window.addEventListener('resize', () => {
-        if (window.innerWidth > 768) {
-            whatsappBtn.classList.remove('footer-visible');
-            observer.disconnect();
-        } else {
-            observer.observe(footer);
-        }
-    });
 }

@@ -977,11 +977,41 @@ section {
 }
 
 .footer-bottom {
-  text-align: center;
-  padding-top: var(--spacing-lg);
-  border-top: none;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  padding: var(--spacing-lg) 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.2);
   color: var(--text-secondary);
+}
+
+.footer-bottom-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-xs);
+  text-align: center;
+}
+
+.copyright-text {
+  font-size: 0.9rem;
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.powered-by {
+  font-size: 0.85rem;
+  margin: 0;
+  color: var(--text-tertiary);
+}
+
+.powered-by a {
+  color: var(--primary);
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.powered-by a:hover {
+  color: var(--accent-primary);
+  text-decoration: underline;
 }
 
 /* Page-specific hero adjustments */
@@ -1655,7 +1685,6 @@ section {
     transform: scale(0.95);
 }
 
-/* Hide WhatsApp button when footer is visible on mobile */
 @media (max-width: 768px) {
     .whatsapp-float {
         bottom: 20px;
@@ -1663,12 +1692,5 @@ section {
         width: 50px;
         height: 50px;
         font-size: 24px;
-    }
-    
-    .whatsapp-float.footer-visible {
-        opacity: 0;
-        visibility: hidden;
-        transform: scale(0.8);
-        pointer-events: none;
     }
 }

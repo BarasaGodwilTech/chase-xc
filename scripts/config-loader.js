@@ -205,6 +205,50 @@ function populateContactAndSocialData() {
     whatsappFloat.href = `https://wa.me/${cleanNumber}`
   }
 
+  // Hide WhatsApp floating button when footer copyright area is visible
+  if (whatsappFloat && !window.__whatsappFooterObserverAttached) {
+    window.__whatsappFooterObserverAttached = true
+
+    const attach = () => {
+      const footerBottom = document.querySelector('.footer-bottom')
+      if (!footerBottom) return false
+
+      const setHidden = (hidden) => {
+        whatsappFloat.style.display = hidden ? 'none' : ''
+      }
+
+      if ('IntersectionObserver' in window) {
+        const observer = new IntersectionObserver(
+          (entries) => {
+            const isVisible = entries.some(e => e.isIntersecting)
+            setHidden(isVisible)
+          },
+          { root: null, threshold: 0.01 }
+        )
+        observer.observe(footerBottom)
+      } else {
+        const onScroll = () => {
+          const rect = footerBottom.getBoundingClientRect()
+          const isVisible = rect.top < window.innerHeight && rect.bottom > 0
+          setHidden(isVisible)
+        }
+        window.addEventListener('scroll', onScroll, { passive: true })
+        window.addEventListener('resize', onScroll)
+        onScroll()
+      }
+
+      return true
+    }
+
+    if (!attach()) {
+      let tries = 0
+      const t = setInterval(() => {
+        tries += 1
+        if (attach() || tries > 40) clearInterval(t)
+      }, 250)
+    }
+  }
+
   // Populate footer social links
   const footerInstagram = document.getElementById('footerInstagram')
   const footerYouTube = document.getElementById('footerYouTube')

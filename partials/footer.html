@@ -100,7 +100,10 @@
         </div>
             </div>
     <div class="footer-bottom">
-        <p>&copy; 2025 Chase x Records. All rights reserved | powered by barasagodwiltechnologies.</p>
+        <div class="footer-bottom-content">
+            <p class="copyright-text">&copy; <span id="currentYear"></span> Chase x Records. All rights reserved.</p>
+            <p class="powered-by">Powered by <a href="https://barasagodwiltechnologies.com" target="_blank" rel="noopener">Barasa Godwil Technologies</a></p>
+        </div>
     </div>
 </footer>
 
@@ -112,3 +115,13 @@
 <!-- Persistent Floating Player -->
 <link rel="stylesheet" href="styles/floating-player.css">
 <script src="scripts/floating-player.js"></script>
+
+<script>
+  // Set current year in copyright
+  document.addEventListener('DOMContentLoaded', function() {
+    const currentYearSpan = document.getElementById('currentYear');
+    if (currentYearSpan) {
+      currentYearSpan.textContent = new Date().getFullYear();
+    }
+  });
+</script>
