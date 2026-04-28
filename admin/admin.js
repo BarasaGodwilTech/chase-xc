@@ -2783,39 +2783,56 @@ class AdminPanel {
     }
 
     async confirmAndOpenAddArtist(extractedName = '') {
+        if (this._addArtistConfirmInFlight) return;
+
         const suggested = String(extractedName || '').trim();
+
+        const promptKey = suggested.toLowerCase();
+        const now = Date.now();
+        if (promptKey && this._lastAddArtistPromptKey === promptKey && (now - (this._lastAddArtistPromptAt || 0)) < 1500) {
+            return;
+        }
+
+        this._lastAddArtistPromptKey = promptKey;
+        this._lastAddArtistPromptAt = now;
+
+        this._addArtistConfirmInFlight = true;
         const msg = suggested
             ? `Artist "${suggested}" was not found. Do you want to add this artist now? You can also cancel and select a different artist from the dropdown.`
             : 'Do you want to add a new artist now?';
 
         let ok = false;
-        if (window.notifications && window.notifications.confirm) {
-            ok = await window.notifications.confirm(msg, 'Add New Artist?', 'info');
-        } else {
-            ok = confirm(msg);
-        }
-        if (!ok) return;
+        try {
+            if (window.notifications && window.notifications.confirm) {
+                ok = await window.notifications.confirm(msg, 'Add New Artist?', 'info');
+            } else {
+                ok = confirm(msg);
+            }
+            if (!ok) return;
 
-        // Prefill artist name if we have one.
-        if (suggested) {
-            window.__pendingNewArtistName = suggested;
-        }
+            // Prefill artist name if we have one.
+            if (suggested) {
+                window.__pendingNewArtistName = suggested;
+            }
 
-        // Prefer the established add-new flow via the Audio Link artist select.
-        const trackArtistSelect = document.getElementById('trackArtist');
-        if (trackArtistSelect) {
-            trackArtistSelect.value = '__add_new__';
-            trackArtistSelect.dispatchEvent(new Event('change', { bubbles: true }));
-        } else if (typeof window.openAddArtistModal === 'function') {
-            window.openAddArtistModal();
-        }
+            // Prefer the established add-new flow via the Audio Link artist select.
+            const trackArtistSelect = document.getElementById('trackArtist');
+            if (trackArtistSelect) {
+                trackArtistSelect.value = '__add_new__';
+                trackArtistSelect.dispatchEvent(new Event('change', { bubbles: true }));
+            } else if (typeof window.openAddArtistModal === 'function') {
+                window.openAddArtistModal();
+            }
 
-        // Try to prefill once the form is visible.
-        if (suggested) {
-            setTimeout(() => {
-                const input = document.getElementById('artistName');
-                if (input && !input.value) input.value = suggested;
-            }, 350);
+            // Try to prefill once the form is visible.
+            if (suggested) {
+                setTimeout(() => {
+                    const input = document.getElementById('artistName');
+                    if (input && !input.value) input.value = suggested;
+                }, 350);
+            }
+        } finally {
+            this._addArtistConfirmInFlight = false;
         }
     }
     
