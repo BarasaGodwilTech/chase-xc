@@ -2729,22 +2729,18 @@ class AdminPanel {
 
         const addNewOptionValue = '__add_new__';
 
-        const keepOptions = [];
-        for (const opt of Array.from(select.options)) {
-            if (opt.value === '' || opt.value === addNewOptionValue) keepOptions.push(opt);
-        }
-
+        // Always rebuild options from scratch.
+        // This prevents duplicates when navigating away/back and the browser restores previous <option> nodes.
         select.innerHTML = '';
-        keepOptions.forEach((o) => select.appendChild(o));
 
-        // Ensure base options exist
-        if (!Array.from(select.options).some((o) => o.value === '')) {
+        {
             const opt = document.createElement('option');
             opt.value = '';
             opt.textContent = 'Select Artist';
             select.appendChild(opt);
         }
-        if (!Array.from(select.options).some((o) => o.value === addNewOptionValue)) {
+
+        {
             const opt = document.createElement('option');
             opt.value = addNewOptionValue;
             opt.textContent = '+ Add new artist...';
