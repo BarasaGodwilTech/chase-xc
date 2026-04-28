@@ -70,16 +70,13 @@ class AdminPanel {
     async handleImageUpload(file, entityType = 'team') {
         if (!file) return '';
 
-        // Prefer GitHub uploads (server-side token via Cloud Function). If not configured,
+        // Prefer GitHub uploads via Cloudflare Worker (server-side token). If not configured,
         // fall back to Firebase Storage.
 
         const githubSettings = await this.getGithubSettings();
         const githubEnabled = Boolean(githubSettings && githubSettings.enabled);
         if (githubEnabled) {
             try {
-                const { firebaseApp } = await import('../scripts/firebase-init.js');
-                const { getFunctions, httpsCallable } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-functions.js');
-
                 const base64 = await new Promise((resolve, reject) => {
                     const reader = new FileReader();
                     reader.onerror = () => reject(reader.error || new Error('Failed to read file'));
@@ -91,18 +88,43 @@ class AdminPanel {
                     reader.readAsDataURL(file);
                 });
 
-                const functions = getFunctions(firebaseApp);
-                const upload = httpsCallable(functions, 'githubUploadProfileImage');
-                const res = await upload({
-                    entityType: String(entityType || 'team'),
-                    mimeType: file.type || 'image/jpeg',
-                    fileName: file.name || 'image.jpg',
-                    base64,
-                });
+                // Construct GitHub path from settings
+                const owner = githubSettings.owner;
+                const repo = githubSettings.repo;
+                const branch = githubSettings.branch || 'main';
+                const folder = githubSettings.folder || 'images/profiles';
 
-                const url = res?.data?.url;
-                if (typeof url === 'string' && url.startsWith('http')) {
-                    return url;
+                if (!owner || !repo) {
+                    console.warn('[AdminPanel] GitHub settings missing owner or repo, falling back to Firebase Storage');
+                } else {
+                    const ext = String(file.name || '').split('.').pop().toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+                    const timestamp = Date.now();
+                    const path = `${folder}/${entityType}/${timestamp}.${ext}`;
+
+                    // Call Cloudflare Worker
+                    const workerUrl = 'https://github-image-uploader.barasagodwil.workers.dev';
+                    const res = await fetch(workerUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            owner,
+                            repo,
+                            path,
+                            content: base64,
+                            message: `Upload ${entityType} image ${timestamp}.${ext}`,
+                            branch,
+                        }),
+                    });
+
+                    if (res.ok) {
+                        const data = await res.json();
+                        const url = data?.url;
+                        if (typeof url === 'string' && url.startsWith('http')) {
+                            return url;
+                        }
+                    } else {
+                        console.warn('[AdminPanel] Cloudflare Worker upload failed:', res.status, await res.text());
+                    }
                 }
             } catch (e) {
                 // Not fatal — will fall back below.
