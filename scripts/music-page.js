@@ -278,27 +278,92 @@ async function renderGenreCards(tracks) {
   const genreIcons = {
     'Afro-Pop': 'fa-headphones-alt',
     'Dancehall': 'fa-microphone-alt',
-    'R&B': 'fa-solid fa-piano',
+    'R&B': 'fa-piano',
     'Electronic': 'fa-music',
     'Afrobeat': 'fa-drum',
-    'Afro-House': 'fa-compact-disc'
+    'Afro-House': 'fa-compact-disc',
+    'Dance': 'fa-guitar',
+    'House': 'fa-record-vinyl',
+    'Soul': 'fa-heart',
+    'Pop': 'fa-star',
+    'Hip-Hop': 'fa-microphone',
+    'Reggae': 'fa-guitar',
+    'Jazz': 'fa-saxophone',
+    'Blues': 'fa-guitar',
+    'Rock': 'fa-guitar',
+    'Alternative': 'fa-headphones',
+    'Indie': 'fa-music',
+    'Folk': 'fa-guitar',
+    'Country': 'fa-guitar',
+    'Classical': 'fa-violin',
+    'Gospel': 'fa-church',
+    'World Music': 'fa-globe',
+    'Latin': 'fa-music',
+    'Funk': 'fa-music',
+    'Disco': 'fa-record-vinyl'
+  }
+
+  // Genre descriptions
+  const genreDescriptions = {
+    'Afro-Pop': 'Vibrant African rhythms with modern pop influences',
+    'Dancehall': 'Energetic Jamaican dance music',
+    'R&B': 'Smooth rhythm and blues melodies',
+    'Electronic': 'Electronic beats and synthesized sounds',
+    'Afrobeat': 'West African funk and jazz fusion',
+    'Afro-House': 'Deep house with African percussion',
+    'Dance': 'Upbeat tracks for the dance floor',
+    'House': 'Electronic dance music with soulful vocals',
+    'Soul': 'Deep, emotional music with gospel roots',
+    'Pop': 'Catchy mainstream hits and radio favorites',
+    'Hip-Hop': 'Rhythmic beats and lyrical flow',
+    'Reggae': 'Jamaican music with offbeat rhythms',
+    'Jazz': 'Improvisational and sophisticated melodies',
+    'Blues': 'Deep, soulful music with African roots',
+    'Rock': 'Electric guitars and powerful vocals',
+    'Alternative': 'Non-mainstream rock and experimental sounds',
+    'Indie': 'Independent music with unique character',
+    'Folk': 'Traditional acoustic music and storytelling',
+    'Country': 'American roots music with storytelling',
+    'Classical': 'Orchestral and instrumental masterpieces',
+    'Gospel': 'Religious music with soulful vocals',
+    'World Music': 'Global sounds and cultural fusion',
+    'Latin': 'Rhythmic music from Latin America',
+    'Funk': 'Groovy basslines and syncopated rhythms',
+    'Disco': 'Dance music from the 70s and 80s'
   }
 
   container.innerHTML = Array.from(genreStats.entries()).map(([genre, stats]) => {
-    const icon = genreIcons[genre] || 'fa-music'
+    // Case-insensitive icon lookup
+    const icon = genreIcons[genre] || genreIcons[Object.keys(genreIcons).find(key => key.toLowerCase() === genre.toLowerCase())] || 'fa-music'
+    const description = genreDescriptions[genre] || genreDescriptions[Object.keys(genreDescriptions).find(key => key.toLowerCase() === genre.toLowerCase())] || `Explore ${genre} music`
     return `
-      <div class="service-card genre-card">
+      <div class="service-card genre-card" data-genre="${genre.toLowerCase()}">
         <div class="service-icon"><i class="fas ${icon}"></i></div>
         <h4>${genre}</h4>
-        <p>Music in the ${genre} genre</p>
+        <p>${description}</p>
         <span class="track-count">${stats.tracks} tracks</span>
         <div class="genre-stats">
           <span>${formatNumber(stats.streams)} Streams</span>
         </div>
-        <button class="btn btn-sm btn-outline">Explore</button>
+        <button class="btn btn-sm btn-outline" onclick="filterByGenre('${genre}')">Explore</button>
       </div>
     `
   }).join('')
+}
+
+// Function to filter tracks by genre
+function filterByGenre(genre) {
+  const genreFilter = document.getElementById('genreFilter')
+  if (genreFilter) {
+    genreFilter.value = genre.toLowerCase()
+    genreFilter.dispatchEvent(new Event('change'))
+    
+    // Scroll to music section
+    const musicSection = document.getElementById('musicSection')
+    if (musicSection) {
+      musicSection.scrollIntoView({ behavior: 'smooth' })
+    }
+  }
 }
 
 async function initMusicPage() {

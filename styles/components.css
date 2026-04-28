@@ -6117,12 +6117,21 @@ border-radius: 12px;
     max-height: 0;
     overflow: hidden;
     transition: all 0.3s ease;
+    position: relative;
+    z-index: 1000;
 }
 
 .search-filters.show {
     opacity: 1;
     visibility: visible;
     max-height: 300px;
+}
+
+@media (max-width: 480px) {
+    body.has-custom-select .search-filters.show {
+        max-height: none;
+        overflow: visible;
+    }
 }
 
 .filter-group {

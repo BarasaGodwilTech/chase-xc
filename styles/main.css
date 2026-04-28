@@ -432,13 +432,13 @@ section {
 
 .services-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: var(--spacing-lg);
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--spacing-sm);
 }
 
 .service-card {
   background: var(--surface);
-  padding: var(--spacing-lg);
+  padding: var(--spacing-sm);
   border-radius: var(--radius);
   border: 1px solid var(--border);
   text-align: center;
@@ -453,7 +453,7 @@ section {
 }
 
 .service-icon {
-  font-size: 3rem;
+  font-size: 2rem;
   margin-bottom: var(--spacing-md);
 }
 
@@ -467,6 +467,7 @@ section {
 .service-card p {
   color: var(--text-secondary);
   font-size: 0.95rem;
+  margin-bottom: var(--spacing-xs);
 }
 
 .service-price {
@@ -479,6 +480,15 @@ section {
   color: var(--primary);
   font-weight: 600;
   margin-top: var(--spacing-sm);
+  margin-bottom: var(--spacing-xs);
+}
+
+.genre-stats {
+  margin-bottom: var(--spacing-xs);
+}
+
+.genre-card .btn {
+  margin-top: 0;
 }
 
 /* Service Detail Pages */
@@ -1248,6 +1258,22 @@ section {
   .services-grid {
     grid-template-columns: repeat(2, 1fr);
   }
+
+  .service-card p {
+    margin-bottom: var(--spacing-xs);
+  }
+
+  .track-count {
+    margin-bottom: var(--spacing-xs);
+  }
+
+  .genre-stats {
+    margin-bottom: var(--spacing-xs);
+  }
+
+  .genre-card .btn {
+    margin-top: 0;
+  }
 }
 
 @media (max-width: 768px) {
@@ -1257,6 +1283,63 @@ section {
 
   .container {
     padding: 0 var(--spacing-sm);
+  }
+
+  .services-grid {
+    display: flex;
+    grid-template-columns: none;
+    gap: var(--spacing-sm);
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding-bottom: var(--spacing-xs);
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .services-grid::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  .services-grid::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+  }
+
+  .services-grid::-webkit-scrollbar-thumb {
+    background: var(--primary);
+    border-radius: 2px;
+  }
+
+  .service-card {
+    padding: var(--spacing-sm);
+    width: 180px;
+    flex-shrink: 0;
+    scroll-snap-align: start;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 120px;
+  }
+
+  .service-icon {
+    font-size: 1.5rem;
+  }
+
+  .service-card h4 {
+    font-size: 1.1rem;
+  }
+
+  .service-card p {
+    font-size: 0.85rem;
+    margin-bottom: var(--spacing-xs);
+  }
+
+  .genre-stats {
+    font-size: 0.8rem;
+    margin-bottom: var(--spacing-xs);
+  }
+
+  .genre-card .btn {
+    margin-top: 0;
   }
 
   .nav {
@@ -1358,16 +1441,16 @@ section {
   .service-features {
     grid-template-columns: 1fr;
   }
-  
+
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .artist-stats {
     flex-direction: column;
     gap: var(--spacing-sm);
   }
-  
+
   .service-content ul {
     padding-left: var(--spacing-md);
   }
@@ -1417,6 +1500,67 @@ section {
 
   .stats-grid {
     grid-template-columns: 1fr;
+  }
+
+  .services-grid {
+    display: flex;
+    gap: var(--spacing-xs);
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding-bottom: var(--spacing-xs);
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .services-grid::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  .services-grid::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+  }
+
+  .services-grid::-webkit-scrollbar-thumb {
+    background: var(--primary);
+    border-radius: 2px;
+  }
+
+  .service-card {
+    padding: var(--spacing-xs);
+    width: 160px;
+    flex-shrink: 0;
+    scroll-snap-align: start;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 100px;
+  }
+
+  .service-icon {
+    font-size: 1.2rem;
+    margin-bottom: var(--spacing-xs);
+  }
+
+  .service-card h4 {
+    font-size: 0.9rem;
+  }
+
+  .service-card p {
+    font-size: 0.7rem;
+    margin-bottom: var(--spacing-xs);
+  }
+
+  .track-count {
+    font-size: 0.7rem;
+  }
+
+  .genre-stats {
+    font-size: 0.65rem;
+    margin-bottom: var(--spacing-xs);
+  }
+
+  .genre-card .btn {
+    margin-top: 0;
   }
 }
 
