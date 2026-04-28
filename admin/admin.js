@@ -4,6 +4,7 @@ class AdminPanel {
         this.currentSection = 'dashboard';
         this.dataManager = window.dataManager;
         this.editingItem = null;
+
         this.settingsDirty = false;
         this.settingsDirtyBound = false;
         this.searchBound = false;
@@ -17,7 +18,6 @@ class AdminPanel {
     init() {
         console.log('AdminPanel initializing...');
 
-
         // Ensure we have a reliable focus target for keyboard navigation
         const adminNav = document.getElementById('adminNav');
         if (adminNav && !adminNav.hasAttribute('tabindex')) {
@@ -27,11 +27,9 @@ class AdminPanel {
         this.setupEventListeners();
         this.bindAdminAuthState();
 
-
         const storedSection = localStorage.getItem('admin:lastSection');
         const initialSection = storedSection && document.getElementById(storedSection) ? storedSection : 'dashboard';
         this.showSection(initialSection);
-
 
         // Only listen for local DataManager updates when running in local-storage mode.
         if (this.dataManager) {
@@ -467,6 +465,9 @@ class AdminPanel {
                 }
             });
         }
+
+        // Ensure the external artist dropdown is populated when this method is active.
+        this.populateExternalArtistSelect().catch(console.error);
     }
 
     resetExternalForm() {
@@ -495,6 +496,8 @@ class AdminPanel {
         if (resultsContainer) {
             resultsContainer.innerHTML = '';
         }
+
+        this.externalExtractedArtistName = '';
     }
 
     setupBasicMusicManagement() {
@@ -1483,39 +1486,59 @@ class AdminPanel {
     }
 
     async rejectPayment(paymentId) {
-        if (!confirm('Are you sure you want to reject this payment?')) {
-            return;
-        }
-
+        let memberName = '';
         try {
             const { db } = await import('../scripts/firebase-init.js');
-            const { doc, updateDoc } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
-
-            const reason = (prompt('Reason for rejecting this payment (required):') || '').trim();
-            if (!reason) {
-                this.showNotification('Rejection reason is required.', 'error');
-                return;
+            const { doc, getDoc } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
+            const snap = await getDoc(doc(db, 'payments', paymentId));
+            if (snap.exists()) {
+                const m = snap.data() || {};
+                memberName = m.name || m.fullName || m.displayName || m.email || '';
             }
+        } catch (_) {
+            // ignore lookup failures; still allow delete
+        }
 
-            const reviewer = (window.adminAuth && typeof window.adminAuth.getCurrentUser === 'function')
-                ? window.adminAuth.getCurrentUser()
-                : null;
-            const reviewedBy = reviewer?.username || reviewer?.email || 'admin';
-            
-            const paymentRef = doc(db, 'payments', paymentId);
-            await updateDoc(paymentRef, {
-                status: 'rejected',
-                rejectionReason: reason,
-                reviewedAt: new Date().toISOString(),
-                reviewedBy,
-                updatedAt: new Date().toISOString()
-            });
+        const label = memberName ? `"${memberName}"` : `ID ${paymentId}`;
+        const msg = `Are you sure you want to reject this payment? This action cannot be undone.`;
 
-            this.showNotification('Payment rejected', 'success');
-            this.loadPayments();
-        } catch (error) {
-            console.error('Error rejecting payment:', error);
-            this.showNotification('Error rejecting payment', 'error');
+        let ok = false;
+        if (window.notifications && window.notifications.confirm) {
+            ok = await window.notifications.confirm(msg, 'Reject Payment', 'warning');
+        } else {
+            ok = confirm(msg);
+        }
+        if (ok) {
+            try {
+                const { db } = await import('../scripts/firebase-init.js');
+                const { doc, updateDoc } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
+
+                const reason = (prompt('Reason for rejecting this payment (required):') || '').trim();
+                if (!reason) {
+                    this.showNotification('Rejection reason is required.', 'error');
+                    return;
+                }
+
+                const reviewer = (window.adminAuth && typeof window.adminAuth.getCurrentUser === 'function')
+                    ? window.adminAuth.getCurrentUser()
+                    : null;
+                const reviewedBy = reviewer?.username || reviewer?.email || 'admin';
+                
+                const paymentRef = doc(db, 'payments', paymentId);
+                await updateDoc(paymentRef, {
+                    status: 'rejected',
+                    rejectionReason: reason,
+                    reviewedAt: new Date().toISOString(),
+                    reviewedBy,
+                    updatedAt: new Date().toISOString()
+                });
+
+                this.showNotification('Payment rejected', 'success');
+                this.loadPayments();
+            } catch (error) {
+                console.error('Error rejecting payment:', error);
+                this.showNotification('Error rejecting payment: ' + error.message, 'error');
+            }
         }
     }
 
@@ -1800,9 +1823,11 @@ class AdminPanel {
         try {
             const { db } = await import('../scripts/firebase-init.js');
             const { doc, getDoc } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
-            const snap = await getDoc(doc(db, 'team', memberId));
-            if (snap.exists()) {
-                const m = snap.data() || {};
+
+            const docRef = doc(db, 'team', memberId);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                const m = docSnap.data() || {};
                 memberName = m.name || m.fullName || m.displayName || m.email || '';
             }
         } catch (_) {
@@ -1882,7 +1907,7 @@ class AdminPanel {
         this.showSection('music-management');
 
         // Use longer delay to ensure section is visible and form is rendered
-        const populateForm = () => {
+        const populateForm = async () => {
             const titleInput = document.getElementById('trackTitle');
             const artistInput = document.getElementById('trackArtist');
             const genreInput = document.getElementById('trackGenre');
@@ -1893,7 +1918,23 @@ class AdminPanel {
             const artworkPreview = document.getElementById('artworkPreview');
 
             if (titleInput) titleInput.value = track.title || '';
-            if (artistInput) artistInput.value = track.artist || '';
+            
+            // Try to match artist by name into the select; fall back to add-new.
+            if (artistInput) {
+                try {
+                    const artists = await window.fetchArtists();
+                    const trackArtist = String(track.artist || '').toLowerCase();
+                    const matchingArtist = (artists || []).find(a => String(a.name || '').toLowerCase() === trackArtist);
+                    artistInput.value = matchingArtist ? matchingArtist.id : '__add_new__';
+                } catch (_) {
+                    artistInput.value = '__add_new__';
+                }
+
+                if (artistInput.value === '__add_new__') {
+                    artistInput.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            }
+
             if (genreInput) genreInput.value = track.genre || '';
             if (durationInput) durationInput.value = track.duration || '';
             if (releaseDateInput) releaseDateInput.value = track.releaseDate || '';
@@ -1943,7 +1984,12 @@ class AdminPanel {
         };
 
         // Wait for section to be visible, then populate
-        setTimeout(populateForm, 500);
+        setTimeout(() => {
+            populateForm().catch((err) => {
+                console.error('Failed to populate track edit form:', err);
+                this.showNotification('Failed to populate track form. Please try again.', 'error');
+            });
+        }, 500);
     }
 
     async viewTrack(trackId) {
@@ -1979,142 +2025,6 @@ class AdminPanel {
                 console.error('Error deleting track:', error);
                 this.showNotification('Failed to delete track: ' + error.message, 'error');
             }
-        }
-    }
-
-    async viewPayment(paymentId) {
-        try {
-            const { db } = await import('../scripts/firebase-init.js');
-            const { doc, getDoc } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
-            const snap = await getDoc(doc(db, 'payments', paymentId));
-            if (!snap.exists()) {
-                this.showNotification('Payment not found', 'error');
-                return;
-            }
-            const p = { id: snap.id, ...snap.data() };
-            const createdAt = p.createdAt ? new Date(p.createdAt).toLocaleDateString() : 'N/A';
-            const reviewedAt = p.reviewedAt ? new Date(p.reviewedAt).toLocaleDateString() : 'N/A';
-            const details = [
-                `User: ${p.userName || 'Unknown'} ${p.userEmail ? `(${p.userEmail})` : ''}`,
-                `Plan: ${p.plan || 'Unknown'}`,
-                `Amount: UGX ${this.formatNumber(p.amount || 0)}`,
-                `Method: ${p.paymentMethod || 'Unknown'}`,
-                `Phone: ${p.phoneNumber || 'N/A'}`,
-                `Transaction: ${p.transactionId || 'N/A'}`,
-                `Status: ${p.status || 'unknown'}`,
-                `Created: ${createdAt}`,
-                `Reviewed: ${reviewedAt} ${p.reviewedBy ? `by ${p.reviewedBy}` : ''}`,
-                p.rejectionReason ? `Rejection Reason: ${p.rejectionReason}` : ''
-            ].filter(Boolean).join('\n');
-
-            if (window.notifications) {
-                window.notifications.show(details, 'info');
-            } else {
-                alert(details);
-            }
-        } catch (error) {
-            console.error('Error viewing payment:', error);
-            this.showNotification('Error loading payment details', 'error');
-        }
-    }
-
-    async loadUsers() {
-        const table = document.getElementById('usersTable');
-        if (!table) return;
-
-        try {
-            const { db } = await import('../scripts/firebase-init.js');
-            const { collection, getDocs, query, orderBy, limit } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
-
-            const q = query(collection(db, 'users'), orderBy('createdAt', 'desc'), limit(200));
-            const snap = await getDocs(q);
-
-            let adminIds = new Set();
-            let adminEmails = new Set();
-            try {
-                const adminsSnap = await getDocs(collection(db, 'admins'));
-                adminsSnap.docs.forEach((d) => {
-                    adminIds.add(d.id);
-                    const email = d.data()?.email;
-                    if (email) adminEmails.add(String(email).toLowerCase());
-                });
-            } catch (e) {
-                console.warn('Unable to load admins for filtering users list:', e);
-            }
-
-            const users = snap.docs
-                .map((d) => ({ id: d.id, ...d.data() }))
-                .filter((u) => {
-                    const uidMatch = adminIds.has(u.id);
-                    const emailMatch = u.email && adminEmails.has(String(u.email).toLowerCase());
-                    return !uidMatch && !emailMatch;
-                });
-
-            if (users.length === 0) {
-                table.innerHTML = '<tr><td colspan="5" class="text-center">No users found</td></tr>';
-                return;
-            }
-
-            table.innerHTML = users.map((u) => {
-                const name = u.displayName || u.name || 'Unnamed';
-                const email = u.email || '';
-                const status = u.status || 'active';
-                const plan = u.membership?.plan || u.plan || 'N/A';
-                const created = u.createdAt && u.createdAt.toDate
-                    ? u.createdAt.toDate().toLocaleDateString()
-                    : (u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '');
-
-                return `
-                    <tr>
-                        <td>
-                            <div class="user-cell">
-                                <div class="user-name">${name}</div>
-                                <div class="user-email">${email}</div>
-                            </div>
-                        </td>
-                        <td>${plan}</td>
-                        <td>${created}</td>
-                        <td><span class="status-badge status-${status}">${status}</span></td>
-                        <td>
-                            <button class="btn btn-secondary btn-sm" type="button" onclick="adminPanel.viewUser('${u.id}')" title="View">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-        } catch (error) {
-            console.error('Error loading users:', error);
-            table.innerHTML = '<tr><td colspan="5" class="text-center">Unable to load users (Firestore rules may restrict admin access)</td></tr>';
-        }
-    }
-
-    async viewUser(userId) {
-        try {
-            const { db } = await import('../scripts/firebase-init.js');
-            const { doc, getDoc } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
-            const snap = await getDoc(doc(db, 'users', userId));
-            if (!snap.exists()) {
-                this.showNotification('User not found', 'error');
-                return;
-            }
-            const u = { id: snap.id, ...snap.data() };
-            const details = [
-                `User: ${u.displayName || u.name || 'Unnamed'}`,
-                u.email ? `Email: ${u.email}` : '',
-                u.phoneNumber ? `Phone: ${u.phoneNumber}` : '',
-                u.status ? `Status: ${u.status}` : '',
-                u.membership?.plan ? `Plan: ${u.membership.plan}` : (u.plan ? `Plan: ${u.plan}` : ''),
-            ].filter(Boolean).join('\n');
-
-            if (window.notifications) {
-                window.notifications.show(details, 'info');
-            } else {
-                alert(details);
-            }
-        } catch (error) {
-            console.error('Error viewing user:', error);
-            this.showNotification('Unable to view user (Firestore rules may restrict access)', 'error');
         }
     }
 
@@ -2521,11 +2431,14 @@ class AdminPanel {
     selectExternalResult(url, title, artist) {
         document.getElementById('externalUrl').value = url;
         document.getElementById('externalTitle').value = title;
-        document.getElementById('externalArtist').value = artist;
+        // Artist is likely a name from search results; try to match into the dropdown.
+        this.externalExtractedArtistName = String(artist || '').trim();
+        this.selectExternalArtistByName(this.externalExtractedArtistName).catch(console.error);
 
         const resultsContainer = document.getElementById('externalResults');
         if (resultsContainer) {
             resultsContainer.innerHTML = '';
+
             resultsContainer.classList.remove('show');
         }
 
@@ -2725,14 +2638,23 @@ class AdminPanel {
         const titleInput = document.getElementById('externalTitle');
         const artistInput = document.getElementById('externalArtist');
         const genreSelect = document.getElementById('externalGenre');
+        
 
         if (titleInput && metadata.title) {
             titleInput.value = metadata.title;
         }
 
-        if (artistInput && metadata.artist) {
-            artistInput.value = metadata.artist;
+        if (metadata && metadata.artist) {
+            this.externalExtractedArtistName = String(metadata.artist || '').trim();
+        } else {
+            this.externalExtractedArtistName = '';
         }
+
+        // If externalArtist is a select, try to match the extracted name to an existing artist.
+        if (artistInput && metadata && metadata.artist) {
+            this.selectExternalArtistByName(String(metadata.artist || '')).catch(console.error);
+        }
+        
 
         if (genreSelect && metadata.genre && metadata.genre !== 'Unknown') {
             // Try to match genre to available options
@@ -2747,20 +2669,135 @@ class AdminPanel {
         this.fetchedExternalMetadata = metadata;
     }
 
+    async populateExternalArtistSelect(selectedId = '') {
+        const select = document.getElementById('externalArtist');
+        if (!select) return;
+
+        const addNewOptionValue = '__add_new__';
+
+        const keepOptions = [];
+        for (const opt of Array.from(select.options)) {
+            if (opt.value === '' || opt.value === addNewOptionValue) keepOptions.push(opt);
+        }
+
+        select.innerHTML = '';
+        keepOptions.forEach((o) => select.appendChild(o));
+
+        // Ensure base options exist
+        if (!Array.from(select.options).some((o) => o.value === '')) {
+            const opt = document.createElement('option');
+            opt.value = '';
+            opt.textContent = 'Select Artist';
+            select.appendChild(opt);
+        }
+        if (!Array.from(select.options).some((o) => o.value === addNewOptionValue)) {
+            const opt = document.createElement('option');
+            opt.value = addNewOptionValue;
+            opt.textContent = '+ Add new artist...';
+            select.appendChild(opt);
+        }
+
+        try {
+            const artists = await window.fetchArtists();
+            (artists || []).forEach((a) => {
+                const opt = document.createElement('option');
+                opt.value = a.id;
+                opt.textContent = a.name || a.id;
+                select.appendChild(opt);
+            });
+        } catch (e) {
+            console.error(e);
+        }
+
+        if (selectedId) select.value = selectedId;
+    }
+
+    async selectExternalArtistByName(name) {
+        const select = document.getElementById('externalArtist');
+        if (!select) return;
+
+        const raw = String(name || '').trim();
+        if (!raw) {
+            select.value = '';
+            return;
+        }
+
+        await this.populateExternalArtistSelect();
+
+        const artists = await window.fetchArtists();
+        const lower = raw.toLowerCase();
+        const match = (artists || []).find((a) => String(a.name || '').toLowerCase() === lower);
+
+        if (match && match.id) {
+            select.value = match.id;
+            return;
+        }
+
+        // Artist not found: keep selection empty, but let user confirm whether to add a new artist.
+        select.value = '';
+        await this.confirmAndOpenAddArtist(raw);
+    }
+
+    async confirmAndOpenAddArtist(extractedName = '') {
+        const suggested = String(extractedName || '').trim();
+        const msg = suggested
+            ? `Artist "${suggested}" was not found. Do you want to add this artist now? You can also cancel and select a different artist from the dropdown.`
+            : 'Do you want to add a new artist now?';
+
+        let ok = false;
+        if (window.notifications && window.notifications.confirm) {
+            ok = await window.notifications.confirm(msg, 'Add New Artist?', 'info');
+        } else {
+            ok = confirm(msg);
+        }
+        if (!ok) return;
+
+        // Prefill artist name if we have one.
+        if (suggested) {
+            window.__pendingNewArtistName = suggested;
+        }
+
+        // Prefer the established add-new flow via the Audio Link artist select.
+        const trackArtistSelect = document.getElementById('trackArtist');
+        if (trackArtistSelect) {
+            trackArtistSelect.value = '__add_new__';
+            trackArtistSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        } else if (typeof window.openAddArtistModal === 'function') {
+            window.openAddArtistModal();
+        }
+
+        // Try to prefill once the form is visible.
+        if (suggested) {
+            setTimeout(() => {
+                const input = document.getElementById('artistName');
+                if (input && !input.value) input.value = suggested;
+            }, 350);
+        }
+    }
+    
+
     async handleExternalTrack() {
         const platform = document.querySelector('input[name="platform"]:checked')?.value;
         const url = document.getElementById('externalUrl').value.trim();
         const title = document.getElementById('externalTitle').value.trim();
-        const artist = document.getElementById('externalArtist').value.trim();
+        const externalArtistValue = document.getElementById('externalArtist').value;
         const genre = document.getElementById('externalGenre').value;
+        
 
         if (!platform) {
             this.showNotification('Please select a platform', 'error');
             return;
         }
 
-        if (!url || !title || !artist) {
+        if (!url || !title || !externalArtistValue) {
             this.showNotification('Please fill in all required fields', 'error');
+            return;
+        }
+        
+
+        if (externalArtistValue === '__add_new__') {
+            const extractedName = String(this.externalExtractedArtistName || '').trim();
+            await this.confirmAndOpenAddArtist(extractedName);
             return;
         }
 
@@ -2806,21 +2843,11 @@ class AdminPanel {
                 descriptionInput.value = `Imported from ${platform}: ${normalizedUrl}`;
             }
 
-            // Try to match artist by name into the select; fall back to add-new.
+            // Use selected artist ID.
             if (artistSelect) {
-                try {
-                    const artists = await window.fetchArtists();
-                    const externalArtist = String(artist || '').toLowerCase();
-                    const matchingArtist = (artists || []).find(a => String(a.name || '').toLowerCase() === externalArtist);
-                    artistSelect.value = matchingArtist ? matchingArtist.id : '__add_new__';
-                } catch (_) {
-                    artistSelect.value = '__add_new__';
-                }
-
-                if (artistSelect.value === '__add_new__') {
-                    artistSelect.dispatchEvent(new Event('change', { bubbles: true }));
-                }
+                artistSelect.value = externalArtistValue;
             }
+            
 
             if (artworkPreview && artwork) {
                 artworkPreview.classList.add('has-image');

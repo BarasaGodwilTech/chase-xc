@@ -598,7 +598,10 @@
                             <div class="form-row hidden" id="detailsSection">
                                 <div class="form-group">
                                     <label for="externalArtist">Artist*</label>
-                                    <input type="text" id="externalArtist" name="externalArtist">
+                                    <select id="externalArtist" name="externalArtist" required>
+                                        <option value="">Select Artist</option>
+                                        <option value="__add_new__">+ Add new artist...</option>
+                                    </select>
                                 </div>
                                 <div class="form-group" style="flex: 1;">
                                     <label for="externalGenre">Genre</label>
