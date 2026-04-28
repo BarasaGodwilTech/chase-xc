@@ -633,84 +633,197 @@ section {
 
 /* Artists Section */
 .artists {
-  background: var(--background);
+  background: linear-gradient(135deg, var(--background) 0%, rgba(0, 212, 255, 0.05) 50%, var(--background) 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.artists::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle at 30% 30%, rgba(0, 212, 255, 0.08) 0%, transparent 50%),
+              radial-gradient(circle at 70% 70%, rgba(168, 85, 247, 0.08) 0%, transparent 50%);
+  animation: gradientMove 20s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes gradientMove {
+  0%, 100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(2%, 2%);
+  }
 }
 
 .artists-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: var(--spacing-lg);
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+  position: relative;
+  z-index: 1;
 }
 
 .artist-card {
+  background: var(--surface);
+  border-radius: 20px;
+  padding: 1.5rem;
   text-align: center;
+  border: 1px solid var(--border);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.artist-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--primary), var(--secondary), var(--accent));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.artist-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px rgba(0, 212, 255, 0.15),
+              0 0 0 1px rgba(0, 212, 255, 0.2);
+  border-color: rgba(0, 212, 255, 0.3);
+}
+
+.artist-card:hover::before {
+  opacity: 1;
 }
 
 .artist-image {
+  position: relative;
   overflow: hidden;
-  border-radius: var(--radius);
+  border-radius: 16px;
   aspect-ratio: 1;
-  margin-bottom: var(--spacing-md);
+  margin-bottom: 1.25rem;
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(168, 85, 247, 0.1));
+}
+
+.artist-image::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.2) 0%, transparent 50%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.artist-card:hover .artist-image::after {
+  opacity: 1;
 }
 
 .artist-image img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: var(--transition);
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .artist-card:hover .artist-image img {
-  transform: scale(1.1);
+  transform: scale(1.08);
 }
 
 .artist-card h4 {
   font-family: var(--font-heading);
-  font-size: 1.2rem;
+  font-size: 1.4rem;
+  font-weight: 700;
   color: var(--text-primary);
+  margin-bottom: 0.5rem;
+  transition: color 0.3s ease;
+}
+
+.artist-card:hover h4 {
+  color: var(--primary);
 }
 
 .artist-genre {
   color: var(--primary);
   font-size: 0.9rem;
-  margin-bottom: var(--spacing-md);
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  background: rgba(0, 212, 255, 0.1);
+  padding: 0.35rem 0.85rem;
+  border-radius: 20px;
+  display: inline-block;
 }
 
 .artist-bio {
   color: var(--text-secondary);
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   line-height: 1.6;
-  margin: var(--spacing-sm) 0;
+  margin: 0.75rem 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .artist-stats {
   display: flex;
   justify-content: space-around;
-  margin: var(--spacing-md) 0;
-  padding: var(--spacing-md) 0;
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
+  margin: 1rem 0;
+  padding: 1rem 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .artist-stats span {
   color: var(--text-secondary);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.artist-stats span i {
+  font-size: 1.1rem;
+  color: var(--primary);
 }
 
 .artist-socials {
   display: flex;
-  gap: var(--spacing-md);
+  gap: 1rem;
   justify-content: center;
-  font-size: 1.5rem;
+  margin-top: 1rem;
 }
 
 .artist-socials a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  color: var(--text-secondary);
+  font-size: 1.1rem;
   text-decoration: none;
-  transition: var(--transition);
+  transition: all 0.3s ease;
 }
 
 .artist-socials a:hover {
-  transform: scale(1.2);
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  border-color: transparent;
+  color: white;
+  transform: translateY(-3px) scale(1.1);
+  box-shadow: 0 8px 20px rgba(0, 212, 255, 0.3);
 }
 
 /* About Section */
