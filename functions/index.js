@@ -32,13 +32,7 @@ exports.githubUploadProfileImage = onCall(
   {
     timeoutSeconds: 60,
     memory: '256MiB',
-    cors: [
-      'https://chase.ezeemoney.site',
-      'https://chase-x-records.web.app',
-      'https://chase-x-records.firebaseapp.com',
-      'http://localhost:5000',
-      'http://127.0.0.1:5000',
-    ],
+    cors: true,
   },
   async (request) => {
   if (!request.auth) {
