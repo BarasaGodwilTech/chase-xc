@@ -976,6 +976,24 @@
    RESPONSIVE ENHANCEMENTS
    ============================================ */
 
+@media (max-width: 768px) {
+    .section-controls {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        justify-content: flex-start;
+        padding-bottom: 0.5rem;
+    }
+
+    .filter-btn {
+        flex: 0 0 auto;
+        white-space: nowrap;
+    }
+
+    .filter-btn span {
+        display: inline;
+    }
+}
+
 @media (max-width: 480px) {
     .newsletter-form {
         flex-direction: column !important;
@@ -1024,19 +1042,24 @@
     
     .section-controls {
         gap: 0.5rem;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        justify-content: flex-start;
     }
     
     .filter-btn {
-        padding: 0.5rem 1rem;
+        padding: 0.5rem 0.875rem;
         font-size: 0.8rem;
+        flex: 0 0 auto;
+        white-space: nowrap;
     }
     
     .filter-btn span {
-        display: none;
+        display: inline;
     }
     
     .filter-btn i {
-        font-size: 1rem;
+        font-size: 0.95rem;
     }
 }
 
