@@ -41,75 +41,6 @@ function getTrackBadge(track) {
   return null
 }
 
-function getSampleTracks() {
-  return [
-    {
-      id: 'sample-1',
-      title: 'Blessed',
-      artistName: 'Chase XC',
-      genre: 'Afro-Pop',
-      duration: '3:45',
-      artwork: 'public/player-cover-1.jpg',
-      audioUrl: '',
-      streams: 125000,
-      likes: 8500,
-      downloads: 3200,
-      status: 'published',
-      releaseDate: '2024-01-15',
-      featured: true,
-      categories: ['afro-pop', 'dance']
-    },
-    {
-      id: 'sample-2',
-      title: 'Midnight Groove',
-      artistName: 'Chase XC',
-      genre: 'Electronic',
-      duration: '4:12',
-      artwork: 'public/player-cover-2.jpg',
-      audioUrl: '',
-      streams: 89000,
-      likes: 6200,
-      downloads: 2100,
-      status: 'published',
-      releaseDate: '2024-02-20',
-      featured: false,
-      categories: ['electronic', 'house']
-    },
-    {
-      id: 'sample-3',
-      title: 'Summer Vibes',
-      artistName: 'Chase XC',
-      genre: 'Dancehall',
-      duration: '3:28',
-      artwork: 'public/player-cover-3.jpg',
-      audioUrl: '',
-      streams: 67000,
-      likes: 4100,
-      downloads: 1800,
-      status: 'published',
-      releaseDate: '2024-03-10',
-      featured: true,
-      categories: ['dancehall', 'afrobeat']
-    },
-    {
-      id: 'sample-4',
-      title: 'City Lights',
-      artistName: 'Chase XC',
-      genre: 'R&B',
-      duration: '3:55',
-      artwork: 'public/player-cover-4.jpg',
-      audioUrl: '',
-      streams: 45000,
-      likes: 3200,
-      downloads: 1200,
-      status: 'published',
-      releaseDate: '2024-04-05',
-      featured: false,
-      categories: ['r&b', 'soul']
-    }
-  ]
-}
-
 // Helper to escape HTML
 function escapeHtml(str) {
   if (!str) return ''
@@ -384,9 +315,28 @@ async function initMusicPage() {
   }
 
   if (!Array.isArray(tracks) || tracks.length === 0) {
-    console.log('[MusicPage] No tracks found or invalid data format, using sample tracks')
-    // Use sample tracks as fallback
-    tracks = getSampleTracks()
+    console.log('[MusicPage] No tracks found')
+    if (grid) {
+      grid.innerHTML = `
+        <div class="no-results-message">
+          <div class="no-results-content">
+            <i class="fas fa-music"></i>
+            <h4>No Tracks Yet</h4>
+            <p>Please check back soon.</p>
+          </div>
+        </div>
+      `
+    }
+    if (resultsCount) resultsCount.textContent = '0 tracks'
+    document.dispatchEvent(new CustomEvent('music:loaded'))
+
+    // Ensure dependent sections also show empty states.
+    const latestReleases = document.getElementById('latestReleases')
+    if (latestReleases) latestReleases.innerHTML = '<p class="text-center">No latest releases yet</p>'
+
+    const genreGrid = document.getElementById('genreGrid')
+    if (genreGrid) genreGrid.innerHTML = '<p class="text-center">No genres available yet</p>'
+    return
   }
 
   const artistCache = new Map()
