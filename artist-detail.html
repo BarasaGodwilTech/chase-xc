@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Artist Details - Chase x Records</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/components.css">
+    <link rel="stylesheet" href="styles/floating-player.css">
+</head>
+<body>
+    <script src="scripts/includes.js"></script>
+    <div data-include="partials/header.html"></div>
+
+    <section class="artist-detail-page">
+        <div class="artist-detail-container">
+            <a href="artists.html" class="back-btn">
+                <i class="fas fa-arrow-left"></i>
+                <span>Back to Artists</span>
+            </a>
+
+            <div class="artist-detail-hero" id="artistHero">
+                <div class="artist-detail-image">
+                    <img id="artistImage" src="" alt="Artist Image">
+                </div>
+                <div class="artist-detail-info">
+                    <h1 class="artist-detail-name" id="artistName">Loading...</h1>
+                    <p class="artist-detail-genre" id="artistGenre"></p>
+                    <p class="artist-detail-bio" id="artistBio"></p>
+                    <div class="artist-detail-stats">
+                        <div class="stat-item">
+                            <i class="fas fa-music"></i>
+                            <span id="artistTrackCount">0</span> tracks
+                        </div>
+                        <div class="stat-item">
+                            <i class="fas fa-play"></i>
+                            <span id="artistStreamCount">0</span> streams
+                        </div>
+                    </div>
+                    <div class="artist-detail-socials" id="artistSocials"></div>
+                </div>
+            </div>
+
+            <div class="artist-detail-tracks">
+                <h2 class="section-title">Tracks</h2>
+                <div class="music-grid" id="artistTracksGrid"></div>
+            </div>
+        </div>
+    </section>
+
+    <div data-include="partials/footer.html"></div>
+
+    <script type="module" src="scripts/firebase-init.js"></script>
+    <script type="module" src="scripts/auth.js"></script>
+    <script type="module" src="scripts/liked-tracks-manager.js"></script>
+    <script src="scripts/main.js"></script>
+    <script type="module" src="scripts/artist-detail.js"></script>
+</body>
+</html>

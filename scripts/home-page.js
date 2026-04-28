@@ -26,7 +26,7 @@ function renderArtistCard(artist, index) {
   const socials = artist.socials || {}
   
   return `
-    <div class="artist-card" data-artist="${index}">
+    <div class="artist-card" data-artist="${index}" data-artist-id="${escapeHtml(artist.id || '')}" role="button" tabindex="0">
       <div class="artist-image">
         <img src="${imageUrl}" alt="${artist.name || 'Artist'}">
       </div>
@@ -47,6 +47,31 @@ function renderArtistCard(artist, index) {
       </div>
     </div>
   `
+}
+
+function setupArtistCardListeners() {
+  document.querySelectorAll('#artists .artist-card[data-artist-id]').forEach((card) => {
+    if (card._artistNavBound) return
+    card._artistNavBound = true
+
+    const go = () => {
+      const artistId = card.dataset.artistId
+      if (!artistId) return
+      window.location.href = `artist-detail.html?id=${encodeURIComponent(artistId)}`
+    }
+
+    card.addEventListener('click', (e) => {
+      if (e.target.closest('.artist-socials a')) return
+      go()
+    })
+
+    card.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault()
+        go()
+      }
+    })
+  })
 }
 
 async function loadFeaturedArtists() {
@@ -78,6 +103,7 @@ async function loadFeaturedArtists() {
     }
 
     container.innerHTML = activeArtists.map((artist, index) => renderArtistCard(artist, index)).join('')
+    setupArtistCardListeners()
     console.log('[HomePage] Rendered', activeArtists.length, 'artists')
   } catch (error) {
     console.error('[HomePage] Error loading artists:', error)
