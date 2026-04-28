@@ -1364,11 +1364,34 @@ class AdminPanel {
         if (!artistSelect) return;
         
         const artists = await window.fetchArtists();
+        const seenIds = new Set();
+        const seenNames = new Set();
+
+        const normalized = (artists || [])
+            .filter((a) => a && a.id)
+            .map((a) => ({
+                id: String(a.id),
+                name: String(a.name || ''),
+            }))
+            .sort((a, b) => a.name.localeCompare(b.name));
+
+        const optionsHtml = normalized
+            .filter((a) => {
+                const keyName = a.name.trim().toLowerCase();
+                if (seenIds.has(a.id)) return false;
+                if (keyName && seenNames.has(keyName)) return false;
+                seenIds.add(a.id);
+                if (keyName) seenNames.add(keyName);
+                return true;
+            })
+            .map((a) => `<option value="${a.id}">${a.name || a.id}</option>`)
+            .join('');
+
         // Preserve the Firestore-powered artist select behavior, including "+ Add new artist..."
         // (admin-firebase.js relies on the special __add_new__ option).
         artistSelect.innerHTML = '<option value="">Select Artist</option>' +
             '<option value="__add_new__">+ Add new artist...</option>' +
-            artists.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+            optionsHtml;
     }
 
     async loadPayments() {
@@ -2699,10 +2722,31 @@ class AdminPanel {
 
         try {
             const artists = await window.fetchArtists();
-            (artists || []).forEach((a) => {
+            const seenIds = new Set();
+            const seenNames = new Set();
+
+            const normalized = (artists || [])
+                .filter((a) => a && a.id)
+                .map((a) => ({
+                    id: String(a.id),
+                    name: String(a.name || ''),
+                }))
+                .sort((a, b) => a.name.localeCompare(b.name));
+
+            normalized.forEach((a) => {
+                const id = a.id;
+                const name = a.name;
+                const keyName = name.trim().toLowerCase();
+
+                if (seenIds.has(id)) return;
+                if (keyName && seenNames.has(keyName)) return;
+
+                seenIds.add(id);
+                if (keyName) seenNames.add(keyName);
+
                 const opt = document.createElement('option');
-                opt.value = a.id;
-                opt.textContent = a.name || a.id;
+                opt.value = id;
+                opt.textContent = name || id;
                 select.appendChild(opt);
             });
         } catch (e) {

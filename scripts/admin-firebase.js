@@ -242,11 +242,32 @@ async function populateArtistSelect(selectedId = '') {
   try {
     const artists = await fetchArtists()
     if (!artistCache) artistCache = new Map()
-    artists.forEach((a) => {
-      artistCache.set(a.id, a.name || '')
+
+    const seenIds = new Set()
+    const seenNames = new Set()
+    const normalized = (artists || [])
+      .filter((a) => a && a.id)
+      .map((a) => ({
+        id: String(a.id),
+        name: String(a.name || ''),
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name))
+
+    normalized.forEach((a) => {
+      const id = a.id
+      const name = a.name
+      const keyName = name.trim().toLowerCase()
+
+      if (seenIds.has(id)) return
+      if (keyName && seenNames.has(keyName)) return
+
+      seenIds.add(id)
+      if (keyName) seenNames.add(keyName)
+
+      artistCache.set(id, name)
       const opt = document.createElement('option')
-      opt.value = a.id
-      opt.textContent = a.name || a.id
+      opt.value = id
+      opt.textContent = name || id
       select.appendChild(opt)
     })
   } catch (e) {
