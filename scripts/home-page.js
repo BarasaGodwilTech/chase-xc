@@ -19,6 +19,50 @@ function escapeHtml(str) {
   })
 }
 
+function renderTalentCard(artist) {
+  const imageUrl = artist.image || artist.artwork || 'images/headphones.png'
+  const name = artist.name || 'Unknown Artist'
+  const artistId = artist.id || ''
+
+  const href = artistId ? `artist-detail.html?id=${encodeURIComponent(artistId)}` : 'artists.html'
+
+  return `
+    <a class="talent-card" href="${href}" ${artistId ? `data-artist-id="${escapeHtml(artistId)}"` : ''}>
+      <div class="talent-card-media">
+        <img class="talent-card-image" src="${escapeHtml(imageUrl)}" alt="${escapeHtml(name)}">
+      </div>
+      <div class="talent-card-name">${escapeHtml(name)}</div>
+    </a>
+  `
+}
+
+async function loadTalentMarquee() {
+  const trackEl = document.querySelector('#talentMarqueeTrack')
+  if (!trackEl) return
+
+  try {
+    const artists = await fetchArtists()
+
+    const activeArtists = (Array.isArray(artists) ? artists : [])
+      .filter((a) => a && (a.status === 'active' || !a.status))
+      .filter((a) => a.name || a.id)
+
+    if (activeArtists.length === 0) {
+      trackEl.innerHTML = ''
+      return
+    }
+
+    const baseCards = activeArtists.map((a) => renderTalentCard(a)).join('')
+    trackEl.innerHTML = baseCards + baseCards
+
+    const duration = Math.min(55, Math.max(22, activeArtists.length * 4.5))
+    trackEl.style.setProperty('--marquee-duration', `${duration}s`)
+  } catch (e) {
+    console.error('[HomePage] Error loading talent marquee:', e)
+    if (trackEl) trackEl.innerHTML = ''
+  }
+}
+
 function renderArtistCard(artist, index) {
   const imageUrl = artist.image || artist.artwork || 'images/headphones.png'
   const genre = artist.genre || 'Music'
@@ -435,6 +479,7 @@ function toggleLikeButton(btn) {
 
 function initHomePage() {
   console.log('[HomePage] Initializing homepage...')
+  loadTalentMarquee()
   loadFeaturedArtists()
   loadFeaturedTracks()
   setupTrackCardListeners()
