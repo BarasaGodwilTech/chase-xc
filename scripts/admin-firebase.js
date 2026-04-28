@@ -19,6 +19,8 @@ import {
 
 import { db, storage, firebaseApp } from './firebase-init.js'
 
+const GITHUB_IMAGE_WORKER_URL = 'https://github-image-uploader.barasagodwil.workers.dev'
+
 let githubSettingsCache = null
 let githubSettingsCacheAt = 0
 
@@ -62,23 +64,37 @@ async function uploadProfileImageToGithub(entityType, file) {
   if (!githubEnabled) return ''
 
   try {
-    const { getFunctions, httpsCallable } = await import(
-      'https://www.gstatic.com/firebasejs/10.12.5/firebase-functions.js'
-    )
-
-    const functions = getFunctions(firebaseApp)
-    const upload = httpsCallable(functions, 'githubUploadProfileImage')
     const base64 = await fileToBase64(file)
 
-    const res = await upload({
-      entityType,
-      mimeType: file.type || 'image/jpeg',
-      fileName: file.name || 'image.jpg',
-      base64,
+    const owner = githubSettings.owner
+    const repo = githubSettings.repo
+    const branch = githubSettings.branch || 'main'
+    const folder = githubSettings.folder || 'images/profiles'
+
+    if (!owner || !repo) return ''
+
+    const ext = safeFileExt(file.name) || 'jpg'
+    const ts = Date.now()
+    const path = `${folder}/${entityType}/${ts}.${ext}`
+
+    const res = await fetch(GITHUB_IMAGE_WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        owner,
+        repo,
+        path,
+        content: base64,
+        message: `Upload ${entityType} image ${ts}.${ext}`,
+        branch,
+      }),
     })
 
-    const url = res?.data?.url
+    if (!res.ok) return ''
+    const data = await res.json().catch(() => null)
+    const url = data?.url
     if (typeof url === 'string' && url.startsWith('http')) return url
+
     return ''
   } catch (e) {
     console.warn('[admin-firebase] GitHub upload failed, falling back to Firebase Storage:', e)
@@ -642,9 +658,14 @@ async function handleAudioUploadSubmit(e) {
       // Use the Spotify artwork URL
       artworkUrl = spotifyArtworkUrl
     } else if (artworkFile && artworkFile instanceof File && artworkFile.size > 0) {
-      // Upload the artwork file
-      const artPath = `artwork/${artistId}/${now}.${artworkExt || 'jpg'}`
-      artworkUrl = await uploadFileToStorage(artPath, artworkFile)
+      // Prefer GitHub via Worker; fall back to Firebase Storage
+      const ghUrl = await uploadProfileImageToGithub('artwork', artworkFile)
+      if (ghUrl) {
+        artworkUrl = ghUrl
+      } else {
+        const artPath = `artwork/${artistId}/${now}.${artworkExt || 'jpg'}`
+        artworkUrl = await uploadFileToStorage(artPath, artworkFile)
+      }
     }
 
     const existingPlatformLinks = (existingTrack?.platformLinks && typeof existingTrack.platformLinks === 'object')
