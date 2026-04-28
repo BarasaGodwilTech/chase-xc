@@ -336,7 +336,7 @@
             // Filter toggle
             if (this.filterToggle && this.filtersContainer) {
                 this.filterToggle.addEventListener('click', () => {
-                    this.filtersContainer.classList.toggle('active');
+                    this.filtersContainer.classList.toggle('show');
                     this.filterToggle.classList.toggle('active');
                 });
             }

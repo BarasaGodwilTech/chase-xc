@@ -664,22 +664,7 @@
     color: var(--primary);
 }
 
-/* Search Filters Dropdown */
-.search-filters {
-    display: none;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 1rem;
-    padding: 1.5rem;
-    margin-top: 1rem;
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    animation: slideDown 0.3s ease;
-}
-
-.search-filters.active {
-    display: grid;
-}
+/* Search Filters Dropdown styles are now in components.css */
 
 @keyframes slideDown {
     from {
@@ -704,25 +689,7 @@
     font-weight: 500;
 }
 
-.filter-select {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--border);
-    color: var(--text-primary);
-    padding: 0.6rem 1rem;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.filter-select:hover {
-    border-color: var(--primary);
-}
-
-.filter-select:focus {
-    outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.2);
-}
+/* Filter select styles are now handled in components.css for consistency */
 
 /* ============================================
    ENHANCED NEWSLETTER

@@ -506,7 +506,7 @@ function setupTrackCardListeners() {
   // Filter toggle
   if (searchFilterToggle && searchFilters) {
     searchFilterToggle.addEventListener('click', () => {
-      searchFilters.classList.toggle('active')
+      searchFilters.classList.toggle('show')
       searchFilterToggle.classList.toggle('active')
     })
   }
@@ -948,7 +948,88 @@ function showNotification(message, type = 'info') {
   }, 3000)
 }
 
+function initMobileCustomSelects() {
+  const shouldUseCustom = window.matchMedia('(max-width: 480px)').matches
+  if (!shouldUseCustom) return
+
+  const selects = Array.from(document.querySelectorAll('.search-filters .filter-select'))
+  if (!selects.length) return
+
+  document.body.classList.add('has-custom-select')
+
+  const closeAll = () => {
+    document.querySelectorAll('.filter-select-custom.is-open').forEach(el => {
+      el.classList.remove('is-open')
+    })
+  }
+
+  if (!window.__customSelectOutsideHandlerAttached) {
+    window.__customSelectOutsideHandlerAttached = true
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.filter-select-custom')) closeAll()
+    })
+  }
+
+  selects.forEach((select) => {
+    if (!select || select.dataset.customized === '1') return
+    select.dataset.customized = '1'
+
+    const wrapper = document.createElement('div')
+    wrapper.className = 'filter-select-custom'
+
+    const btn = document.createElement('button')
+    btn.type = 'button'
+    btn.className = 'filter-select-custom-btn'
+
+    const menu = document.createElement('div')
+    menu.className = 'filter-select-custom-menu'
+
+    const setLabel = () => {
+      const opt = select.options[select.selectedIndex]
+      btn.textContent = opt ? opt.textContent : ''
+    }
+
+    const buildMenu = () => {
+      menu.innerHTML = ''
+      Array.from(select.options).forEach((opt) => {
+        const item = document.createElement('button')
+        item.type = 'button'
+        item.className = 'filter-select-custom-item'
+        item.dataset.value = opt.value
+        item.textContent = opt.textContent
+        item.addEventListener('click', () => {
+          select.value = opt.value
+          setLabel()
+          select.dispatchEvent(new Event('change', { bubbles: true }))
+          wrapper.classList.remove('is-open')
+        })
+        menu.appendChild(item)
+      })
+    }
+
+    btn.addEventListener('click', (e) => {
+      e.preventDefault()
+      const isOpen = wrapper.classList.contains('is-open')
+      closeAll()
+      wrapper.classList.toggle('is-open', !isOpen)
+    })
+
+    select.addEventListener('change', () => {
+      setLabel()
+    })
+
+    setLabel()
+    buildMenu()
+
+    select.parentNode.insertBefore(wrapper, select)
+    wrapper.appendChild(select)
+    wrapper.appendChild(btn)
+    wrapper.appendChild(menu)
+  })
+}
+
 function boot() {
+  initMobileCustomSelects()
   initMusicPage().catch(console.error)
   // Execute any pending action after login
   setTimeout(() => executePendingAction(), 500)
