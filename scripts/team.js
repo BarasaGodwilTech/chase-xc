@@ -1,6 +1,6 @@
 // Team functionality for fetching and displaying team members from Firebase
 import { db } from './firebase-init.js';
-import { collection, getDocs, query, where, orderBy } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
+import { collection, getDocs } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
 
 /**
  * Fetches team members from Firebase Firestore
@@ -9,23 +9,17 @@ import { collection, getDocs, query, where, orderBy } from 'https://www.gstatic.
 async function fetchTeamMembers() {
     try {
         console.log('Fetching team members from Firebase...');
-        
-        const teamQuery = query(
-            collection(db, 'team'),
-            where('status', '==', 'active'),
-            orderBy('createdAt', 'asc')
-        );
-        
-        const querySnapshot = await getDocs(teamQuery);
-        const teamMembers = [];
-        
-        querySnapshot.forEach((doc) => {
-            teamMembers.push({
-                id: doc.id,
-                ...doc.data()
-            });
-        });
-        
+
+        // Avoid composite index requirements (e.g. where + orderBy) and tolerate missing fields.
+        // Fetch all team docs, then filter/sort client-side.
+        const querySnapshot = await getDocs(collection(db, 'team'));
+        const allMembers = querySnapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+        const teamMembers = (allMembers || [])
+            .filter((m) => m && m.id)
+            .filter((m) => (m.status || 'active') === 'active')
+            .sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+
         console.log(`Successfully fetched ${teamMembers.length} team members`);
         return teamMembers;
     } catch (error) {
