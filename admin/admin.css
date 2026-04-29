@@ -2397,6 +2397,96 @@ body.admin-page {
     gap: 1rem;
 }
 
+.artist-tick-list {
+    margin-top: 0.75rem;
+    padding: 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: rgba(255, 255, 255, 0.03);
+    max-height: 280px;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.artist-tick-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.artist-tick-list::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 999px;
+}
+
+.artist-tick-list::-webkit-scrollbar-thumb {
+    background: rgba(0, 212, 255, 0.35);
+    border-radius: 999px;
+}
+
+.artist-tick-list::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 212, 255, 0.55);
+}
+
+.artist-tick-list > .btn {
+    width: 100%;
+    justify-content: center;
+    margin-bottom: 0.75rem;
+}
+
+.artist-tick-items {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+}
+
+@media (min-width: 520px) {
+    .artist-tick-items {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+.artist-tick-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 0.75rem;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.02);
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    transition: var(--transition);
+}
+
+.artist-tick-item:hover {
+    border-color: rgba(0, 212, 255, 0.25);
+    background: rgba(0, 212, 255, 0.06);
+}
+
+.artist-tick-item.selected {
+    border-color: rgba(0, 212, 255, 0.4);
+    background: rgba(0, 212, 255, 0.1);
+    box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.06);
+}
+
+.artist-tick-item input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    flex-shrink: 0;
+    accent-color: var(--primary);
+}
+
+.artist-tick-item span {
+    flex: 1;
+    min-width: 0;
+    font-weight: 600;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 /* File Upload Area */
 .file-upload-area {
     border: 2px dashed var(--border);

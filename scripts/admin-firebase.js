@@ -369,8 +369,11 @@ async function renderCollaboratorsTickList(selectedIds = []) {
     cb.dataset.artistId = a.id
     cb.checked = preserved.has(a.id) || Array.from(select.selectedOptions).some((o) => o.value === a.id)
 
+    row.classList.toggle('selected', cb.checked)
+
     cb.addEventListener('change', () => {
       syncTickListToSelect(select, container)
+      row.classList.toggle('selected', cb.checked)
     })
 
     const name = document.createElement('span')

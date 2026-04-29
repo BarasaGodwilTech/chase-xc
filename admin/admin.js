@@ -2997,12 +2997,15 @@ class AdminPanel {
             cb.dataset.artistId = a.id;
             cb.checked = preserved.has(a.id);
 
+            row.classList.toggle('selected', cb.checked);
+
             cb.addEventListener('change', () => {
                 const ids = Array.from(container.querySelectorAll('input[type="checkbox"][data-artist-id]'))
                     .filter((x) => x.checked)
                     .map((x) => String(x.dataset.artistId || ''))
                     .filter(Boolean);
                 this.externalCollaboratorIds = ids;
+                row.classList.toggle('selected', cb.checked);
             });
 
             const name = document.createElement('span');
