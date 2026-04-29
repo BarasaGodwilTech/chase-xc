@@ -322,9 +322,30 @@ async function populateCollaboratorsSelect(selectedIds = []) {
   const select = document.getElementById('trackCollaborators')
   if (!select) return
 
+  const addNewOptionValue = '__add_new__'
   const preserve = new Set((Array.isArray(selectedIds) ? selectedIds : []).map((x) => String(x)))
 
+  const keepOptions = []
+  for (const opt of Array.from(select.options)) {
+    if (opt.value === '' || opt.value === addNewOptionValue) keepOptions.push(opt)
+  }
+
   select.innerHTML = ''
+  keepOptions.forEach((o) => select.appendChild(o))
+
+  if (!Array.from(select.options).some((o) => o.value === '')) {
+    const opt = document.createElement('option')
+    opt.value = ''
+    opt.textContent = 'Select collaborators'
+    opt.disabled = true
+    select.appendChild(opt)
+  }
+  if (!Array.from(select.options).some((o) => o.value === addNewOptionValue)) {
+    const opt = document.createElement('option')
+    opt.value = addNewOptionValue
+    opt.textContent = '+ Add new artist...'
+    select.appendChild(opt)
+  }
 
   try {
     const artists = await fetchArtists()
@@ -433,6 +454,8 @@ function captureAudioUploadDraft() {
 
   return {
     trackTitle: String(fd.get('trackTitle') || ''),
+    trackArtist: String(fd.get('trackArtist') || ''),
+    trackCollaborators: fd.getAll('trackCollaborators').map((x) => String(x || '')).filter(Boolean),
     trackGenre: String(fd.get('trackGenre') || ''),
     releaseDate: String(fd.get('releaseDate') || ''),
     trackDuration: String(fd.get('trackDuration') || ''),
@@ -453,11 +476,18 @@ function restoreAudioUploadDraft(draft) {
   }
 
   setValue('trackTitle', draft.trackTitle)
+  setValue('trackArtist', draft.trackArtist)
   setValue('trackGenre', draft.trackGenre)
   setValue('releaseDate', draft.releaseDate)
   setValue('trackDuration', draft.trackDuration)
   setValue('trackDescription', draft.trackDescription)
   setValue('audioUrl', draft.audioUrl)
+
+  // Restore collaborators selections after the list has been populated.
+  // (populateCollaboratorsSelect is called on init / section navigation)
+  if (Array.isArray(draft.trackCollaborators)) {
+    populateCollaboratorsSelect(draft.trackCollaborators).catch(console.error)
+  }
 
   // File inputs cannot be programmatically set for security reasons.
   // We keep draft.audioFile/artworkFile only as a hint for future enhancement.
@@ -543,6 +573,7 @@ async function handleAddArtistSubmit(e) {
       // Refresh caches + selects
       artistCache = null
       await populateArtistSelect(ref.id)
+      await populateCollaboratorsSelect()
       
       if (window.notifications) {
         window.notifications.show('Artist added successfully', 'success')
@@ -1261,6 +1292,50 @@ function initAdminFirebase() {
 
         openAddArtistModal()
       }
+    })
+  }
+
+  const collabSelect = document.getElementById('trackCollaborators')
+  if (collabSelect && !collabSelect.dataset.addNewBound) {
+    collabSelect.dataset.addNewBound = 'true'
+
+    collabSelect.addEventListener('change', async () => {
+      const selected = Array.from(collabSelect.selectedOptions).map((o) => o.value)
+      if (!selected.includes('__add_new__')) return
+
+      // Save current form draft so user can continue after adding the artist
+      window.__audioUploadDraft = captureAudioUploadDraft()
+
+      const artworkInput = document.getElementById('trackArtwork')
+      const hasArtwork = artworkInput && artworkInput.files && artworkInput.files.length > 0
+
+      if (hasArtwork) {
+        let ok = false
+        if (window.notifications && window.notifications.confirm) {
+          ok = await window.notifications.confirm(
+            'You have selected an artwork file. If you add a new artist now, you may need to re-select that file afterwards. Continue?',
+            'Confirm Action',
+            'warning'
+          )
+        } else {
+          ok = confirm('You have selected an artwork file. If you add a new artist now, you may need to re-select that file afterwards. Continue?')
+        }
+        if (!ok) {
+          // Remove the magic value and keep the rest of selections intact
+          Array.from(collabSelect.options).forEach((opt) => {
+            if (opt.value === '__add_new__') opt.selected = false
+          })
+          return
+        }
+      }
+
+      // IMPORTANT: unselect the magic option so we don't re-trigger the add-new flow
+      // on future repopulates / navigation.
+      Array.from(collabSelect.options).forEach((opt) => {
+        if (opt.value === '__add_new__') opt.selected = false
+      })
+
+      openAddArtistModal()
     })
   }
 
