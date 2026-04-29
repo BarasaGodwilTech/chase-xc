@@ -4095,12 +4095,14 @@
 }
 
 .artist-image {
-    width: 150px;
-    height: 150px;
-    margin: 0 auto 1.5rem;
-    border-radius: 50%;
+    width: calc(100% + 4rem);
+    margin-left: -2rem;
+    margin-right: -2rem;
+    margin-top: -2rem;
+    aspect-ratio: 1;
+    border-radius: 16px 16px 0 0;
     overflow: hidden;
-    border: 4px solid var(--primary-light);
+    border: none;
 }
 
 .artist-image img {
@@ -4210,8 +4212,12 @@
     }
     
     .artist-image {
-        width: 120px;
-        height: 120px;
+        width: calc(100% + 3rem);
+        margin-left: -1.5rem;
+        margin-right: -1.5rem;
+        margin-top: -1.5rem;
+        aspect-ratio: 1;
+        border-radius: 16px 16px 0 0;
     }
 }
 /* Latest Releases Timeline Styles */

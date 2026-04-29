@@ -371,6 +371,8 @@ class PersistentFloatingPlayer {
                     this.currentPlatform = state.platform || null;
                     this.videoVisible = state.videoVisible !== false;
                     this.isCollapsed = state.isCollapsed || false;
+                    this.isShuffled = !!state.isShuffled;
+                    this.repeatMode = state.repeatMode || 'none';
                     
                     // Restore based on platform type
                     if (state.platform === 'audio' && state.track.audioUrl) {
@@ -389,6 +391,8 @@ class PersistentFloatingPlayer {
                         this.show();
                         this.updatePlayButton();
                     }
+
+                    this.updateShuffleRepeatUI();
                     
                     // Restore collapsed state
                     if (this.isCollapsed) {
@@ -407,13 +411,63 @@ class PersistentFloatingPlayer {
             this.setupAudioEvents();
         }
         this.audio.src = state.track.audioUrl;
-        this.audio.currentTime = state.currentTime || 0;
+        const desiredTime = typeof state.currentTime === 'number' ? state.currentTime : 0;
+        const shouldAutoPlay = !!state.isPlaying;
+
+        const applyTimeAndMaybePlay = () => {
+            try {
+                if (desiredTime > 0 && isFinite(this.audio.duration) && this.audio.duration > 0) {
+                    this.audio.currentTime = Math.min(desiredTime, Math.max(0, this.audio.duration - 0.25));
+                } else if (desiredTime > 0) {
+                    this.audio.currentTime = desiredTime;
+                }
+            } catch (_) {}
+
+            if (shouldAutoPlay) {
+                this.audio.play().then(() => {
+                    this.isPlaying = true;
+                    this.updatePlayButton();
+                    this.dispatchStateChange();
+                    this.saveState();
+                }).catch(() => {
+                    this.isPlaying = false;
+                    this.updatePlayButton();
+                    this.saveState();
+                });
+            } else {
+                this.isPlaying = false;
+                this.updatePlayButton();
+                this.saveState();
+            }
+        };
+
+        if (this.audio.readyState >= 1) {
+            applyTimeAndMaybePlay();
+        } else {
+            this.audio.addEventListener('loadedmetadata', applyTimeAndMaybePlay, { once: true });
+        }
+
         this.audio.load();
         this.updateUI('audio');
         this.show();
-        // Auto-play might be blocked, so we just show the player
-        // User can click play to resume
-        this.updatePlayButton();
+        this.updateShuffleRepeatUI();
+    }
+
+    updateShuffleRepeatUI() {
+        const shuffleBtn = document.getElementById('flpShuffleBtn');
+        if (shuffleBtn) {
+            shuffleBtn.classList.toggle('active', !!this.isShuffled);
+        }
+
+        const repeatBtn = document.getElementById('flpRepeatBtn');
+        if (repeatBtn) {
+            repeatBtn.classList.toggle('active', this.repeatMode !== 'none');
+            if (this.repeatMode === 'one') {
+                repeatBtn.innerHTML = '<i class="fas fa-redo"></i><span class="flp-repeat-one">1</span>';
+            } else {
+                repeatBtn.innerHTML = '<i class="fas fa-redo"></i>';
+            }
+        }
     }
 
     setupAudioEvents() {
@@ -1037,6 +1091,8 @@ class PersistentFloatingPlayer {
             platform: this.currentPlatform,
             videoVisible: this.videoVisible,
             isCollapsed: this.isCollapsed,
+            isShuffled: this.isShuffled,
+            repeatMode: this.repeatMode,
             timestamp: Date.now()
         };
         localStorage.setItem('floatingPlayerState', JSON.stringify(state));
@@ -1187,6 +1243,7 @@ class PersistentFloatingPlayer {
         if (shuffleBtn) {
             shuffleBtn.classList.toggle('active', this.isShuffled);
         }
+        this.dispatchStateChange();
         this.saveState();
     }
     
@@ -1205,6 +1262,7 @@ class PersistentFloatingPlayer {
                 repeatBtn.innerHTML = '<i class="fas fa-redo"></i>';
             }
         }
+        this.dispatchStateChange();
         this.saveState();
     }
 
