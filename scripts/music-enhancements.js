@@ -196,43 +196,32 @@
         }
 
         togglePlay() {
-            if (this.audioPlayer) {
-                this.audioPlayer.togglePlay();
-            } else {
-                const playBtn = document.getElementById('playBtn') || document.getElementById('floatingPlayBtn');
-                if (playBtn) playBtn.click();
+            if (window.persistentPlayer && typeof window.persistentPlayer.togglePlay === 'function') {
+                window.persistentPlayer.togglePlay();
+                return;
             }
+            const playBtn = document.getElementById('flpPlayBtn') || document.getElementById('floatingPlayBtn');
+            if (playBtn) playBtn.click();
         }
 
         seek(seconds) {
-            const audio = document.getElementById('audioElement');
+            const audio = window.persistentPlayer?.audio;
             if (audio && audio.duration) {
                 audio.currentTime = Math.max(0, Math.min(audio.duration, audio.currentTime + seconds));
             }
         }
 
         adjustVolume(delta) {
-            const audio = document.getElementById('audioElement');
-            const volumeSlider = document.getElementById('volumeControl');
+            const audio = window.persistentPlayer?.audio;
             if (audio) {
                 audio.volume = Math.max(0, Math.min(1, audio.volume + delta));
-                if (volumeSlider) {
-                    volumeSlider.value = audio.volume * 100;
-                }
             }
         }
 
         toggleMute() {
-            const audio = document.getElementById('audioElement');
-            const volumeBtn = document.getElementById('volumeToggle');
+            const audio = window.persistentPlayer?.audio;
             if (audio) {
                 audio.muted = !audio.muted;
-                if (volumeBtn) {
-                    const icon = volumeBtn.querySelector('i');
-                    if (icon) {
-                        icon.className = audio.muted ? 'fas fa-volume-mute' : 'fas fa-volume-up';
-                    }
-                }
             }
         }
 
@@ -577,7 +566,7 @@
     // ============================================
     class AudioPlayerSync {
         constructor() {
-            this.audio = document.getElementById('audioElement');
+            this.audio = null;
             this.playerWaveform = null;
             this.floatingWaveform = null;
             this.playerCover = document.querySelector('.player-cover');
@@ -673,7 +662,7 @@
             }
 
             // Initialize keyboard shortcuts
-            this.keyboardShortcuts = new KeyboardShortcuts(window.audioPlayer);
+            this.keyboardShortcuts = new KeyboardShortcuts(null);
 
             // Initialize loading skeleton manager
             this.loadingSkeleton = new LoadingSkeletonManager();

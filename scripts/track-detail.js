@@ -241,23 +241,6 @@ function handlePlayTrack() {
       window.persistentPlayer.loadTrack(currentTrack);
     }
     
-    // For audio files, also sync with main audio player if available
-    if (currentTrack.audioUrl && currentTrack.audioUrl.trim() !== '' && window.audioPlayer) {
-      // Add track to window.__tracks if not already there
-      if (!window.__tracks) {
-        window.__tracks = []
-      }
-      
-      let trackIndex = window.__tracks.findIndex(t => t.id === currentTrack.id)
-      if (trackIndex === -1) {
-        window.__tracks.push(currentTrack)
-        trackIndex = window.__tracks.length - 1
-      }
-      
-      window.audioPlayer.currentTrackIndex = trackIndex
-      window.audioPlayer.loadTrack(trackIndex)
-    }
-    
     window.persistentPlayer.play()
   } else {
     console.error('[TrackDetail] Persistent player not available')
@@ -527,12 +510,6 @@ function setupMoreTracksListeners() {
           });
           window.persistentPlayer.currentIndex = window.persistentPlayer.playlist.length - 1;
           window.persistentPlayer.loadTrack(track);
-        }
-        
-        // Also sync with audio player for audio files
-        if (track.audioUrl && track.audioUrl.trim() !== '' && window.audioPlayer) {
-          window.audioPlayer.currentTrackIndex = trackIndex
-          window.audioPlayer.loadTrack(trackIndex)
         }
         
         window.persistentPlayer.play()

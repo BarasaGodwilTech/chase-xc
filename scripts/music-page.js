@@ -796,17 +796,6 @@ function handlePlayTrack(track) {
       window.persistentPlayer.loadTrack(track);
     }
     
-    // For audio files, also sync with main audio player if available
-    if (track.audioUrl && track.audioUrl.trim() !== '' && window.audioPlayer) {
-      let trackIndex = window.__tracks.findIndex(t => t.id === track.id)
-      if (trackIndex === -1) {
-        window.__tracks.push(track)
-        trackIndex = window.__tracks.length - 1
-      }
-      window.audioPlayer.currentTrackIndex = trackIndex
-      window.audioPlayer.loadTrack(trackIndex)
-    }
-    
     window.persistentPlayer.play()
   } else {
     console.error('[MusicPage] Persistent player not available')

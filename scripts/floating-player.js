@@ -22,6 +22,9 @@ class PersistentFloatingPlayer {
         this.isMobile = window.innerWidth <= 480;
         this.isShuffled = false;
         this.repeatMode = 'none'; // 'none', 'one', 'all'
+
+        this._streamTimer = null;
+        this._streamCountedForTrackId = null;
         
         this.init();
     }
@@ -383,6 +386,12 @@ class PersistentFloatingPlayer {
                         this.updateUI(state.platform);
                         this.show();
                         this.updatePlayButton();
+
+                        if (state.isPlaying) {
+                            // Best-effort resume. May be blocked by browser autoplay policy.
+                            this.isPlaying = false;
+                            setTimeout(() => this.play(), 0);
+                        }
                     } else {
                         // Fallback - detect platform from track
                         const { platform } = this.detectPlatform(state.track);
@@ -390,6 +399,12 @@ class PersistentFloatingPlayer {
                         this.updateUI(platform);
                         this.show();
                         this.updatePlayButton();
+
+                        if (state.isPlaying) {
+                            // Best-effort resume. May be blocked by browser autoplay policy.
+                            this.isPlaying = false;
+                            setTimeout(() => this.play(), 0);
+                        }
                     }
 
                     this.updateShuffleRepeatUI();
@@ -427,6 +442,7 @@ class PersistentFloatingPlayer {
                 this.audio.play().then(() => {
                     this.isPlaying = true;
                     this.updatePlayButton();
+                    this.scheduleStreamIncrement();
                     this.dispatchStateChange();
                     this.saveState();
                 }).catch(() => {
@@ -504,6 +520,7 @@ class PersistentFloatingPlayer {
         if (!track) return;
         
         this.currentTrack = track;
+        this.resetStreamTracking();
         this.closeVideoWindow();
         this.isCollapsed = false;
         this.playerElement?.classList.remove('collapsed');
@@ -530,6 +547,76 @@ class PersistentFloatingPlayer {
         } else {
             this.showNotification('No playable source found', 'warning');
         }
+    }
+
+    resetStreamTracking() {
+        if (this._streamTimer) {
+            clearTimeout(this._streamTimer);
+            this._streamTimer = null;
+        }
+        this._streamCountedForTrackId = null;
+    }
+
+    getCurrentTrackId() {
+        return this.currentTrack?.id || this.currentTrack?.originalData?.id || null;
+    }
+
+    hasRecentlyCountedStream(trackId) {
+        try {
+            const raw = localStorage.getItem('floatingPlayerStreamDedup');
+            if (!raw) return false;
+            const s = JSON.parse(raw);
+            if (!s || typeof s !== 'object') return false;
+            if (s.trackId !== trackId) return false;
+            // Dedup within 5 minutes
+            return !!s.timestamp && (Date.now() - s.timestamp) < 5 * 60 * 1000;
+        } catch (_) {
+            return false;
+        }
+    }
+
+    markStreamCounted(trackId) {
+        try {
+            localStorage.setItem('floatingPlayerStreamDedup', JSON.stringify({
+                trackId,
+                timestamp: Date.now()
+            }));
+        } catch (_) {}
+    }
+
+    async incrementStreamsForCurrentTrack() {
+        const trackId = this.getCurrentTrackId();
+        if (!trackId) return;
+        if (this._streamCountedForTrackId === trackId) return;
+        if (this.hasRecentlyCountedStream(trackId)) return;
+
+        this._streamCountedForTrackId = trackId;
+        this.markStreamCounted(trackId);
+
+        try {
+            const { incrementTrackStreams } = await import('./user-data.js');
+            await incrementTrackStreams(trackId, 1);
+        } catch (error) {
+            console.error('[FloatingPlayer] Error incrementing streams:', error);
+        }
+    }
+
+    scheduleStreamIncrement() {
+        const trackId = this.getCurrentTrackId();
+        if (!trackId) return;
+        if (this._streamCountedForTrackId === trackId) return;
+
+        if (this._streamTimer) {
+            clearTimeout(this._streamTimer);
+        }
+
+        const delayMs = this.currentPlatform === 'audio' ? 15000 : 1000;
+        this._streamTimer = setTimeout(() => {
+            this._streamTimer = null;
+            if (!this.isPlaying) return;
+            if (this.getCurrentTrackId() !== trackId) return;
+            this.incrementStreamsForCurrentTrack();
+        }, delayMs);
     }
 
     detectPlatform(track) {
@@ -917,6 +1004,7 @@ class PersistentFloatingPlayer {
             this.updatePlayButton();
             this.saveState();
             this.animateWaveform(true);
+            this.scheduleStreamIncrement();
             this.dispatchStateChange();
         }).catch(err => {
             console.error('[FloatingPlayer] Play error:', err);
@@ -946,6 +1034,7 @@ class PersistentFloatingPlayer {
             this.updatePlayButton();
             this.saveState();
             this.animateWaveform(false);
+            this.resetStreamTracking();
             this.dispatchStateChange();
         }
     }
@@ -966,7 +1055,9 @@ class PersistentFloatingPlayer {
                 track: this.currentTrack,
                 isPlaying: this.isPlaying,
                 currentTime: this.audio?.currentTime || 0,
-                platform: this.currentPlatform
+                platform: this.currentPlatform,
+                isShuffled: this.isShuffled,
+                repeatMode: this.repeatMode
             }
         }));
     }
@@ -1218,6 +1309,7 @@ class PersistentFloatingPlayer {
     }
 
     handleTrackEnd() {
+        this.resetStreamTracking();
         // Handle repeat one
         if (this.repeatMode === 'one') {
             if (this.audio) {

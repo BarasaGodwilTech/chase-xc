@@ -121,6 +121,8 @@ class AudioPlayer {
         trackId: track.id,
         currentTime: (!this.isPlayingExternal && this.audio) ? (this.audio.currentTime || 0) : 0,
         isPlaying: !!this.isPlaying,
+        isShuffled: !!this.isShuffled,
+        repeatMode: typeof this.repeatMode === 'number' ? this.repeatMode : 0,
         volume: this.volumeControl ? Number(this.volumeControl.value) : undefined,
         timestamp: Date.now()
       };
@@ -142,6 +144,14 @@ class AudioPlayer {
     const state = this._pendingRestore;
     this._pendingRestore = null;
     if (!state) return;
+
+    if (typeof state.isShuffled === 'boolean') {
+      this.isShuffled = state.isShuffled;
+    }
+    if (typeof state.repeatMode === 'number') {
+      this.repeatMode = state.repeatMode;
+    }
+    this.updateButtonStates();
 
     if (!this.isPlayingExternal && this.audio && typeof state.currentTime === 'number' && state.currentTime > 0) {
       const targetTime = state.currentTime;
@@ -174,7 +184,7 @@ class AudioPlayer {
     document.addEventListener('floatingPlayerStateChanged', (e) => {
       if (!e.detail || !e.detail.track) return;
       
-      const { track, isPlaying, currentTime } = e.detail;
+      const { track, isPlaying, currentTime, isShuffled, repeatMode } = e.detail;
       
       // Only sync if it's an audio track (not embed)
       if (track.audioUrl && track.audioUrl.trim() !== '') {
@@ -198,9 +208,19 @@ class AudioPlayer {
         if (currentTime && Math.abs(this.audio.currentTime - currentTime) > 1) {
           this.audio.currentTime = currentTime;
         }
+
+        // Sync shuffle / repeat from persistent player
+        if (typeof isShuffled === 'boolean') {
+          this.isShuffled = isShuffled;
+        }
+        if (typeof repeatMode === 'number') {
+          this.repeatMode = repeatMode;
+        }
+        this.updateButtonStates();
         
         // Update UI
         this.updatePlayButton();
+        this.scheduleSaveState();
       }
     });
   }
@@ -319,6 +339,8 @@ class AudioPlayer {
   toggleRepeat() {
     this.repeatMode = (this.repeatMode + 1) % 3;
     this.updateButtonStates();
+    this.scheduleSaveState();
+    this.syncWithPersistentPlayer();
   }
 
   toggleShuffle() {
@@ -1025,9 +1047,21 @@ class AudioPlayer {
       detail: {
         track: trackData,
         isPlaying: this.isPlaying,
-        currentTime: this.audio?.currentTime || 0
+        currentTime: this.audio?.currentTime || 0,
+        isShuffled: this.isShuffled,
+        repeatMode: this.repeatMode
       }
     }));
+
+    // Keep persistent player shuffle/repeat modes aligned with the main player
+    window.persistentPlayer.isShuffled = this.isShuffled;
+    window.persistentPlayer.repeatMode = ['none', 'all', 'one'][this.repeatMode] || 'none';
+    if (typeof window.persistentPlayer.updateShuffleRepeatUI === 'function') {
+      window.persistentPlayer.updateShuffleRepeatUI();
+    }
+    if (typeof window.persistentPlayer.saveState === 'function') {
+      window.persistentPlayer.saveState();
+    }
     
     // Also set playlist in persistent player
     if (this.tracks.length > 0 && window.persistentPlayer.playlist?.length !== this.tracks.length) {
@@ -1052,13 +1086,7 @@ function initAudioPlayer() {
     console.warn('dataManager not found. Audio player will use default tracks.');
   }
 
-  if (document.getElementById("audioElement")) {
-    if (window.audioPlayer && typeof window.audioPlayer.rebind === 'function') {
-      window.audioPlayer.rebind();
-    } else {
-      window.audioPlayer = new AudioPlayer();
-    }
-  }
+  return;
   
   // Floating player close button
   const floatingClose = document.getElementById("floatingClose");

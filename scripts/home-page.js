@@ -369,11 +369,6 @@ function handlePlayTrack(track) {
       window.persistentPlayer.loadTrack(track);
     }
     
-    // For audio files, also sync with main audio player if available
-    if (track.audioUrl && track.audioUrl.trim() !== '' && window.audioPlayer) {
-      window.audioPlayer.loadTrackByData(track.id)
-    }
-    
     window.persistentPlayer.play()
   } else {
     console.error('[HomePage] Persistent player not available')
