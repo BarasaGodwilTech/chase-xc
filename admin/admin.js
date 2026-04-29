@@ -207,11 +207,9 @@ class AdminPanel {
         // Close mobile nav when clicking outside
         document.addEventListener('click', (e) => {
             const navContent = document.querySelector('.nav-content');
-            const navToggle = document.getElementById('navToggle');
             const adminNav = document.getElementById('adminNav');
-            
             if (navContent && navContent.classList.contains('active')) {
-                if (!adminNav.contains(e.target)) {
+                if (adminNav && !adminNav.contains(e.target)) {
                     navContent.classList.remove('active');
                 }
             }
@@ -306,6 +304,24 @@ class AdminPanel {
             });
         });
 
+        const externalArtistSelect = document.getElementById('externalArtist');
+        if (externalArtistSelect && !externalArtistSelect.dataset.collabBound) {
+            externalArtistSelect.dataset.collabBound = 'true';
+            externalArtistSelect.addEventListener('change', async () => {
+                const container = document.getElementById('externalCollaboratorsTickList');
+                if (!container) return;
+
+                if (externalArtistSelect.value === '__collab__') {
+                    container.style.display = '';
+                    await this.renderExternalCollaboratorsTickList(Array.isArray(this.externalCollaboratorIds) ? this.externalCollaboratorIds : []);
+                } else {
+                    container.style.display = 'none';
+                    this.externalCollaboratorIds = [];
+                    container.innerHTML = '';
+                }
+            });
+        }
+
         document.getElementById('searchExternal')?.addEventListener('click', () => {
             this.searchExternalPlatform();
         });
@@ -324,7 +340,7 @@ class AdminPanel {
         const externalUrlInput = document.getElementById('externalUrl');
         if (externalUrlInput) {
             // Handle paste event
-            externalUrlInput.addEventListener('paste', async (e) => {
+            externalUrlInput.addEventListener('paste', async () => {
                 setTimeout(async () => {
                     const url = externalUrlInput.value.trim();
                     if (url) {
@@ -342,7 +358,7 @@ class AdminPanel {
             });
 
             // Handle input event with debounce
-            externalUrlInput.addEventListener('input', (e) => {
+            externalUrlInput.addEventListener('input', () => {
                 const url = externalUrlInput.value.trim();
                 if (url && (
                     this.isValidPlatformUrl(url, 'youtube') ||
@@ -2791,6 +2807,7 @@ class AdminPanel {
         if (!select) return;
 
         const addNewOptionValue = '__add_new__';
+        const collabOptionValue = '__collab__';
 
         // Always rebuild options from scratch.
         // This prevents duplicates when navigating away/back and the browser restores previous <option> nodes.
@@ -2800,6 +2817,13 @@ class AdminPanel {
             const opt = document.createElement('option');
             opt.value = '';
             opt.textContent = 'Select Artist';
+            select.appendChild(opt);
+        }
+
+        {
+            const opt = document.createElement('option');
+            opt.value = collabOptionValue;
+            opt.textContent = 'Collaboration (multiple artists)';
             select.appendChild(opt);
         }
 
@@ -2817,33 +2841,108 @@ class AdminPanel {
 
             const normalized = (artists || [])
                 .filter((a) => a && a.id)
-                .map((a) => ({
-                    id: String(a.id),
-                    name: String(a.name || ''),
-                }))
-                .sort((a, b) => a.name.localeCompare(b.name));
+                .map((a) => ({ id: String(a.id), name: String(a.name || '') }))
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .filter((a) => {
+                    const keyName = a.name.trim().toLowerCase();
+                    if (seenIds.has(a.id)) return false;
+                    if (keyName && seenNames.has(keyName)) return false;
+                    seenIds.add(a.id);
+                    if (keyName) seenNames.add(keyName);
+                    return true;
+                });
 
-            normalized.forEach((a) => {
-                const id = a.id;
-                const name = a.name;
-                const keyName = name.trim().toLowerCase();
-
-                if (seenIds.has(id)) return;
-                if (keyName && seenNames.has(keyName)) return;
-
-                seenIds.add(id);
-                if (keyName) seenNames.add(keyName);
-
+            for (const a of normalized) {
                 const opt = document.createElement('option');
-                opt.value = id;
-                opt.textContent = name || id;
+                opt.value = a.id;
+                opt.textContent = a.name || a.id;
                 select.appendChild(opt);
-            });
+            }
         } catch (e) {
             console.error(e);
         }
 
         if (selectedId) select.value = selectedId;
+    }
+
+    async renderExternalCollaboratorsTickList(selectedIds = []) {
+        const container = document.getElementById('externalCollaboratorsTickList');
+        if (!container) return;
+
+        const preserved = new Set((Array.isArray(selectedIds) ? selectedIds : []).map(x => String(x)));
+
+        let artists = [];
+        try {
+            artists = await window.fetchArtists();
+        } catch (_) {
+            artists = [];
+        }
+
+        const seenIds = new Set();
+        const seenNames = new Set();
+
+        const normalized = (artists || [])
+            .filter((a) => a && a.id)
+            .map((a) => ({ id: String(a.id), name: String(a.name || '') }))
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .filter((a) => {
+                const keyName = a.name.trim().toLowerCase();
+                if (seenIds.has(a.id)) return false;
+                if (keyName && seenNames.has(keyName)) return false;
+                seenIds.add(a.id);
+                if (keyName) seenNames.add(keyName);
+                return true;
+            });
+
+        container.innerHTML = '';
+
+        const addBtn = document.createElement('button');
+        addBtn.type = 'button';
+        addBtn.className = 'btn btn-secondary btn-sm';
+        addBtn.textContent = '+ Add new artist...';
+        addBtn.addEventListener('click', () => {
+            const trackArtistSelect = document.getElementById('trackArtist');
+            if (trackArtistSelect) {
+                trackArtistSelect.value = '__add_new__';
+                trackArtistSelect.dispatchEvent(new Event('change', { bubbles: true }));
+            } else if (typeof window.openAddArtistModal === 'function') {
+                window.openAddArtistModal();
+            }
+        });
+        container.appendChild(addBtn);
+
+        const list = document.createElement('div');
+        list.className = 'artist-tick-items';
+
+        for (const a of normalized) {
+            const row = document.createElement('label');
+            row.className = 'artist-tick-item';
+
+            const cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.dataset.artistId = a.id;
+            cb.checked = preserved.has(a.id);
+
+            cb.addEventListener('change', () => {
+                const ids = Array.from(container.querySelectorAll('input[type="checkbox"][data-artist-id]'))
+                    .filter((x) => x.checked)
+                    .map((x) => String(x.dataset.artistId || ''))
+                    .filter(Boolean);
+                this.externalCollaboratorIds = ids;
+            });
+
+            const name = document.createElement('span');
+            name.textContent = a.name || a.id;
+
+            row.appendChild(cb);
+            row.appendChild(name);
+            list.appendChild(row);
+        }
+
+        container.appendChild(list);
+
+        // initial sync
+        this.externalCollaboratorIds = Array.from(preserved);
     }
 
     async selectExternalArtistByName(name) {
@@ -2925,7 +3024,6 @@ class AdminPanel {
             this._addArtistConfirmInFlight = false;
         }
     }
-    
 
     async handleExternalTrack() {
         const platform = document.querySelector('input[name="platform"]:checked')?.value;
@@ -2933,7 +3031,6 @@ class AdminPanel {
         const title = document.getElementById('externalTitle').value.trim();
         const externalArtistValue = document.getElementById('externalArtist').value;
         const genre = document.getElementById('externalGenre').value;
-        
 
         if (!platform) {
             this.showNotification('Please select a platform', 'error');
@@ -2944,7 +3041,14 @@ class AdminPanel {
             this.showNotification('Please fill in all required fields', 'error');
             return;
         }
-        
+
+        if (externalArtistValue === '__collab__') {
+            const ids = Array.isArray(this.externalCollaboratorIds) ? this.externalCollaboratorIds : [];
+            if (ids.length < 2) {
+                this.showNotification('For collaborations, please select at least 2 artists.', 'error');
+                return;
+            }
+        }
 
         if (externalArtistValue === '__add_new__') {
             const extractedName = String(this.externalExtractedArtistName || '').trim();
@@ -2997,8 +3101,23 @@ class AdminPanel {
             // Use selected artist ID.
             if (artistSelect) {
                 artistSelect.value = externalArtistValue;
+                artistSelect.dispatchEvent(new Event('change', { bubbles: true }));
+
+                if (externalArtistValue === '__collab__') {
+                    const ids = Array.isArray(this.externalCollaboratorIds) ? this.externalCollaboratorIds : [];
+                    if (typeof window.populateCollaboratorsSelect === 'function') {
+                        await window.populateCollaboratorsSelect(ids);
+                    } else {
+                        const collabSelect = document.getElementById('trackCollaborators');
+                        if (collabSelect) {
+                            const selectedSet = new Set(ids.map((x) => String(x)));
+                            Array.from(collabSelect.options).forEach((opt) => {
+                                opt.selected = selectedSet.has(opt.value);
+                            });
+                        }
+                    }
+                }
             }
-            
 
             if (artworkPreview && artwork) {
                 artworkPreview.classList.add('has-image');

@@ -272,6 +272,115 @@ async function resolveArtistName(artistId) {
   return artistCache.get(artistId) || ''
 }
 
+async function getNormalizedDedupedArtists() {
+  const artists = await fetchArtists()
+  const seenIds = new Set()
+  const seenNames = new Set()
+
+  return (artists || [])
+    .filter((a) => a && a.id)
+    .map((a) => ({
+      id: String(a.id),
+      name: String(a.name || ''),
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .filter((a) => {
+      const id = a.id
+      const name = a.name
+      const keyName = name.trim().toLowerCase()
+
+      if (seenIds.has(id)) return false
+      if (keyName && seenNames.has(keyName)) return false
+
+      seenIds.add(id)
+      if (keyName) seenNames.add(keyName)
+      return true
+    })
+}
+
+function setCollabTickUiEnabled(enabled) {
+  const collabSelect = document.getElementById('trackCollaborators')
+  const tickList = document.getElementById('trackCollaboratorsTickList')
+  if (!collabSelect || !tickList) return
+
+  if (enabled) {
+    collabSelect.style.display = 'none'
+    tickList.style.display = ''
+  } else {
+    collabSelect.style.display = ''
+    tickList.style.display = 'none'
+  }
+}
+
+function syncTickListToSelect(select, container) {
+  if (!select || !container) return
+  const checkedIds = Array.from(container.querySelectorAll('input[type="checkbox"][data-artist-id]'))
+    .filter((x) => x.checked)
+    .map((x) => String(x.dataset.artistId || ''))
+    .filter(Boolean)
+
+  const checkedSet = new Set(checkedIds)
+  Array.from(select.options).forEach((opt) => {
+    if (!opt.value || opt.value === '__add_new__') return
+    opt.selected = checkedSet.has(opt.value)
+  })
+}
+
+async function renderCollaboratorsTickList(selectedIds = []) {
+  const select = document.getElementById('trackCollaborators')
+  const container = document.getElementById('trackCollaboratorsTickList')
+  if (!select || !container) return
+
+  const preserved = new Set((Array.isArray(selectedIds) ? selectedIds : []).map((x) => String(x)))
+
+  const artists = await getNormalizedDedupedArtists()
+
+  container.innerHTML = ''
+
+  {
+    const addBtn = document.createElement('button')
+    addBtn.type = 'button'
+    addBtn.className = 'btn btn-secondary btn-sm'
+    addBtn.textContent = '+ Add new artist...'
+    addBtn.addEventListener('click', () => {
+      window.__audioUploadDraft = captureAudioUploadDraft()
+      openAddArtistModal()
+    })
+    container.appendChild(addBtn)
+  }
+
+  const list = document.createElement('div')
+  list.className = 'artist-tick-items'
+
+  for (const a of artists) {
+    if (!a || !a.id) continue
+
+    const row = document.createElement('label')
+    row.className = 'artist-tick-item'
+
+    const cb = document.createElement('input')
+    cb.type = 'checkbox'
+    cb.dataset.artistId = a.id
+    cb.checked = preserved.has(a.id) || Array.from(select.selectedOptions).some((o) => o.value === a.id)
+
+    cb.addEventListener('change', () => {
+      syncTickListToSelect(select, container)
+    })
+
+    const name = document.createElement('span')
+    name.textContent = a.name || a.id
+
+    row.appendChild(cb)
+    row.appendChild(name)
+    list.appendChild(row)
+  }
+
+  container.appendChild(list)
+
+  // Initial sync to ensure FormData sees correct selected options.
+  syncTickListToSelect(select, container)
+}
+
 async function populateArtistSelect(selectedId = '') {
   const select = document.getElementById('trackArtist')
   if (!select) return
@@ -376,16 +485,8 @@ async function populateCollaboratorsSelect(selectedIds = []) {
   }
 
   try {
-    const artists = await fetchArtists()
+    const normalized = await getNormalizedDedupedArtists()
     if (!artistCache) artistCache = new Map()
-
-    const normalized = (artists || [])
-      .filter((a) => a && a.id)
-      .map((a) => ({
-        id: String(a.id),
-        name: String(a.name || ''),
-      }))
-      .sort((a, b) => a.name.localeCompare(b.name))
 
     for (const a of normalized) {
       artistCache.set(a.id, a.name)
@@ -395,6 +496,8 @@ async function populateCollaboratorsSelect(selectedIds = []) {
       if (preserve.has(a.id)) opt.selected = true
       select.appendChild(opt)
     }
+
+    await renderCollaboratorsTickList(Array.from(preserve))
   } catch (e) {
     console.error(e)
   }
@@ -1325,9 +1428,14 @@ function initAdminFirebase() {
 
       if (select.value === '__collab__') {
         if (collabGroup) collabGroup.style.display = ''
+        setCollabTickUiEnabled(true)
+        await populateCollaboratorsSelect(
+          Array.from(document.getElementById('trackCollaborators')?.selectedOptions || []).map((o) => String(o.value))
+        )
       } else {
         // Hide + clear collaborators if not in collaboration mode
         if (collabGroup) collabGroup.style.display = 'none'
+        setCollabTickUiEnabled(false)
         const collabSelect = document.getElementById('trackCollaborators')
         if (collabSelect) {
           Array.from(collabSelect.options).forEach((o) => {
@@ -1366,6 +1474,7 @@ function initAdminFirebase() {
     // Initialize collaborators visibility on load
     const collabGroup = document.getElementById('trackCollaborators')?.closest('.form-group')
     if (collabGroup) collabGroup.style.display = select.value === '__collab__' ? '' : 'none'
+    setCollabTickUiEnabled(select.value === '__collab__')
   }
 
   const collabSelect = document.getElementById('trackCollaborators')
