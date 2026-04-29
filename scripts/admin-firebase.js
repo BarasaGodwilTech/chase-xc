@@ -272,6 +272,12 @@ async function resolveArtistName(artistId) {
   return artistCache.get(artistId) || ''
 }
 
+function normalizeArtistName(name) {
+  return String(name || '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 async function getNormalizedDedupedArtists() {
   const artists = await fetchArtists()
   const seenIds = new Set()
@@ -281,13 +287,13 @@ async function getNormalizedDedupedArtists() {
     .filter((a) => a && a.id)
     .map((a) => ({
       id: String(a.id),
-      name: String(a.name || ''),
+      name: normalizeArtistName(a.name),
     }))
     .sort((a, b) => a.name.localeCompare(b.name))
     .filter((a) => {
       const id = a.id
       const name = a.name
-      const keyName = name.trim().toLowerCase()
+      const keyName = normalizeArtistName(name).toLowerCase()
 
       if (seenIds.has(id)) return false
       if (keyName && seenNames.has(keyName)) return false
@@ -427,14 +433,14 @@ async function populateArtistSelect(selectedId = '') {
       .filter((a) => a && a.id)
       .map((a) => ({
         id: String(a.id),
-        name: String(a.name || ''),
+        name: normalizeArtistName(a.name),
       }))
       .sort((a, b) => a.name.localeCompare(b.name))
 
     normalized.forEach((a) => {
       const id = a.id
       const name = a.name
-      const keyName = name.trim().toLowerCase()
+      const keyName = normalizeArtistName(name).toLowerCase()
 
       if (seenIds.has(id)) return
       if (keyName && seenNames.has(keyName)) return
@@ -445,7 +451,7 @@ async function populateArtistSelect(selectedId = '') {
       artistCache.set(id, name)
       const opt = document.createElement('option')
       opt.value = id
-      opt.textContent = name || id
+      opt.textContent = normalizeArtistName(name) || id
       select.appendChild(opt)
     })
   } catch (e) {
