@@ -113,6 +113,89 @@ async function renderLatestReleases(tracks) {
   `
 }
 
+function safeArray(val) {
+  if (!val) return []
+  if (Array.isArray(val)) return val.filter(Boolean)
+  return []
+}
+
+function uniqueStrings(values) {
+  const out = []
+  const seen = new Set()
+  for (const v of values || []) {
+    const s = String(v || '').trim()
+    if (!s) continue
+    const key = s.toLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push(s)
+  }
+  return out
+}
+
+async function renderCollaborations(tracks, artistsById = new Map()) {
+  const container = document.getElementById('collaborationsGrid')
+  if (!container) return
+
+  const collabTracks = (tracks || []).filter((t) => {
+    const collabIds = safeArray(t.collaborators)
+    return collabIds.length > 0
+  })
+
+  if (collabTracks.length === 0) {
+    container.innerHTML = '<p class="text-center">No collaborations available yet</p>'
+    return
+  }
+
+  const top = collabTracks
+    .slice()
+    .sort((a, b) => (Number(b.streams || 0) - Number(a.streams || 0)))
+    .slice(0, 8)
+
+  container.innerHTML = top.map((track) => {
+    const collabIds = safeArray(track.collaborators)
+
+    const primaryId = String(track.artist || '').trim()
+    const allIds = uniqueStrings([primaryId, ...collabIds].filter(Boolean))
+
+    const namesFromDoc = safeArray(track.collaboratorNames)
+    const resolvedNames = uniqueStrings([
+      track.artistName || '',
+      ...namesFromDoc,
+      ...collabIds.map((id) => artistsById.get(String(id))?.name || ''),
+    ].filter(Boolean))
+
+    const artistsLine = resolvedNames.length > 0 ? resolvedNames.join(' • ') : (track.artistName || 'Unknown Artist')
+
+    const avatars = allIds
+      .map((id) => artistsById.get(String(id))?.image || '')
+      .filter(Boolean)
+      .slice(0, 4)
+
+    const avatarHtml = avatars.length
+      ? avatars.map((src) => `
+          <span class="collab-avatar"><img src="${escapeHtml(src)}" alt="" loading="lazy" decoding="async"></span>
+        `).join('')
+      : ''
+
+    return `
+      <div class="collab-card" data-track-id="${track.id || ''}" data-collab-track-id="${track.id || ''}">
+        <div class="collab-artwork">
+          <img src="${escapeHtml(track.artwork || '')}" alt="${escapeHtml(track.title || '')}" loading="lazy" decoding="async">
+          <button class="collab-play-btn" aria-label="Play ${escapeHtml(track.title || '')}" type="button" data-collab-play-track-id="${track.id || ''}">
+            <i class="fas fa-play"></i>
+          </button>
+        </div>
+        <div class="collab-info">
+          <p class="collab-title">${escapeHtml(track.title || '')}</p>
+          <p class="collab-artists">${escapeHtml(artistsLine)}</p>
+          <div class="collab-avatars">${avatarHtml}</div>
+        </div>
+      </div>
+    `
+  }).join('')
+}
+
 function renderFeaturedReleaseCard(track, index, artistName) {
   const categories = getTrackCategories(track)
   const badge = getTrackBadge(track)
@@ -334,9 +417,17 @@ async function initMusicPage() {
     const latestReleases = document.getElementById('latestReleases')
     if (latestReleases) latestReleases.innerHTML = '<p class="text-center">No latest releases yet</p>'
 
-    const genreGrid = document.getElementById('genreGrid')
-    if (genreGrid) genreGrid.innerHTML = '<p class="text-center">No genres available yet</p>'
+    const collaborationsGrid = document.getElementById('collaborationsGrid')
+    if (collaborationsGrid) collaborationsGrid.innerHTML = '<p class="text-center">No collaborations available yet</p>'
     return
+  }
+
+  let artistsById = new Map()
+  try {
+    const artists = await fetchArtists()
+    artistsById = new Map((artists || []).map((a) => [String(a.id), a]))
+  } catch (e) {
+    console.warn('[MusicPage] Failed to fetch artists for collaborations section', e)
   }
 
   const artistCache = new Map()
@@ -344,7 +435,7 @@ async function initMusicPage() {
     const id = track.artist
     if (!id) return { name: track.artistName || 'Unknown Artist', socials: {} }
     if (artistCache.has(id)) return artistCache.get(id)
-    const artist = await fetchArtistById(id)
+    const artist = artistsById.get(String(id)) || await fetchArtistById(id)
     const artistData = {
       name: artist?.name || track.artistName || 'Unknown Artist',
       socials: artist?.socials || {}
@@ -376,8 +467,8 @@ async function initMusicPage() {
   // Render Latest Releases section
   await renderLatestReleases(normalizedTracks)
 
-  // Render Genre cards section
-  await renderGenreCards(normalizedTracks)
+  // Render Collaborations section
+  await renderCollaborations(normalizedTracks, artistsById)
 
   // Setup button event listeners
   setupTrackCardListeners()
@@ -385,21 +476,25 @@ async function initMusicPage() {
 
 function setupTrackCardListeners() {
   // Play button listeners - plays track on all devices
-  document.querySelectorAll('.track-play-btn, .featured-play-btn, .side-play-btn').forEach(btn => {
+  document.querySelectorAll('.track-play-btn, .featured-play-btn, .side-play-btn, .collab-play-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation()
+      if (btn.matches('.collab-play-btn')) {
+        const trackId = btn.dataset.collabPlayTrackId
+        const track = (window.__tracks || []).find((t) => t.id === trackId)
+        if (track) handlePlayTrack(track)
+        return
+      }
+
       const card = btn.closest('.track-card, .featured-release-card, .side-release-card')
       const trackIndex = parseInt(card.dataset.track)
       const track = window.__tracks[trackIndex]
-      
-      if (track) {
-        handlePlayTrack(track)
-      }
+      if (track) handlePlayTrack(track)
     })
   })
 
   // Card click listeners - navigate to detail page on all devices
-  document.querySelectorAll('.track-card, .featured-release-card, .side-release-card').forEach(card => {
+  document.querySelectorAll('.track-card, .featured-release-card, .side-release-card, .collab-card').forEach(card => {
     if (card._clickHandler) {
       card.removeEventListener('click', card._clickHandler)
     }
@@ -408,10 +503,12 @@ function setupTrackCardListeners() {
       // Don't navigate if clicking on play button, like button, or spotify indicator
       if (e.target.closest('.track-play-btn, .featured-play-btn, .side-play-btn') || 
           e.target.closest('.like-btn-mini, .featured-like-btn, .side-like-btn') || 
-          e.target.closest('.spotify-indicator, .featured-spotify-btn')) {
+          e.target.closest('.spotify-indicator, .featured-spotify-btn') ||
+          e.target.closest('.collab-play-btn')) {
         return
       }
-      const trackId = card.dataset.trackId
+
+      const trackId = card.dataset.trackId || card.dataset.collabTrackId || card.dataset.trackId
       if (trackId) {
         window.location.href = `track-detail.html?id=${trackId}`
       }

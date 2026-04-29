@@ -318,6 +318,39 @@ async function populateArtistSelect(selectedId = '') {
   if (selectedId) select.value = selectedId
 }
 
+async function populateCollaboratorsSelect(selectedIds = []) {
+  const select = document.getElementById('trackCollaborators')
+  if (!select) return
+
+  const preserve = new Set((Array.isArray(selectedIds) ? selectedIds : []).map((x) => String(x)))
+
+  select.innerHTML = ''
+
+  try {
+    const artists = await fetchArtists()
+    if (!artistCache) artistCache = new Map()
+
+    const normalized = (artists || [])
+      .filter((a) => a && a.id)
+      .map((a) => ({
+        id: String(a.id),
+        name: String(a.name || ''),
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name))
+
+    for (const a of normalized) {
+      artistCache.set(a.id, a.name)
+      const opt = document.createElement('option')
+      opt.value = a.id
+      opt.textContent = a.name || a.id
+      if (preserve.has(a.id)) opt.selected = true
+      select.appendChild(opt)
+    }
+  } catch (e) {
+    console.error(e)
+  }
+}
+
 let editingArtistId = null
 
 function openAddArtistModal() {
@@ -372,6 +405,7 @@ function schedulePopulateArtistSelect(selectedId = '') {
   // Schedule a repopulate after the UI finishes switching.
   setTimeout(() => {
     populateArtistSelect(selectedId).catch(console.error)
+    populateCollaboratorsSelect().catch(console.error)
   }, 350)
 }
 
@@ -560,6 +594,10 @@ async function handleAudioUploadSubmit(e) {
 
   const title = String(fd.get('trackTitle') || '').trim()
   const artistId = String(fd.get('trackArtist') || '').trim()
+  const collaboratorIdsRaw = fd.getAll('trackCollaborators')
+  const collaboratorIds = (collaboratorIdsRaw || [])
+    .map((x) => String(x || '').trim())
+    .filter((x) => x && x !== artistId)
   const genre = normalizeGenre(fd.get('trackGenre'))
   const releaseDate = String(fd.get('releaseDate') || '').trim()
   const duration = String(fd.get('trackDuration') || '').trim()
@@ -647,6 +685,11 @@ async function handleAudioUploadSubmit(e) {
 
   try {
     const artistName = await resolveArtistName(artistId)
+    const collaboratorNames = []
+    for (const id of collaboratorIds) {
+      const name = await resolveArtistName(id)
+      if (name) collaboratorNames.push(name)
+    }
 
     // Links-only: use input if provided, otherwise keep existing.
     const linkInfo = classifyLink(effectiveAudioUrlForSave)
@@ -682,6 +725,8 @@ async function handleAudioUploadSubmit(e) {
       title,
       artist: artistId,
       artistName,
+      collaborators: collaboratorIds,
+      collaboratorNames,
       genre,
       duration,
       artwork: artworkUrl,
@@ -941,6 +986,7 @@ function initAdminFirebase() {
 
   // Populate dropdown from Firestore
   populateArtistSelect().catch(console.error)
+  populateCollaboratorsSelect().catch(console.error)
 
   // Re-populate when navigating to Music Management (prevents other scripts from removing __add_new__)
   document.querySelector('[data-target="music-management"]')?.addEventListener('click', () => {

@@ -1986,6 +1986,7 @@ class AdminPanel {
         const populateForm = async () => {
             const titleInput = document.getElementById('trackTitle');
             const artistInput = document.getElementById('trackArtist');
+            const collaboratorsInput = document.getElementById('trackCollaborators');
             const genreInput = document.getElementById('trackGenre');
             const durationInput = document.getElementById('trackDuration');
             const releaseDateInput = document.getElementById('releaseDate');
@@ -1994,7 +1995,7 @@ class AdminPanel {
             const artworkPreview = document.getElementById('artworkPreview');
 
             if (titleInput) titleInput.value = track.title || '';
-            
+
             // Try to match artist by name into the select; fall back to add-new.
             if (artistInput) {
                 try {
@@ -2008,6 +2009,31 @@ class AdminPanel {
 
                 if (artistInput.value === '__add_new__') {
                     artistInput.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            }
+
+            if (collaboratorsInput) {
+                const selectedIds = Array.isArray(track.collaborators)
+                    ? track.collaborators.map(x => String(x))
+                    : [];
+
+                try {
+                    const artists = await window.fetchArtists();
+                    const normalized = (artists || [])
+                        .filter((a) => a && a.id)
+                        .map((a) => ({ id: String(a.id), name: String(a.name || '') }))
+                        .sort((a, b) => a.name.localeCompare(b.name));
+
+                    collaboratorsInput.innerHTML = normalized
+                        .map((a) => `<option value="${a.id}">${a.name || a.id}</option>`)
+                        .join('');
+
+                    const selectedSet = new Set(selectedIds);
+                    Array.from(collaboratorsInput.options).forEach((opt) => {
+                        opt.selected = selectedSet.has(opt.value);
+                    });
+                } catch (_) {
+                    // ignore
                 }
             }
 
