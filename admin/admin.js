@@ -1547,6 +1547,80 @@ class AdminPanel {
         }
     }
 
+    async loadUsers() {
+        console.log('Loading users...');
+        const container = document.getElementById('usersTable');
+        if (!container) {
+            console.error('Users table container not found');
+            return;
+        }
+
+        try {
+            // Load users from Firestore
+            const { db } = await import('../scripts/firebase-init.js');
+            const { collection, getDocs, query, orderBy } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
+            
+            const usersQuery = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
+            const snapshot = await getDocs(usersQuery);
+            
+            const users = [];
+            snapshot.forEach(doc => {
+                users.push({ id: doc.id, ...doc.data() });
+            });
+            
+            if (users.length === 0) {
+                container.innerHTML = '<tr><td colspan="5" class="text-center">No users found</td></tr>';
+                return;
+            }
+            
+            container.innerHTML = users.map(user => {
+                const displayName = user.displayName || user.email || 'Anonymous User';
+                const email = user.email || '';
+                const plan = user.membership?.plan || 'Free';
+                const memberSince = user.createdAt?.toDate ? user.createdAt.toDate().toLocaleDateString() : 
+                                 user.memberSince || 'Unknown';
+                const status = user.status || 'active';
+                
+                return `
+                    <tr>
+                        <td>
+                            <div class="user-cell">
+                                <div class="user-name">${displayName}</div>
+                                <div class="user-email">${email}</div>
+                            </div>
+                        </td>
+                        <td><span class="plan-badge plan-${plan.toLowerCase()}">${plan}</span></td>
+                        <td>${memberSince}</td>
+                        <td><span class="status-badge status-${status}">${status}</span></td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="btn btn-primary btn-sm" onclick="adminPanel.viewUser('${user.id}')" title="View">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="btn btn-secondary btn-sm" onclick="adminPanel.editUser('${user.id}')" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                ${status === 'active' ? `
+                                    <button class="btn btn-warning btn-sm" onclick="adminPanel.suspendUser('${user.id}')" title="Suspend">
+                                        <i class="fas fa-ban"></i>
+                                    </button>
+                                ` : `
+                                    <button class="btn btn-success btn-sm" onclick="adminPanel.activateUser('${user.id}')" title="Activate">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                `}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            
+        } catch (error) {
+            console.error('Error loading users from Firestore:', error);
+            container.innerHTML = '<tr><td colspan="5" class="text-center">Failed to load users</td></tr>';
+        }
+    }
+
     async verifyPayment(paymentId) {
         if (!confirm('Are you sure you want to verify this payment? This will activate the user\'s membership.')) {
             return;
