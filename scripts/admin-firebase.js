@@ -394,6 +394,9 @@ async function populateArtistSelect(selectedId = '') {
   const select = document.getElementById('trackArtist')
   if (!select) return
 
+  populateArtistSelect._seq = (populateArtistSelect._seq || 0) + 1
+  const seq = populateArtistSelect._seq
+
   const addNewOptionValue = '__add_new__'
   const collabOptionValue = '__collab__'
   const ensureBaseOptions = () => {
@@ -428,6 +431,7 @@ async function populateArtistSelect(selectedId = '') {
 
   try {
     const artists = await fetchArtists()
+    if (seq !== populateArtistSelect._seq) return
     if (!artistCache) artistCache = new Map()
 
     const seenIds = new Set()
@@ -441,6 +445,7 @@ async function populateArtistSelect(selectedId = '') {
       .sort((a, b) => a.name.localeCompare(b.name))
 
     normalized.forEach((a) => {
+      if (seq !== populateArtistSelect._seq) return
       const id = a.id
       const name = a.name
       const keyName = normalizeArtistName(name).toLowerCase()
@@ -467,6 +472,9 @@ async function populateArtistSelect(selectedId = '') {
 async function populateCollaboratorsSelect(selectedIds = []) {
   const select = document.getElementById('trackCollaborators')
   if (!select) return
+
+  populateCollaboratorsSelect._seq = (populateCollaboratorsSelect._seq || 0) + 1
+  const seq = populateCollaboratorsSelect._seq
 
   const addNewOptionValue = '__add_new__'
   const preserve = new Set((Array.isArray(selectedIds) ? selectedIds : []).map((x) => String(x)))
@@ -495,9 +503,11 @@ async function populateCollaboratorsSelect(selectedIds = []) {
 
   try {
     const normalized = await getNormalizedDedupedArtists()
+    if (seq !== populateCollaboratorsSelect._seq) return
     if (!artistCache) artistCache = new Map()
 
     for (const a of normalized) {
+      if (seq !== populateCollaboratorsSelect._seq) return
       artistCache.set(a.id, a.name)
       const opt = document.createElement('option')
       opt.value = a.id
