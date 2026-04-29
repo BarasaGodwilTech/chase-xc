@@ -569,8 +569,8 @@ class PersistentFloatingPlayer {
             const s = JSON.parse(raw);
             if (!s || typeof s !== 'object') return false;
             if (s.trackId !== trackId) return false;
-            // Dedup within 5 minutes
-            return !!s.timestamp && (Date.now() - s.timestamp) < 5 * 60 * 1000;
+            // Dedup within 30 seconds
+            return !!s.timestamp && (Date.now() - s.timestamp) < 30 * 1000;
         } catch (_) {
             return false;
         }
