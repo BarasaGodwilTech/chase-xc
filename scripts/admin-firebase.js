@@ -563,7 +563,9 @@ function schedulePopulateArtistSelect(selectedId = '') {
   // Schedule a repopulate after the UI finishes switching.
   setTimeout(() => {
     populateArtistSelect(selectedId).catch(console.error)
-    populateCollaboratorsSelect().catch(console.error)
+    const pending = Array.isArray(window.__pendingCollaboratorIds) ? window.__pendingCollaboratorIds : null
+    if (pending) window.__pendingCollaboratorIds = null
+    populateCollaboratorsSelect(pending || []).catch(console.error)
   }, 350)
 }
 

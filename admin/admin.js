@@ -3179,6 +3179,7 @@ class AdminPanel {
 
                 if (externalArtistValue === '__collab__') {
                     const ids = Array.isArray(this.externalCollaboratorIds) ? this.externalCollaboratorIds : [];
+                    window.__pendingCollaboratorIds = ids;
                     if (typeof window.populateCollaboratorsSelect === 'function') {
                         await window.populateCollaboratorsSelect(ids);
                     } else {
