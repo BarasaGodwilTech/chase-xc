@@ -10731,7 +10731,7 @@ border-radius: 12px;
     margin: 0 auto;
     padding: 0 3rem;
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) clamp(260px, 38vw, 550px);
     gap: 5rem;
     align-items: center;
     position: relative;
@@ -10969,8 +10969,8 @@ border-radius: 12px;
 /* Responsive Design for Music Hero */
 @media (max-width: 1024px) {
     .music-hero-container {
-        grid-template-columns: 1fr;
-        gap: 3rem;
+        grid-template-columns: minmax(0, 1fr) clamp(220px, 34vw, 420px);
+        gap: 2.5rem;
         padding: 0 1.5rem;
     }
 
@@ -10979,12 +10979,27 @@ border-radius: 12px;
     }
 
     .music-hero-image-wrapper {
-        max-width: 400px;
-        margin: 0 auto;
+        max-width: 420px;
     }
 }
 
 @media (max-width: 768px) {
+    .music-hero-container {
+        grid-template-columns: minmax(0, 1fr) clamp(200px, 32vw, 320px);
+        gap: 1.75rem;
+    }
+
+    .music-hero-image-wrapper {
+        max-width: 320px;
+    }
+
+    .music-hero-btn-primary,
+    .music-hero-btn-secondary {
+        padding: 0.9rem 1.6rem;
+    }
+}
+
+@media (max-width: 600px) {
     .music-hero {
         min-height: auto;
         padding: 5rem 0 4rem 0;
@@ -11044,7 +11059,6 @@ border-radius: 12px;
     .music-hero-wave {
         display: none;
     }
-
     .hero-particles {
         display: none;
     }
