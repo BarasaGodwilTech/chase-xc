@@ -109,6 +109,151 @@ function renderTeamMembers(teamMembers) {
 
     const teamHtml = teamMembers.map(member => createTeamMemberCard(member)).join('');
     teamGrid.innerHTML = teamHtml;
+    
+    // Add scroll functionality if there are more than 4 team members
+    if (teamMembers.length > 4) {
+        setupScrollFunctionality(teamGrid);
+    }
+}
+
+/**
+ * Sets up scroll functionality for the team grid
+ * @param {HTMLElement} teamGrid - The team grid element
+ */
+function setupScrollFunctionality(teamGrid) {
+    // Add scroll indicators
+    addScrollIndicators(teamGrid);
+    
+    // Add touch/swipe support for mobile
+    addTouchSupport(teamGrid);
+    
+    // Add keyboard navigation
+    addKeyboardNavigation(teamGrid);
+}
+
+/**
+ * Adds scroll indicators to show more content is available
+ * @param {HTMLElement} teamGrid - The team grid element
+ */
+function addScrollIndicators(teamGrid) {
+    // Check if scroll indicators already exist
+    if (teamGrid.parentElement.querySelector('.team-scroll-indicators')) {
+        return;
+    }
+    
+    const indicatorsContainer = document.createElement('div');
+    indicatorsContainer.className = 'team-scroll-indicators';
+    indicatorsContainer.innerHTML = `
+        <button class="team-scroll-btn team-scroll-left" aria-label="Scroll left">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+        <button class="team-scroll-btn team-scroll-right" aria-label="Scroll right">
+            <i class="fas fa-chevron-right"></i>
+        </button>
+    `;
+    
+    teamGrid.parentElement.style.position = 'relative';
+    teamGrid.parentElement.appendChild(indicatorsContainer);
+    
+    // Scroll button functionality
+    const leftBtn = indicatorsContainer.querySelector('.team-scroll-left');
+    const rightBtn = indicatorsContainer.querySelector('.team-scroll-right');
+    
+    leftBtn.addEventListener('click', () => {
+        teamGrid.scrollBy({ left: -300, behavior: 'smooth' });
+    });
+    
+    rightBtn.addEventListener('click', () => {
+        teamGrid.scrollBy({ left: 300, behavior: 'smooth' });
+    });
+    
+    // Update button visibility based on scroll position
+    function updateScrollButtons() {
+        const maxScroll = teamGrid.scrollWidth - teamGrid.clientWidth;
+        leftBtn.style.display = teamGrid.scrollLeft <= 10 ? 'none' : 'flex';
+        rightBtn.style.display = teamGrid.scrollLeft >= maxScroll - 10 ? 'none' : 'flex';
+    }
+    
+    teamGrid.addEventListener('scroll', updateScrollButtons);
+    updateScrollButtons(); // Initial state
+}
+
+/**
+ * Adds touch/swipe support for mobile devices
+ * @param {HTMLElement} teamGrid - The team grid element
+ */
+function addTouchSupport(teamGrid) {
+    let startX = 0;
+    let scrollLeft = 0;
+    let isDown = false;
+    
+    teamGrid.addEventListener('mousedown', (e) => {
+        isDown = true;
+        startX = e.pageX - teamGrid.offsetLeft;
+        scrollLeft = teamGrid.scrollLeft;
+        teamGrid.style.cursor = 'grabbing';
+    });
+    
+    teamGrid.addEventListener('mouseleave', () => {
+        isDown = false;
+        teamGrid.style.cursor = 'grab';
+    });
+    
+    teamGrid.addEventListener('mouseup', () => {
+        isDown = false;
+        teamGrid.style.cursor = 'grab';
+    });
+    
+    teamGrid.addEventListener('mousemove', (e) => {
+        if (!isDown) return;
+        e.preventDefault();
+        const x = e.pageX - teamGrid.offsetLeft;
+        const walk = (x - startX) * 2;
+        teamGrid.scrollLeft = scrollLeft - walk;
+    });
+    
+    // Touch events for mobile
+    teamGrid.addEventListener('touchstart', (e) => {
+        startX = e.touches[0].pageX - teamGrid.offsetLeft;
+        scrollLeft = teamGrid.scrollLeft;
+    });
+    
+    teamGrid.addEventListener('touchmove', (e) => {
+        const x = e.touches[0].pageX - teamGrid.offsetLeft;
+        const walk = (x - startX) * 2;
+        teamGrid.scrollLeft = scrollLeft - walk;
+    });
+}
+
+/**
+ * Adds keyboard navigation support
+ * @param {HTMLElement} teamGrid - The team grid element
+ */
+function addKeyboardNavigation(teamGrid) {
+    teamGrid.setAttribute('tabindex', '0');
+    teamGrid.setAttribute('role', 'region');
+    teamGrid.setAttribute('aria-label', 'Team members carousel');
+    
+    teamGrid.addEventListener('keydown', (e) => {
+        switch(e.key) {
+            case 'ArrowLeft':
+                e.preventDefault();
+                teamGrid.scrollBy({ left: -300, behavior: 'smooth' });
+                break;
+            case 'ArrowRight':
+                e.preventDefault();
+                teamGrid.scrollBy({ left: 300, behavior: 'smooth' });
+                break;
+            case 'Home':
+                e.preventDefault();
+                teamGrid.scrollTo({ left: 0, behavior: 'smooth' });
+                break;
+            case 'End':
+                e.preventDefault();
+                teamGrid.scrollTo({ left: teamGrid.scrollWidth, behavior: 'smooth' });
+                break;
+        }
+    });
 }
 
 /**
