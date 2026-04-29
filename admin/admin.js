@@ -1443,6 +1443,7 @@ class AdminPanel {
         // Preserve the Firestore-powered artist select behavior, including "+ Add new artist..."
         // (admin-firebase.js relies on the special __add_new__ option).
         artistSelect.innerHTML = '<option value="">Select Artist</option>' +
+            '<option value="__collab__">Collaboration (multiple artists)</option>' +
             '<option value="__add_new__">+ Add new artist...</option>' +
             optionsHtml;
     }
@@ -1998,17 +1999,27 @@ class AdminPanel {
 
             // Try to match artist by name into the select; fall back to add-new.
             if (artistInput) {
-                try {
-                    const artists = await window.fetchArtists();
-                    const trackArtist = String(track.artist || '').toLowerCase();
-                    const matchingArtist = (artists || []).find(a => String(a.name || '').toLowerCase() === trackArtist);
-                    artistInput.value = matchingArtist ? matchingArtist.id : '__add_new__';
-                } catch (_) {
-                    artistInput.value = '__add_new__';
-                }
+                const selectedIds = Array.isArray(track.collaborators)
+                    ? track.collaborators.map(x => String(x))
+                    : [];
 
-                if (artistInput.value === '__add_new__') {
+                // Collaboration tracks may not have a main artist saved.
+                if (!track.artist && selectedIds.length >= 2) {
+                    artistInput.value = '__collab__';
                     artistInput.dispatchEvent(new Event('change', { bubbles: true }));
+                } else {
+                    try {
+                        const artists = await window.fetchArtists();
+                        const trackArtist = String(track.artist || '').toLowerCase();
+                        const matchingArtist = (artists || []).find(a => String(a.name || '').toLowerCase() === trackArtist);
+                        artistInput.value = matchingArtist ? matchingArtist.id : '__add_new__';
+                    } catch (_) {
+                        artistInput.value = '__add_new__';
+                    }
+
+                    if (artistInput.value === '__add_new__') {
+                        artistInput.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
                 }
             }
 
@@ -2018,20 +2029,24 @@ class AdminPanel {
                     : [];
 
                 try {
-                    const artists = await window.fetchArtists();
-                    const normalized = (artists || [])
-                        .filter((a) => a && a.id)
-                        .map((a) => ({ id: String(a.id), name: String(a.name || '') }))
-                        .sort((a, b) => a.name.localeCompare(b.name));
+                    if (typeof window.populateCollaboratorsSelect === 'function') {
+                        await window.populateCollaboratorsSelect(selectedIds);
+                    } else {
+                        const artists = await window.fetchArtists();
+                        const normalized = (artists || [])
+                            .filter((a) => a && a.id)
+                            .map((a) => ({ id: String(a.id), name: String(a.name || '') }))
+                            .sort((a, b) => a.name.localeCompare(b.name));
 
-                    collaboratorsInput.innerHTML = normalized
-                        .map((a) => `<option value="${a.id}">${a.name || a.id}</option>`)
-                        .join('');
+                        collaboratorsInput.innerHTML = normalized
+                            .map((a) => `<option value="${a.id}">${a.name || a.id}</option>`)
+                            .join('');
 
-                    const selectedSet = new Set(selectedIds);
-                    Array.from(collaboratorsInput.options).forEach((opt) => {
-                        opt.selected = selectedSet.has(opt.value);
-                    });
+                        const selectedSet = new Set(selectedIds);
+                        Array.from(collaboratorsInput.options).forEach((opt) => {
+                            opt.selected = selectedSet.has(opt.value);
+                        });
+                    }
                 } catch (_) {
                     // ignore
                 }

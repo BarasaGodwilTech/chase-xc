@@ -277,11 +277,18 @@ async function populateArtistSelect(selectedId = '') {
   if (!select) return
 
   const addNewOptionValue = '__add_new__'
+  const collabOptionValue = '__collab__'
   const ensureBaseOptions = () => {
     if (!Array.from(select.options).some((o) => o.value === '')) {
       const opt = document.createElement('option')
       opt.value = ''
       opt.textContent = 'Select Artist'
+      select.appendChild(opt)
+    }
+    if (!Array.from(select.options).some((o) => o.value === collabOptionValue)) {
+      const opt = document.createElement('option')
+      opt.value = collabOptionValue
+      opt.textContent = 'Collaboration (multiple artists)'
       select.appendChild(opt)
     }
     if (!Array.from(select.options).some((o) => o.value === addNewOptionValue)) {
@@ -294,7 +301,7 @@ async function populateArtistSelect(selectedId = '') {
 
   const keepOptions = []
   for (const opt of Array.from(select.options)) {
-    if (opt.value === '' || opt.value === addNewOptionValue) keepOptions.push(opt)
+    if (opt.value === '' || opt.value === collabOptionValue || opt.value === addNewOptionValue) keepOptions.push(opt)
   }
 
   select.innerHTML = ''
@@ -660,10 +667,12 @@ async function handleAudioUploadSubmit(e) {
 
   const title = String(fd.get('trackTitle') || '').trim()
   const artistId = String(fd.get('trackArtist') || '').trim()
+  const isCollabMode = artistId === '__collab__'
   const collaboratorIdsRaw = fd.getAll('trackCollaborators')
   const collaboratorIds = (collaboratorIdsRaw || [])
     .map((x) => String(x || '').trim())
-    .filter((x) => x && x !== artistId)
+    .filter((x) => x && x !== '__add_new__' && x !== '__collab__')
+    .filter((x) => !isCollabMode ? (x !== artistId) : true)
   const genre = normalizeGenre(fd.get('trackGenre'))
   const releaseDate = String(fd.get('releaseDate') || '').trim()
   const duration = String(fd.get('trackDuration') || '').trim()
@@ -679,11 +688,20 @@ async function handleAudioUploadSubmit(e) {
   const isEdit = Boolean(editingItem && editingItem.type === 'track' && editingItem.id)
   const existingTrack = isEdit ? (editingItem.data || null) : null
 
-  if (!title || !artistId || artistId === '__add_new__' || !genre) {
+  if (!title || (!isCollabMode && (!artistId || artistId === '__add_new__')) || !genre) {
     if (window.notifications) {
       window.notifications.show('Please fill in Track Title, Artist and Genre.', 'error')
     } else {
       console.error('Please fill in Track Title, Artist and Genre.')
+    }
+    return
+  }
+
+  if (isCollabMode && collaboratorIds.length < 2) {
+    if (window.notifications) {
+      window.notifications.show('For collaborations, please select at least 2 artists.', 'error')
+    } else {
+      console.error('For collaborations, please select at least 2 artists.')
     }
     return
   }
@@ -750,7 +768,8 @@ async function handleAudioUploadSubmit(e) {
   const artworkExt = artworkFile && artworkFile instanceof File ? safeFileExt(artworkFile.name) : ''
 
   try {
-    const artistName = await resolveArtistName(artistId)
+    const artistIdForSave = isCollabMode ? '' : artistId
+    const artistName = artistIdForSave ? await resolveArtistName(artistIdForSave) : ''
     const collaboratorNames = []
     for (const id of collaboratorIds) {
       const name = await resolveArtistName(id)
@@ -789,7 +808,7 @@ async function handleAudioUploadSubmit(e) {
 
     const payload = {
       title,
-      artist: artistId,
+      artist: artistIdForSave,
       artistName,
       collaborators: collaboratorIds,
       collaboratorNames,
@@ -1302,6 +1321,21 @@ function initAdminFirebase() {
   const select = document.getElementById('trackArtist')
   if (select) {
     select.addEventListener('change', async () => {
+      const collabGroup = document.getElementById('trackCollaborators')?.closest('.form-group')
+
+      if (select.value === '__collab__') {
+        if (collabGroup) collabGroup.style.display = ''
+      } else {
+        // Hide + clear collaborators if not in collaboration mode
+        if (collabGroup) collabGroup.style.display = 'none'
+        const collabSelect = document.getElementById('trackCollaborators')
+        if (collabSelect) {
+          Array.from(collabSelect.options).forEach((o) => {
+            o.selected = false
+          })
+        }
+      }
+
       if (select.value === '__add_new__') {
         // Save current form draft so user can continue after adding the artist
         window.__audioUploadDraft = captureAudioUploadDraft()
@@ -1328,6 +1362,10 @@ function initAdminFirebase() {
         openAddArtistModal()
       }
     })
+
+    // Initialize collaborators visibility on load
+    const collabGroup = document.getElementById('trackCollaborators')?.closest('.form-group')
+    if (collabGroup) collabGroup.style.display = select.value === '__collab__' ? '' : 'none'
   }
 
   const collabSelect = document.getElementById('trackCollaborators')
