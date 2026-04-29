@@ -1185,6 +1185,14 @@ class PersistentFloatingPlayer {
         this.isPlaying = false;
         this.hide();
         localStorage.removeItem('floatingPlayerState');
+        
+        // Dispatch event to notify listeners that player has closed
+        document.dispatchEvent(new CustomEvent('persistentPlayer:closed', {
+            detail: {
+                isPlaying: false,
+                currentTrack: null
+            }
+        }));
     }
 
     saveState() {

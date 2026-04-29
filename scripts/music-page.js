@@ -792,7 +792,19 @@ function setupHeroPlayButton() {
 }
 
 function setupPlayerStateSync() {
-  // Listen for persistent player state changes
+  // Listen for floating player state changes
+  document.addEventListener('floatingPlayerStateChanged', (e) => {
+    const { isPlaying, track } = e.detail
+    updateHeroPlayButtonState(isPlaying)
+  })
+  
+  // Listen for persistent player close event
+  document.addEventListener('persistentPlayer:closed', (e) => {
+    const { isPlaying, currentTrack } = e.detail
+    updateHeroPlayButtonState(false)
+  })
+  
+  // Listen for persistent player state changes (fallback)
   document.addEventListener('persistentPlayer:stateChanged', (e) => {
     const { isPlaying, currentTrack } = e.detail
     updateHeroPlayButtonState(isPlaying)
@@ -824,9 +836,23 @@ function setupPlayerStateSync() {
   
   // Listen for track end to update button
   document.addEventListener('audioPlayer:trackEnded', () => {
-    // Don't change button state on track end if we're in repeat mode
-    // Let the player handle the next track
+    // Check if player should continue playing or stop
+    setTimeout(() => {
+      checkAndUpdateHeroButtonState()
+    }, 100)
   })
+  
+  // Listen for page visibility changes to sync button state
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+      checkAndUpdateHeroButtonState()
+    }
+  })
+  
+  // Periodic sync every 2 seconds to ensure consistency
+  setInterval(() => {
+    checkAndUpdateHeroButtonState()
+  }, 2000)
 }
 
 function playAllTracks() {
@@ -908,6 +934,22 @@ function updateHeroPlayButtonState(isPlaying) {
       heroPlayBtn?.classList.remove('playing')
     }
   }
+}
+
+// Enhanced function to check actual player state
+function checkAndUpdateHeroButtonState() {
+  let isPlaying = false
+  
+  // Check persistent floating player first
+  if (window.persistentPlayer) {
+    isPlaying = window.persistentPlayer.isPlaying
+  }
+  // Fallback to regular audio player
+  else if (window.audioPlayer) {
+    isPlaying = window.audioPlayer.isPlaying
+  }
+  
+  updateHeroPlayButtonState(isPlaying)
 }
 
 function handlePlayTrack(track) {

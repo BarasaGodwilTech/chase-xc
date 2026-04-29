@@ -24,7 +24,10 @@ service cloud.firestore {
       return request.resource.data.title is string &&
              request.resource.data.title.size() > 0 &&
              request.resource.data.artist is string &&
-             request.resource.data.artist.size() > 0 &&
+             (
+               request.resource.data.artist.size() > 0 ||
+               (request.resource.data.collaborators is list && request.resource.data.collaborators.size() > 0)
+             ) &&
              request.resource.data.genre is string &&
              request.resource.data.genre.size() > 0 &&
              request.resource.data.status in ['published', 'draft'];
