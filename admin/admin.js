@@ -1742,8 +1742,14 @@ class AdminPanel {
             applyValue('mixingPrice', c.services?.mixing);
             applyValue('masteringPrice', c.services?.mastering);
             applyValue('vocalPrice', c.services?.vocal);
-            applyValue('hourlyRate', c.services?.hourlyRate);
-            applyValue('packagePrice', c.services?.packagePrice);
+            applyValue('studioHourlyRate', c.services?.studioHourlyRate);
+            applyValue('studioPackagePrice', c.services?.studioPackagePrice);
+            applyValue('lessonHourlyRate', c.services?.lessonHourlyRate);
+            applyValue('lessonPackagePrice', c.services?.lessonPackagePrice);
+            applyValue('vocalLessonPrice', c.services?.vocalLessonPrice);
+            applyValue('instrumentLessonPrice', c.services?.instrumentLessonPrice);
+            applyValue('advancedLessonPrice', c.services?.advancedLessonPrice);
+            applyValue('groupLessonPrice', c.services?.groupLessonPrice);
             applyValue('songwritingPrice', c.services?.songwriting);
             applyValue('restorationPrice', c.services?.restoration);
             applyValue('sessionMusicianMin', c.services?.sessionMusicianMin);
@@ -1835,8 +1841,14 @@ class AdminPanel {
                 base.services.mixing = readNum('mixingPrice');
                 base.services.mastering = readNum('masteringPrice');
                 base.services.vocal = readNum('vocalPrice');
-                base.services.hourlyRate = readNum('hourlyRate');
-                base.services.packagePrice = readNum('packagePrice');
+                base.services.studioHourlyRate = readNum('studioHourlyRate');
+                base.services.studioPackagePrice = readNum('studioPackagePrice');
+                base.services.lessonHourlyRate = readNum('lessonHourlyRate');
+                base.services.lessonPackagePrice = readNum('lessonPackagePrice');
+                base.services.vocalLessonPrice = readNum('vocalLessonPrice');
+                base.services.instrumentLessonPrice = readNum('instrumentLessonPrice');
+                base.services.advancedLessonPrice = readNum('advancedLessonPrice');
+                base.services.groupLessonPrice = readNum('groupLessonPrice');
                 base.services.songwriting = readNum('songwritingPrice');
                 base.services.restoration = readNum('restorationPrice');
                 base.services.sessionMusicianMin = readNum('sessionMusicianMin');
@@ -2880,6 +2892,9 @@ class AdminPanel {
         const select = document.getElementById('externalArtist');
         if (!select) return;
 
+        this._populateExternalArtistSelectSeq = (this._populateExternalArtistSelectSeq || 0) + 1;
+        const seq = this._populateExternalArtistSelectSeq;
+
         const addNewOptionValue = '__add_new__';
         const collabOptionValue = '__collab__';
 
@@ -2910,6 +2925,7 @@ class AdminPanel {
 
         try {
             const artists = await window.fetchArtists();
+            if (seq !== this._populateExternalArtistSelectSeq) return;
             const seenIds = new Set();
             const seenNames = new Set();
 
@@ -2927,6 +2943,7 @@ class AdminPanel {
                 });
 
             for (const a of normalized) {
+                if (seq !== this._populateExternalArtistSelectSeq) return;
                 const opt = document.createElement('option');
                 opt.value = a.id;
                 opt.textContent = a.name || a.id;

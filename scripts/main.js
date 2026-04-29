@@ -481,14 +481,20 @@ window.updateServicePricesFromConfig = function(config) {
         if (el) el.textContent = `UGX ${services.vocal.toLocaleString()}`
     }
     
-    // Update hourly rate
-    if (services.hourlyRate) {
+    // Update Music Lessons hourly rate (use lesson-specific field first, fallback to general)
+    if (services.lessonHourlyRate) {
+        const el = document.getElementById('hourly-rate')
+        if (el) el.textContent = `UGX ${services.lessonHourlyRate.toLocaleString()}`
+    } else if (services.hourlyRate) {
         const el = document.getElementById('hourly-rate')
         if (el) el.textContent = `UGX ${services.hourlyRate.toLocaleString()}`
     }
     
-    // Update package price
-    if (services.packagePrice) {
+    // Update Music Lessons package price (use lesson-specific field first, fallback to general)
+    if (services.lessonPackagePrice) {
+        const el = document.getElementById('package-price')
+        if (el) el.textContent = `UGX ${services.lessonPackagePrice.toLocaleString()}`
+    } else if (services.packagePrice) {
         const el = document.getElementById('package-price')
         if (el) el.textContent = `UGX ${services.packagePrice.toLocaleString()}`
     }
