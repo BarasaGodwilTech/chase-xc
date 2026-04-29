@@ -3212,7 +3212,25 @@ class AdminPanel {
             // Switch to Audio Link method so you can complete missing info and save normally.
             this.switchUploadMethod('upload');
 
-            // Clean up external form state
+            if (externalArtistValue === '__collab__') {
+                const ids = Array.isArray(this.externalCollaboratorIds) ? this.externalCollaboratorIds : [];
+                window.__pendingCollaboratorIds = ids;
+                setTimeout(async () => {
+                    try {
+                        const artistSelect2 = document.getElementById('trackArtist');
+                        if (artistSelect2 && artistSelect2.value !== '__collab__') {
+                            artistSelect2.value = '__collab__';
+                            artistSelect2.dispatchEvent(new Event('change', { bubbles: true }));
+                        }
+                        if (typeof window.populateCollaboratorsSelect === 'function') {
+                            await window.populateCollaboratorsSelect(ids);
+                        }
+                    } catch (e) {
+                        console.error('Failed to re-apply collaborators after switch:', e);
+                    }
+                }, 450);
+            }
+
             this.resetExternalForm();
 
             this.showNotification('External track data imported. Please complete missing info and click Save Track.', 'success');

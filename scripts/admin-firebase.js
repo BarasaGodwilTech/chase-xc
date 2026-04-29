@@ -1542,6 +1542,16 @@ function initAdminFirebase() {
     console.warn('[admin-firebase] artistForm not found; inline artist save will not work')
   }
 
+  if (typeof window.populateCollaboratorsSelect !== 'function') {
+    window.populateCollaboratorsSelect = populateCollaboratorsSelect
+  }
+  if (typeof window.populateArtistSelect !== 'function') {
+    window.populateArtistSelect = populateArtistSelect
+  }
+  if (typeof window.schedulePopulateArtistSelect !== 'function') {
+    window.schedulePopulateArtistSelect = schedulePopulateArtistSelect
+  }
+
   window.dispatchEvent(new Event('adminFirebaseReady'))
 }
 
