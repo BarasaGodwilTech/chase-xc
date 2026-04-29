@@ -381,29 +381,30 @@ class PersistentFloatingPlayer {
                     if (state.platform === 'audio' && state.track.audioUrl) {
                         this.restoreAudio(state);
                     } else if (state.platform && state.platform !== 'audio') {
-                        // For embeds, show player but don't auto-play
-                        // User can click play to resume
-                        this.updateUI(state.platform);
-                        this.show();
-                        this.updatePlayButton();
+                        // For embeds, rebuild the iframe so play() can actually control it
+                        this.isPlaying = false;
+                        this.loadTrack(state.track);
 
                         if (state.isPlaying) {
                             // Best-effort resume. May be blocked by browser autoplay policy.
-                            this.isPlaying = false;
                             setTimeout(() => this.play(), 0);
+                        } else {
+                            this.updatePlayButton();
+                            this.saveState();
                         }
                     } else {
                         // Fallback - detect platform from track
                         const { platform } = this.detectPlatform(state.track);
                         this.currentPlatform = platform;
-                        this.updateUI(platform);
-                        this.show();
-                        this.updatePlayButton();
+                        this.isPlaying = false;
+                        this.loadTrack(state.track);
 
                         if (state.isPlaying) {
                             // Best-effort resume. May be blocked by browser autoplay policy.
-                            this.isPlaying = false;
                             setTimeout(() => this.play(), 0);
+                        } else {
+                            this.updatePlayButton();
+                            this.saveState();
                         }
                     }
 
@@ -952,6 +953,22 @@ class PersistentFloatingPlayer {
         }), 'https://www.youtube.com');
     }
 
+    attemptYouTubePlay(retries = 6) {
+        if (this.currentPlatform !== 'youtube' && this.currentPlatform !== 'youtubemusic') return;
+        const iframe = document.getElementById('flpYouTubeEmbed') || document.getElementById('flpYouTubeMusicEmbed');
+        if (!iframe) return;
+
+        let attempt = 0;
+        const tick = () => {
+            attempt += 1;
+            this.sendYouTubeCommand('playVideo');
+            if (attempt < retries) {
+                setTimeout(tick, 250 + attempt * 250);
+            }
+        };
+        setTimeout(tick, 0);
+    }
+
     play() {
         // Handle embeds (YouTube, Spotify, SoundCloud)
         if (this.currentPlatform && this.currentPlatform !== 'audio') {
@@ -975,7 +992,7 @@ class PersistentFloatingPlayer {
             
             // Control YouTube embed via postMessage API
             if (this.currentPlatform === 'youtube' || this.currentPlatform === 'youtubemusic') {
-                this.sendYouTubeCommand('playVideo');
+                this.attemptYouTubePlay();
             }
             
             this.isPlaying = true;
