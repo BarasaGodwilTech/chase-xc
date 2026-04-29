@@ -72,25 +72,33 @@ function initNavigation() {
     const navLinks = document.querySelectorAll(".nav-link")
     const profileBtn = document.getElementById("profileBtn")
     const profileDropdown = document.getElementById("profileDropdown")
+    const mobileNavOverlay = document.getElementById("mobileNavOverlay")
 
     if (hamburger) {
         hamburger.addEventListener("click", () => {
-            hamburger.classList.toggle("active")
+            const isActive = hamburger.classList.toggle("active")
             if (nav) nav.classList.toggle("active")
+            if (mobileNavOverlay) mobileNavOverlay.classList.toggle("active", isActive)
             
             // Close profile dropdown when opening mobile menu
             if (profileDropdown) {
                 profileDropdown.classList.remove("active")
+            }
+
+            // Prevent body scroll when menu is open
+            document.body.style.overflow = isActive ? 'hidden' : ''
+            
+            // Add ARIA attributes for accessibility
+            hamburger.setAttribute("aria-expanded", isActive)
+            if (nav) {
+                nav.setAttribute("aria-hidden", !isActive)
             }
         })
     }
 
     navLinks.forEach((link) => {
         link.addEventListener("click", () => {
-            if (hamburger) {
-                hamburger.classList.remove("active")
-                if (nav) nav.classList.remove("active")
-            }
+            closeMobileMenu()
         })
     })
 
@@ -103,21 +111,69 @@ function initNavigation() {
 
             // On mobile, if nav is open, close it first
             if (nav && nav.classList.contains("active")) {
-                if (hamburger) hamburger.classList.remove("active")
-                nav.classList.remove("active")
+                closeMobileMenu()
             }
         })
     }
 
+    // Close mobile menu when clicking overlay
+    if (mobileNavOverlay) {
+        mobileNavOverlay.addEventListener("click", closeMobileMenu)
+    }
+
     // Close mobile menu when clicking outside
     document.addEventListener("click", (e) => {
-        if (hamburger && nav) {
+        if (hamburger && nav && nav.classList.contains("active")) {
             if (!nav.contains(e.target) && !hamburger.contains(e.target)) {
-                hamburger.classList.remove("active")
-                nav.classList.remove("active")
+                closeMobileMenu()
             }
         }
     })
+
+    // Close mobile menu on Escape key
+    document.addEventListener("keydown", (e) => {
+        if (e.key === 'Escape' && nav && nav.classList.contains("active")) {
+            closeMobileMenu()
+        }
+    })
+
+    // Add touch gesture support for swipe to close
+    if (nav) {
+        let touchStartX = 0
+        let touchEndX = 0
+
+        nav.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX
+        })
+
+        nav.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX
+            handleSwipe()
+        })
+
+        function handleSwipe() {
+            // Swipe right to close (from left edge of screen)
+            if (touchEndX - touchStartX > 100 && touchStartX < 50) {
+                closeMobileMenu()
+            }
+        }
+    }
+
+    // Helper function to close mobile menu
+    function closeMobileMenu() {
+        if (hamburger) {
+            hamburger.classList.remove("active")
+            hamburger.setAttribute("aria-expanded", "false")
+        }
+        if (nav) {
+            nav.classList.remove("active")
+            nav.setAttribute("aria-hidden", "true")
+        }
+        if (mobileNavOverlay) {
+            mobileNavOverlay.classList.remove("active")
+        }
+        document.body.style.overflow = ''
+    }
 }
 
 // Set active navigation link based on current page

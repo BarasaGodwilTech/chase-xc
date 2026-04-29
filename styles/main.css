@@ -297,7 +297,20 @@ button.profile-menu-item {
   background: none;
   border: none;
   cursor: pointer;
+  padding: 0.5rem;
+  z-index: 1001;
+  transition: all 0.3s ease;
   gap: 5px;
+  border-radius: 8px;
+}
+
+.hamburger:hover {
+  background: rgba(168, 85, 247, 0.1);
+}
+
+.hamburger:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
 }
 
 .hamburger span {
@@ -318,6 +331,26 @@ button.profile-menu-item {
 
 .hamburger.active span:nth-child(3) {
   transform: rotate(-45deg) translate(8px, -8px);
+}
+
+/* Mobile Navigation Overlay */
+.mobile-nav-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(5px);
+  z-index: 99;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.mobile-nav-overlay.active {
+  opacity: 1;
+  visibility: visible;
 }
 
 /* Hero Section */
@@ -1487,24 +1520,54 @@ section {
 
   .nav {
     display: none;
-    position: absolute;
-    top: 100%;
-    left: 0;
-    width: 100%;
+    position: fixed;
+    top: 0;
+    right: -100%;
+    width: 80%;
+    max-width: 320px;
+    height: 100vh;
+    background: var(--background);
     flex-direction: column;
-    background: var(--surface);
-    padding: var(--spacing-lg);
-    gap: var(--spacing-md);
-    border-bottom: 1px solid var(--border);
+    padding: var(--spacing-xl) var(--spacing-lg);
+    border-left: 1px solid var(--border);
+    box-shadow: -5px 0 20px rgba(0, 0, 0, 0.3);
+    z-index: 100;
+    transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow-y: auto;
   }
 
   .nav.active {
     display: flex;
+    right: 0;
+  }
+
+  .nav-link {
+    padding: var(--spacing-md) var(--spacing-sm);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
+    font-size: 1.1rem;
+    margin-bottom: var(--spacing-sm);
+  }
+
+  .nav-link:hover {
+    background: rgba(168, 85, 247, 0.1);
+    border-color: rgba(168, 85, 247, 0.3);
+    transform: translateX(5px);
+  }
+
+  .nav-link.active {
+    background: rgba(168, 85, 247, 0.15);
+    border-color: rgba(168, 85, 247, 0.5);
+    color: var(--primary);
   }
 
   .nav-profile {
     margin-left: 0;
     align-self: flex-end;
+    margin-top: var(--spacing-lg);
+    padding-top: var(--spacing-md);
+    border-top: 1px solid var(--border);
   }
 
   .profile-btn {
