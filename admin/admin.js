@@ -3299,6 +3299,17 @@ class AdminPanel {
     }
 
     async saveTeamForm() {
+        if (this.teamSaveInProgress) return;
+        this.teamSaveInProgress = true;
+
+        const form = document.getElementById('teamForm');
+        const submitBtn = form?.querySelector('button[type="submit"]');
+        if (submitBtn && !submitBtn.dataset.originalHtml) submitBtn.dataset.originalHtml = submitBtn.innerHTML;
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+        }
+
         const name = document.getElementById('teamMemberNameInput')?.value?.trim();
         const role = document.getElementById('teamMemberRoleInput')?.value?.trim();
         const badge = document.getElementById('teamMemberBadgeInput')?.value?.trim();
@@ -3310,12 +3321,21 @@ class AdminPanel {
 
         if (!name || !role) {
             this.showNotification('Name and role are required', 'error');
+            this.teamSaveInProgress = false;
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                if (submitBtn.dataset.originalHtml) {
+                    submitBtn.innerHTML = submitBtn.dataset.originalHtml;
+                    delete submitBtn.dataset.originalHtml;
+                }
+            }
             return;
         }
 
         try {
             let imageUrl = '';
             if (imageInput?.files?.[0]) {
+                if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading photo...';
                 imageUrl = await this.handleImageUpload(imageInput.files[0]);
             } else if (this.editingItem?.data?.image) {
                 imageUrl = this.editingItem.data.image;
@@ -3324,11 +3344,13 @@ class AdminPanel {
             const memberData = { name, role, badge, status, skills, bio, image: imageUrl };
 
             if (this.editingItem && this.editingItem.id) {
+                if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating member...';
                 const { db } = await import('../scripts/firebase-init.js');
                 const { doc, updateDoc } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
                 await updateDoc(doc(db, 'team', this.editingItem.id), memberData);
                 this.showNotification('Team member updated successfully!', 'success');
             } else {
+                if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding member...';
                 const { db } = await import('../scripts/firebase-init.js');
                 const { collection, addDoc } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js');
                 memberData.createdAt = new Date().toISOString();
@@ -3341,8 +3363,18 @@ class AdminPanel {
         } catch (error) {
             console.error('Error saving team member:', error);
             this.showNotification('Failed to save team member: ' + error.message, 'error');
+        } finally {
+            this.teamSaveInProgress = false;
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                if (submitBtn.dataset.originalHtml) {
+                    submitBtn.innerHTML = submitBtn.dataset.originalHtml;
+                    delete submitBtn.dataset.originalHtml;
+                }
+            }
         }
     }
+
     addNewArtist() {
         this.openArtistForm(null);
     }

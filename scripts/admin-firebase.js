@@ -24,6 +24,27 @@ const GITHUB_IMAGE_WORKER_URL = 'https://github-image-uploader.barasagodwil.work
 let githubSettingsCache = null
 let githubSettingsCacheAt = 0
 
+let artistSaveInProgress = false
+
+function setFormSubmitBusy(form, busy, busyLabel) {
+  if (!form) return
+  const btn = form.querySelector('button[type="submit"]')
+  if (!btn) return
+
+  if (busy) {
+    if (!btn.dataset.originalHtml) btn.dataset.originalHtml = btn.innerHTML
+    btn.disabled = true
+    btn.innerHTML = busyLabel || '<i class="fas fa-spinner fa-spin"></i> Saving...'
+    return
+  }
+
+  btn.disabled = false
+  if (btn.dataset.originalHtml) {
+    btn.innerHTML = btn.dataset.originalHtml
+    delete btn.dataset.originalHtml
+  }
+}
+
 async function getGithubSettings() {
   const now = Date.now()
   if (githubSettingsCache && (now - githubSettingsCacheAt) < 60_000) return githubSettingsCache
@@ -497,6 +518,11 @@ async function handleAddArtistSubmit(e) {
   e.preventDefault()
   console.log('[admin-firebase] Add/Edit artist submit')
   const form = e.currentTarget
+
+  if (artistSaveInProgress) return
+  artistSaveInProgress = true
+  setFormSubmitBusy(form, true, '<i class="fas fa-spinner fa-spin"></i> Saving...')
+
   const fd = new FormData(form)
 
   const name = String(fd.get('artistName') || '').trim()
@@ -510,12 +536,16 @@ async function handleAddArtistSubmit(e) {
     } else {
       console.error('Artist name is required')
     }
+
+    artistSaveInProgress = false
+    setFormSubmitBusy(form, false)
     return
   }
 
   let imageUrl = ''
   try {
     if (imageFile && imageFile instanceof File && imageFile.size > 0) {
+      setFormSubmitBusy(form, true, '<i class="fas fa-spinner fa-spin"></i> Uploading image...')
       try {
         imageUrl = await uploadProfileImageToGithub('artists', imageFile)
         if (!imageUrl) {
@@ -541,6 +571,8 @@ async function handleAddArtistSubmit(e) {
         imageUrl = ''
       }
     }
+
+    setFormSubmitBusy(form, true, '<i class="fas fa-spinner fa-spin"></i> Saving artist...')
 
     const artistData = {
       name,
@@ -602,6 +634,9 @@ async function handleAddArtistSubmit(e) {
   } catch (err) {
     console.error(err)
     alert('Failed to save artist. Please try again.')
+  } finally {
+    artistSaveInProgress = false
+    setFormSubmitBusy(form, false)
   }
 }
 
