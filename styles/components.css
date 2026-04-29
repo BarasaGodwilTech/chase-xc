@@ -10947,6 +10947,20 @@ border-radius: 12px;
     transform: translate(-50%, -50%) scale(0.95);
 }
 
+.music-hero-play-btn.playing {
+    background: rgba(0, 212, 255, 0.9);
+    box-shadow: 0 8px 32px rgba(0, 212, 255, 0.6);
+}
+
+.music-hero-play-btn.playing:hover {
+    background: rgba(0, 212, 255, 0.95);
+    box-shadow: 0 12px 40px rgba(0, 212, 255, 0.8);
+}
+
+.music-hero-play-btn.playing .hero-play-icon {
+    color: white;
+}
+
 .hero-play-icon {
     position: absolute;
     top: 50%;

@@ -472,6 +472,9 @@ async function initMusicPage() {
 
   // Setup button event listeners
   setupTrackCardListeners()
+  
+  // Setup hero play button
+  setupHeroPlayButton()
 }
 
 function setupTrackCardListeners() {
@@ -755,6 +758,156 @@ function renderFilteredTracks(tracks) {
 function handleSearch(query) {
   filterState.searchTerm = query
   applyAllFilters()
+}
+
+function setupHeroPlayButton() {
+  const heroPlayBtn = document.getElementById('musicHeroPlayBtn')
+  if (!heroPlayBtn) return
+  
+  heroPlayBtn.addEventListener('click', () => {
+    // Check if currently playing, if so pause/resume
+    if (heroPlayBtn.classList.contains('playing')) {
+      // Toggle play/pause
+      if (window.persistentPlayer) {
+        if (window.persistentPlayer.isPlaying) {
+          window.persistentPlayer.pause()
+        } else {
+          window.persistentPlayer.play()
+        }
+      } else if (window.audioPlayer) {
+        if (window.audioPlayer.isPlaying) {
+          window.audioPlayer.pause()
+        } else {
+          window.audioPlayer.play()
+        }
+      }
+    } else {
+      // Start playing all tracks
+      playAllTracks()
+    }
+  })
+  
+  // Listen for player state changes to update button
+  setupPlayerStateSync()
+}
+
+function setupPlayerStateSync() {
+  // Listen for persistent player state changes
+  document.addEventListener('persistentPlayer:stateChanged', (e) => {
+    const { isPlaying, currentTrack } = e.detail
+    updateHeroPlayButtonState(isPlaying)
+  })
+  
+  // Listen for audio player state changes
+  if (window.audioPlayer) {
+    const originalTogglePlay = window.audioPlayer.togglePlay
+    window.audioPlayer.togglePlay = function() {
+      const result = originalTogglePlay.call(this)
+      updateHeroPlayButtonState(this.isPlaying)
+      return result
+    }
+    
+    const originalPlay = window.audioPlayer.play
+    window.audioPlayer.play = function() {
+      const result = originalPlay.call(this)
+      updateHeroPlayButtonState(true)
+      return result
+    }
+    
+    const originalPause = window.audioPlayer.pause
+    window.audioPlayer.pause = function() {
+      const result = originalPause.call(this)
+      updateHeroPlayButtonState(false)
+      return result
+    }
+  }
+  
+  // Listen for track end to update button
+  document.addEventListener('audioPlayer:trackEnded', () => {
+    // Don't change button state on track end if we're in repeat mode
+    // Let the player handle the next track
+  })
+}
+
+function playAllTracks() {
+  console.log('[MusicPage] Playing all tracks from hero button')
+  
+  if (!window.__tracks || window.__tracks.length === 0) {
+    console.warn('[MusicPage] No tracks available to play')
+    if (window.notifications) {
+      window.notifications.show('No tracks available to play', 'warning')
+    }
+    return
+  }
+  
+  // Use persistent floating player if available
+  if (window.persistentPlayer) {
+    // Set up full playlist of all tracks
+    const fullPlaylist = window.__tracks.map(t => ({
+      id: t.id,
+      title: t.title,
+      artistName: t.artistName,
+      artwork: t.artwork,
+      audioUrl: t.audioUrl,
+      platformLinks: t.platformLinks || {},
+      originalData: t
+    }))
+    
+    window.persistentPlayer.setPlaylist(fullPlaylist, 0)
+    window.persistentPlayer.play()
+    
+    // Show notification
+    if (window.notifications) {
+      window.notifications.show(`Playing ${window.__tracks.length} tracks`, 'success')
+    }
+    
+    // Update hero button to show playing state
+    updateHeroPlayButtonState(true)
+    
+    // Scroll to music section to show the player
+    const musicSection = document.getElementById('musicSection')
+    if (musicSection) {
+      setTimeout(() => {
+        musicSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }, 500)
+    }
+  } else {
+    // Fallback to regular audio player
+    const audioPlayer = window.audioPlayer
+    if (audioPlayer && window.__tracks.length > 0) {
+      audioPlayer.currentTrackIndex = 0
+      audioPlayer.loadTrack(0)
+      audioPlayer.play()
+      
+      if (window.notifications) {
+        window.notifications.show(`Playing ${window.__tracks.length} tracks`, 'success')
+      }
+      
+      updateHeroPlayButtonState(true)
+    } else {
+      console.error('[MusicPage] No player available')
+      if (window.notifications) {
+        window.notifications.show('Player not available', 'error')
+      }
+    }
+  }
+}
+
+function updateHeroPlayButtonState(isPlaying) {
+  const heroPlayBtn = document.getElementById('musicHeroPlayBtn')
+  const heroPlayIcon = heroPlayBtn?.querySelector('.hero-play-icon i')
+  
+  if (heroPlayIcon) {
+    if (isPlaying) {
+      heroPlayIcon.classList.remove('fa-play')
+      heroPlayIcon.classList.add('fa-pause')
+      heroPlayBtn?.classList.add('playing')
+    } else {
+      heroPlayIcon.classList.remove('fa-pause')
+      heroPlayIcon.classList.add('fa-play')
+      heroPlayBtn?.classList.remove('playing')
+    }
+  }
 }
 
 function handlePlayTrack(track) {
