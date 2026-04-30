@@ -763,6 +763,29 @@ function initMembership() {
     }
 
     function openMembershipModal(planType) {
+        // Check if user is authenticated
+        if (window.userAuth && !window.userAuth.isLoggedIn()) {
+            console.log('User not authenticated, redirecting to login');
+            
+            // Store the current URL for redirect after login
+            const currentUrl = window.location.href;
+            window.userAuth.setRedirectUrl(currentUrl);
+            
+            // Show message before redirect
+            if (window.notifications) {
+                window.notifications.show('Please sign in to continue with your membership selection', 'info');
+            } else {
+                console.log('Please sign in to continue with your membership selection');
+            }
+            
+            // Redirect to auth page
+            setTimeout(() => {
+                window.location.href = 'auth.html';
+            }, 1000);
+            
+            return;
+        }
+        
         renderSelectedPlan(planType, { openModal: true })
     }
 
