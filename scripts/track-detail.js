@@ -30,14 +30,12 @@ function uniqueStrings(values) {
 async function resolveArtistNames(track) {
   const names = []
   
-  // Add primary artist name if available
-  if (track.artistName) {
-    names.push(track.artistName)
-  }
-  
-  // Add collaborator names from stored data
+  // Add collaborator names from stored data first (most reliable)
   if (track.collaboratorNames && Array.isArray(track.collaboratorNames)) {
-    names.push(...track.collaboratorNames.filter(Boolean))
+    const validNames = track.collaboratorNames.filter(name => 
+      name && name !== 'Unknown Artist' && name.trim() !== ''
+    )
+    names.push(...validNames)
   }
   
   // If we have collaborator IDs but no names, fetch them
@@ -53,7 +51,17 @@ async function resolveArtistNames(track) {
         }
       })
     )
-    names.push(...collaboratorNames.filter(Boolean))
+    const validNames = collaboratorNames.filter(name => 
+      name && name !== 'Unknown Artist' && name.trim() !== ''
+    )
+    names.push(...validNames)
+  }
+  
+  // Add primary artist name only if it's valid and not already included
+  if (track.artistName && track.artistName !== 'Unknown Artist' && track.artistName.trim() !== '') {
+    if (!names.includes(track.artistName)) {
+      names.push(track.artistName)
+    }
   }
   
   return uniqueStrings(names)

@@ -1379,20 +1379,30 @@ class AdminPanel {
             let artistName = 'Unknown Artist';
             
             if (track.collaboratorNames && Array.isArray(track.collaboratorNames) && track.collaboratorNames.length > 0) {
-                artistName = track.collaboratorNames.join(' & ');
+                const validNames = track.collaboratorNames.filter(name => 
+                    name && name !== 'Unknown Artist' && name.trim() !== ''
+                );
+                if (validNames.length > 0) {
+                    artistName = validNames.join(' & ');
+                }
             } else if (track.collaborators && Array.isArray(track.collaborators) && track.collaborators.length > 0) {
                 const collaboratorNames = track.collaborators
                     .map(id => artistMap.get(id))
-                    .filter(Boolean);
+                    .filter(name => name && name !== 'Unknown Artist' && name.trim() !== '');
                 if (collaboratorNames.length > 0) {
                     artistName = collaboratorNames.join(' & ');
                 } else {
-                    artistName = track.artistName || 'Unknown Artist';
+                    artistName = track.artistName && track.artistName !== 'Unknown Artist' ? track.artistName : 'Unknown Artist';
                 }
             } else if (track.artist) {
-                artistName = artistMap.get(track.artist) || track.artistName || 'Unknown Artist';
+                const resolvedName = artistMap.get(track.artist);
+                if (resolvedName && resolvedName !== 'Unknown Artist') {
+                    artistName = resolvedName;
+                } else {
+                    artistName = track.artistName && track.artistName !== 'Unknown Artist' ? track.artistName : 'Unknown Artist';
+                }
             } else {
-                artistName = track.artistName || 'Unknown Artist';
+                artistName = track.artistName && track.artistName !== 'Unknown Artist' ? track.artistName : 'Unknown Artist';
             }
             
             return `

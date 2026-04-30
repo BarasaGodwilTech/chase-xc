@@ -163,9 +163,9 @@ async function renderCollaborations(tracks, artistsById = new Map()) {
       track.artistName || '',
       ...namesFromDoc,
       ...collabIds.map((id) => artistsById.get(String(id))?.name || ''),
-    ].filter(Boolean))
+    ].filter(name => name && name !== 'Unknown Artist' && name.trim() !== ''))
 
-    const artistsLine = resolvedNames.length > 0 ? resolvedNames.join(' & ') : (track.artistName || 'Various Artists')
+    const artistsLine = resolvedNames.length > 0 ? resolvedNames.join(' & ') : 'Various Artists'
 
     const avatars = allIds
       .map((id) => artistsById.get(String(id))?.image || '')
@@ -432,6 +432,32 @@ async function initMusicPage() {
 
   const artistCache = new Map()
   async function resolveArtistName(track) {
+    // Handle collaboration tracks
+    if (track.collaboratorNames && Array.isArray(track.collaboratorNames) && track.collaboratorNames.length > 0) {
+      const names = uniqueStrings(track.collaboratorNames.filter(Boolean))
+      return { name: names.join(' & '), socials: {} }
+    }
+    
+    // Handle collaboration by IDs
+    if (track.collaborators && Array.isArray(track.collaborators) && track.collaborators.length > 0) {
+      const collaboratorNames = await Promise.all(
+        track.collaborators.map(async (id) => {
+          try {
+            const artist = artistsById.get(String(id)) || await fetchArtistById(id)
+            return artist?.name
+          } catch (e) {
+            console.warn('Failed to fetch collaborator:', id, e)
+            return null
+          }
+        })
+      )
+      const names = uniqueStrings(collaboratorNames.filter(Boolean))
+      if (names.length > 0) {
+        return { name: names.join(' & '), socials: {} }
+      }
+    }
+    
+    // Handle single artist (original logic)
     const id = track.artist
     if (!id) return { name: track.artistName || 'Unknown Artist', socials: {} }
     if (artistCache.has(id)) return artistCache.get(id)
