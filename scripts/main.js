@@ -903,7 +903,7 @@ function initMembership() {
                 
                 // Open the membership modal with the selected plan after a short delay
                 setTimeout(() => {
-                    openMembershipModal(pendingPlan);
+                    renderSelectedPlan(pendingPlan, { openModal: true })
                 }, 1000);
             }
         }
