@@ -399,74 +399,60 @@ window.updatePlanCardsFromConfig = function(config) {
     if (!config || !config.plans) return
     
     const weeklyPrice = config.plans.weekly?.price || 0
-    const weeklyMainPrice = config.plans.weekly?.mainPrice || 0
     const monthlyPrice = config.plans.monthly?.price || 0
-    const monthlyMainPrice = config.plans.monthly?.mainPrice || 0
     const yearlyPrice = config.plans.yearly?.price || 0
-    const yearlyMainPrice = config.plans.yearly?.mainPrice || 0
+    const weeklyBasePrice = config.plans.weekly?.basePrice || 0
+    const monthlyBasePrice = config.plans.monthly?.basePrice || 0
+    const yearlyBasePrice = config.plans.yearly?.basePrice || 0
+
+    const formatUGX = (n) => `UGX ${Number(n || 0).toLocaleString()}`
+
+    const applyPlanPricing = (planKey, currentPrice, basePrice) => {
+        const currentEl = document.getElementById(`${planKey}-plan-price`)
+        const baseEl = document.getElementById(`${planKey}-plan-base-price`)
+        const savingsEl = document.getElementById(`${planKey}-plan-savings`)
+        const btn = document.getElementById(`${planKey}-plan-btn`)
+
+        if (currentEl) currentEl.textContent = formatUGX(currentPrice)
+        if (btn) btn.setAttribute('data-amount', currentPrice)
+
+        const hasDiscount = Number(basePrice) > 0 && Number(currentPrice) > 0 && Number(basePrice) > Number(currentPrice)
+
+        if (baseEl) {
+            if (hasDiscount) {
+                baseEl.textContent = formatUGX(basePrice)
+                baseEl.style.display = ''
+            } else {
+                baseEl.textContent = ''
+                baseEl.style.display = 'none'
+            }
+        }
+
+        if (savingsEl) {
+            if (hasDiscount) {
+                const savings = Number(basePrice) - Number(currentPrice)
+                savingsEl.textContent = `Save ${formatUGX(savings)}`
+                savingsEl.style.display = ''
+            } else {
+                savingsEl.textContent = ''
+                savingsEl.style.display = 'none'
+            }
+        }
+    }
     
     // Update weekly plan
     if (config.plans.weekly) {
-        const weeklyPriceEl = document.getElementById('weekly-plan-price')
-        const weeklyMainPriceEl = document.getElementById('weekly-plan-main-price')
-        const weeklyBtn = document.getElementById('weekly-plan-btn')
-        if (weeklyPriceEl) weeklyPriceEl.textContent = `UGX ${weeklyPrice.toLocaleString()}`
-        if (weeklyMainPriceEl) {
-            const show = weeklyMainPrice > weeklyPrice && weeklyPrice > 0
-            weeklyMainPriceEl.textContent = show ? `UGX ${weeklyMainPrice.toLocaleString()}` : ''
-            weeklyMainPriceEl.style.display = show ? 'inline' : 'none'
-        }
-        if (weeklyBtn) weeklyBtn.setAttribute('data-amount', weeklyPrice)
+        applyPlanPricing('weekly', weeklyPrice, weeklyBasePrice)
     }
     
     // Update monthly plan
     if (config.plans.monthly) {
-        const monthlyPriceEl = document.getElementById('monthly-plan-price')
-        const monthlyMainPriceEl = document.getElementById('monthly-plan-main-price')
-        const monthlyBtn = document.getElementById('monthly-plan-btn')
-        const monthlySavingsEl = document.getElementById('monthly-plan-savings')
-        
-        if (monthlyPriceEl) monthlyPriceEl.textContent = `UGX ${monthlyPrice.toLocaleString()}`
-        if (monthlyMainPriceEl) {
-            const show = monthlyMainPrice > monthlyPrice && monthlyPrice > 0
-            monthlyMainPriceEl.textContent = show ? `UGX ${monthlyMainPrice.toLocaleString()}` : ''
-            monthlyMainPriceEl.style.display = show ? 'inline' : 'none'
-        }
-        if (monthlyBtn) monthlyBtn.setAttribute('data-amount', monthlyPrice)
-        
-        // Calculate savings: mainPrice - current price
-        const monthlySavings = monthlyMainPrice - monthlyPrice
-        if (monthlySavingsEl && monthlySavings > 0) {
-            monthlySavingsEl.textContent = `Save UGX ${monthlySavings.toLocaleString()}`
-            monthlySavingsEl.style.display = 'block'
-        } else if (monthlySavingsEl) {
-            monthlySavingsEl.style.display = 'none'
-        }
+        applyPlanPricing('monthly', monthlyPrice, monthlyBasePrice)
     }
     
     // Update yearly plan
     if (config.plans.yearly) {
-        const yearlyPriceEl = document.getElementById('yearly-plan-price')
-        const yearlyMainPriceEl = document.getElementById('yearly-plan-main-price')
-        const yearlyBtn = document.getElementById('yearly-plan-btn')
-        const yearlySavingsEl = document.getElementById('yearly-plan-savings')
-        
-        if (yearlyPriceEl) yearlyPriceEl.textContent = `UGX ${yearlyPrice.toLocaleString()}`
-        if (yearlyMainPriceEl) {
-            const show = yearlyMainPrice > yearlyPrice && yearlyPrice > 0
-            yearlyMainPriceEl.textContent = show ? `UGX ${yearlyMainPrice.toLocaleString()}` : ''
-            yearlyMainPriceEl.style.display = show ? 'inline' : 'none'
-        }
-        if (yearlyBtn) yearlyBtn.setAttribute('data-amount', yearlyPrice)
-        
-        // Calculate savings: mainPrice - current price
-        const yearlySavings = yearlyMainPrice - yearlyPrice
-        if (yearlySavingsEl && yearlySavings > 0) {
-            yearlySavingsEl.textContent = `Save UGX ${yearlySavings.toLocaleString()}`
-            yearlySavingsEl.style.display = 'block'
-        } else if (yearlySavingsEl) {
-            yearlySavingsEl.style.display = 'none'
-        }
+        applyPlanPricing('yearly', yearlyPrice, yearlyBasePrice)
     }
 }
 
@@ -708,41 +694,28 @@ function initMembership() {
             }
         }
         // Update homepage plan cards
-        updateHomepagePlanCards(config)
+        if (window.updatePlanCardsFromConfig) {
+            window.updatePlanCardsFromConfig(config)
+        } else {
+            updateHomepagePlanCards(config)
+        }
     })
 
     // Function to update homepage plan cards from config
     function updateHomepagePlanCards(config) {
         if (!config || !config.plans) return
-        
-        // Update weekly plan
-        if (config.plans.weekly) {
-            const weeklyPriceEl = document.getElementById('weekly-plan-price')
-            const weeklyBtn = document.getElementById('weekly-plan-btn')
-            if (weeklyPriceEl) weeklyPriceEl.textContent = `UGX ${config.plans.weekly.price.toLocaleString()}`
-            if (weeklyBtn) weeklyBtn.setAttribute('data-amount', config.plans.weekly.price)
-        }
-        
-        // Update monthly plan
-        if (config.plans.monthly) {
-            const monthlyPriceEl = document.getElementById('monthly-plan-price')
-            const monthlyBtn = document.getElementById('monthly-plan-btn')
-            if (monthlyPriceEl) monthlyPriceEl.textContent = `UGX ${config.plans.monthly.price.toLocaleString()}`
-            if (monthlyBtn) monthlyBtn.setAttribute('data-amount', config.plans.monthly.price)
-        }
-        
-        // Update yearly plan
-        if (config.plans.yearly) {
-            const yearlyPriceEl = document.getElementById('yearly-plan-price')
-            const yearlyBtn = document.getElementById('yearly-plan-btn')
-            if (yearlyPriceEl) yearlyPriceEl.textContent = `UGX ${config.plans.yearly.price.toLocaleString()}`
-            if (yearlyBtn) yearlyBtn.setAttribute('data-amount', config.plans.yearly.price)
+        if (window.updatePlanCardsFromConfig) {
+            window.updatePlanCardsFromConfig(config)
         }
     }
 
     // Initial update when config is available
     if (window.studioConfig && window.studioConfig.plans) {
-        updateHomepagePlanCards(window.studioConfig)
+        if (window.updatePlanCardsFromConfig) {
+            window.updatePlanCardsFromConfig(window.studioConfig)
+        } else {
+            updateHomepagePlanCards(window.studioConfig)
+        }
     }
 
     function renderSelectedPlan(planType, { openModal } = { openModal: false }) {

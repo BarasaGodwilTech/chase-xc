@@ -1760,14 +1760,14 @@ class AdminPanel {
             applyValue('bankAccountName', c.payment?.bank?.accountName);
             applyValue('supportPhone', c.payment?.supportPhone);
 
+            applyValue('weeklyBasePrice', c.plans?.weekly?.basePrice);
             applyValue('weeklyPrice', c.plans?.weekly?.price);
-            applyValue('weeklyMainPrice', c.plans?.weekly?.mainPrice);
             applyValue('weeklyDescription', c.plans?.weekly?.description);
+            applyValue('monthlyBasePrice', c.plans?.monthly?.basePrice);
             applyValue('monthlyPrice', c.plans?.monthly?.price);
-            applyValue('monthlyMainPrice', c.plans?.monthly?.mainPrice);
             applyValue('monthlyDescription', c.plans?.monthly?.description);
+            applyValue('yearlyBasePrice', c.plans?.yearly?.basePrice);
             applyValue('yearlyPrice', c.plans?.yearly?.price);
-            applyValue('yearlyMainPrice', c.plans?.yearly?.mainPrice);
             applyValue('yearlyDescription', c.plans?.yearly?.description);
 
             applyValue('productionPrice', c.services?.production);
@@ -1858,14 +1858,14 @@ class AdminPanel {
                 base.payment.bank.accountName = read('bankAccountName').trim();
                 base.payment.supportPhone = read('supportPhone').trim();
 
+                base.plans.weekly.basePrice = readNum('weeklyBasePrice');
                 base.plans.weekly.price = readNum('weeklyPrice');
-                base.plans.weekly.mainPrice = readNum('weeklyMainPrice');
                 base.plans.weekly.description = read('weeklyDescription').trim();
+                base.plans.monthly.basePrice = readNum('monthlyBasePrice');
                 base.plans.monthly.price = readNum('monthlyPrice');
-                base.plans.monthly.mainPrice = readNum('monthlyMainPrice');
                 base.plans.monthly.description = read('monthlyDescription').trim();
+                base.plans.yearly.basePrice = readNum('yearlyBasePrice');
                 base.plans.yearly.price = readNum('yearlyPrice');
-                base.plans.yearly.mainPrice = readNum('yearlyMainPrice');
                 base.plans.yearly.description = read('yearlyDescription').trim();
 
                 base.services.production = readNum('productionPrice');
