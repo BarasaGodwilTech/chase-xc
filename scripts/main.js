@@ -405,25 +405,43 @@ window.updatePlanCardsFromConfig = function(config) {
     // Update weekly plan
     if (config.plans.weekly) {
         const weeklyPriceEl = document.getElementById('weekly-plan-price')
+        const weeklyMainPriceEl = document.getElementById('weekly-plan-main-price')
+        const weeklySavingsEl = document.getElementById('weekly-plan-savings')
         const weeklyBtn = document.getElementById('weekly-plan-btn')
-        if (weeklyPriceEl) weeklyPriceEl.textContent = `UGX ${weeklyPrice.toLocaleString()}`
-        if (weeklyBtn) weeklyBtn.setAttribute('data-amount', weeklyPrice)
+        
+        const currentPrice = config.plans.weekly.currentPrice || 0
+        const mainPrice = config.plans.weekly.mainPrice || currentPrice
+        const savings = mainPrice - currentPrice
+        
+        if (weeklyPriceEl) weeklyPriceEl.textContent = `UGX ${currentPrice.toLocaleString()}`
+        if (weeklyMainPriceEl) weeklyMainPriceEl.textContent = `UGX ${mainPrice.toLocaleString()}`
+        if (weeklyBtn) weeklyBtn.setAttribute('data-amount', currentPrice)
+        
+        if (weeklySavingsEl && savings > 0) {
+            weeklySavingsEl.textContent = `Save UGX ${savings.toLocaleString()}`
+            weeklySavingsEl.style.display = 'block'
+        } else if (weeklySavingsEl) {
+            weeklySavingsEl.style.display = 'none'
+        }
     }
     
     // Update monthly plan
     if (config.plans.monthly) {
         const monthlyPriceEl = document.getElementById('monthly-plan-price')
-        const monthlyBtn = document.getElementById('monthly-plan-btn')
+        const monthlyMainPriceEl = document.getElementById('monthly-plan-main-price')
         const monthlySavingsEl = document.getElementById('monthly-plan-savings')
+        const monthlyBtn = document.getElementById('monthly-plan-btn')
         
-        if (monthlyPriceEl) monthlyPriceEl.textContent = `UGX ${monthlyPrice.toLocaleString()}`
-        if (monthlyBtn) monthlyBtn.setAttribute('data-amount', monthlyPrice)
+        const currentPrice = config.plans.monthly.currentPrice || 0
+        const mainPrice = config.plans.monthly.mainPrice || currentPrice
+        const savings = mainPrice - currentPrice
         
-        // Calculate monthly savings: (weekly × 4) - monthly
-        const weeklyMonthlyEquivalent = weeklyPrice * 4
-        const monthlySavings = weeklyMonthlyEquivalent - monthlyPrice
-        if (monthlySavingsEl && monthlySavings > 0) {
-            monthlySavingsEl.textContent = `Save UGX ${monthlySavings.toLocaleString()}`
+        if (monthlyPriceEl) monthlyPriceEl.textContent = `UGX ${currentPrice.toLocaleString()}`
+        if (monthlyMainPriceEl) monthlyMainPriceEl.textContent = `UGX ${mainPrice.toLocaleString()}`
+        if (monthlyBtn) monthlyBtn.setAttribute('data-amount', currentPrice)
+        
+        if (monthlySavingsEl && savings > 0) {
+            monthlySavingsEl.textContent = `Save UGX ${savings.toLocaleString()}`
             monthlySavingsEl.style.display = 'block'
         } else if (monthlySavingsEl) {
             monthlySavingsEl.style.display = 'none'
@@ -433,17 +451,20 @@ window.updatePlanCardsFromConfig = function(config) {
     // Update yearly plan
     if (config.plans.yearly) {
         const yearlyPriceEl = document.getElementById('yearly-plan-price')
-        const yearlyBtn = document.getElementById('yearly-plan-btn')
+        const yearlyMainPriceEl = document.getElementById('yearly-plan-main-price')
         const yearlySavingsEl = document.getElementById('yearly-plan-savings')
+        const yearlyBtn = document.getElementById('yearly-plan-btn')
         
-        if (yearlyPriceEl) yearlyPriceEl.textContent = `UGX ${yearlyPrice.toLocaleString()}`
-        if (yearlyBtn) yearlyBtn.setAttribute('data-amount', yearlyPrice)
+        const currentPrice = config.plans.yearly.currentPrice || 0
+        const mainPrice = config.plans.yearly.mainPrice || currentPrice
+        const savings = mainPrice - currentPrice
         
-        // Calculate yearly savings: (monthly × 12) - yearly
-        const monthlyYearlyEquivalent = monthlyPrice * 12
-        const yearlySavings = monthlyYearlyEquivalent - yearlyPrice
-        if (yearlySavingsEl && yearlySavings > 0) {
-            yearlySavingsEl.textContent = `Save UGX ${yearlySavings.toLocaleString()}`
+        if (yearlyPriceEl) yearlyPriceEl.textContent = `UGX ${currentPrice.toLocaleString()}`
+        if (yearlyMainPriceEl) yearlyMainPriceEl.textContent = `UGX ${mainPrice.toLocaleString()}`
+        if (yearlyBtn) yearlyBtn.setAttribute('data-amount', currentPrice)
+        
+        if (yearlySavingsEl && savings > 0) {
+            yearlySavingsEl.textContent = `Save UGX ${savings.toLocaleString()}`
             yearlySavingsEl.style.display = 'block'
         } else if (yearlySavingsEl) {
             yearlySavingsEl.style.display = 'none'
@@ -727,15 +748,20 @@ function initMembership() {
     }
 
     function renderSelectedPlan(planType, { openModal } = { openModal: false }) {
-        // Always use latest config if available, otherwise fall back to local plans
-        let plan
+        // Always use latest config if available
         if (window.studioConfig && window.studioConfig.plans && window.studioConfig.plans[planType]) {
             const configPlan = window.studioConfig.plans[planType]
+            const currentPrice = configPlan.currentPrice || 0
+            const mainPrice = configPlan.mainPrice || currentPrice
+            const savings = mainPrice - currentPrice
+            
             plan = {
                 name: plans[planType]?.name || plans.monthly.name,
-                price: `UGX ${configPlan.price.toLocaleString()}`,
+                price: `UGX ${currentPrice.toLocaleString()}`,
+                mainPrice: `UGX ${mainPrice.toLocaleString()}`,
+                savings: savings > 0 ? `Save UGX ${savings.toLocaleString()}` : null,
                 period: plans[planType]?.period || plans.monthly.period,
-                description: configPlan.description || plans[planType]?.description || plans.monthly.description
+                description: configPlan.description || ''
             }
         } else {
             plan = plans[planType] || plans.monthly
