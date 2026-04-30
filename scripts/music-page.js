@@ -165,7 +165,7 @@ async function renderCollaborations(tracks, artistsById = new Map()) {
       ...collabIds.map((id) => artistsById.get(String(id))?.name || ''),
     ].filter(Boolean))
 
-    const artistsLine = resolvedNames.length > 0 ? resolvedNames.join(' • ') : (track.artistName || 'Unknown Artist')
+    const artistsLine = resolvedNames.length > 0 ? resolvedNames.join(' & ') : (track.artistName || 'Various Artists')
 
     const avatars = allIds
       .map((id) => artistsById.get(String(id))?.image || '')

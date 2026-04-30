@@ -771,22 +771,110 @@ function initMembership() {
             const currentUrl = window.location.href;
             window.userAuth.setRedirectUrl(currentUrl);
             
-            // Show message before redirect
-            if (window.notifications) {
-                window.notifications.show('Please sign in to continue with your membership selection', 'info');
-            } else {
-                console.log('Please sign in to continue with your membership selection');
-            }
+            // Show clear message about why redirect is happening
+            showAuthRedirectMessage();
             
-            // Redirect to auth page
+            // Redirect to auth page after showing message
             setTimeout(() => {
                 window.location.href = 'auth.html';
-            }, 1000);
+            }, 2500);
             
             return;
         }
         
         renderSelectedPlan(planType, { openModal: true })
+    }
+
+    function showAuthRedirectMessage() {
+        // Create a more prominent toast notification
+        const toast = document.createElement('div');
+        toast.className = 'auth-redirect-toast';
+        toast.innerHTML = `
+            <div class="auth-redirect-content">
+                <div class="auth-redirect-icon">
+                    <i class="fas fa-lock"></i>
+                </div>
+                <div class="auth-redirect-text">
+                    <h4>Authentication Required</h4>
+                    <p>Please sign in to select a membership plan</p>
+                    <p class="auth-redirect-subtitle">You'll be redirected to the login page...</p>
+                </div>
+                <div class="auth-redirect-spinner">
+                    <i class="fas fa-spinner fa-spin"></i>
+                </div>
+            </div>
+        `;
+        
+        // Add styles for the toast
+        toast.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            z-index: 10000;
+            max-width: 400px;
+            animation: slideInRight 0.5s ease, pulse 2s infinite;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+        `;
+        
+        // Add internal styles
+        const style = document.createElement('style');
+        style.textContent = `
+            .auth-redirect-content {
+                display: flex;
+                align-items: center;
+                gap: 1rem;
+            }
+            .auth-redirect-icon {
+                font-size: 1.5rem;
+                opacity: 0.9;
+            }
+            .auth-redirect-text h4 {
+                margin: 0 0 0.25rem 0;
+                font-size: 1.1rem;
+                font-weight: 600;
+            }
+            .auth-redirect-text p {
+                margin: 0.25rem 0;
+                font-size: 0.9rem;
+                opacity: 0.9;
+            }
+            .auth-redirect-subtitle {
+                font-size: 0.8rem !important;
+                opacity: 0.7 !important;
+                font-style: italic;
+            }
+            .auth-redirect-spinner {
+                font-size: 1.2rem;
+                opacity: 0.8;
+            }
+            @keyframes slideInRight {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes pulse {
+                0%, 100% { transform: scale(1); }
+                50% { transform: scale(1.02); }
+            }
+        `;
+        
+        document.head.appendChild(style);
+        document.body.appendChild(toast);
+        
+        // Remove toast after redirect time
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.remove();
+            }
+            if (style.parentNode) {
+                style.remove();
+            }
+        }, 2500);
     }
 
     window.openMembershipModal = openMembershipModal

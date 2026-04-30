@@ -5,6 +5,60 @@ import { likedTracksManager } from './liked-tracks-manager.js'
 let currentTrack = null
 let artistData = null
 
+// Helper functions for collaboration tracks
+function safeArray(val) {
+  if (!val) return []
+  if (Array.isArray(val)) return val.filter(Boolean)
+  return []
+}
+
+function uniqueStrings(values) {
+  const out = []
+  const seen = new Set()
+  for (const v of values || []) {
+    const s = String(v || '').trim()
+    if (!s) continue
+    const key = s.toLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push(s)
+  }
+  return out
+}
+
+// Resolve artist names for collaboration tracks
+async function resolveArtistNames(track) {
+  const names = []
+  
+  // Add primary artist name if available
+  if (track.artistName) {
+    names.push(track.artistName)
+  }
+  
+  // Add collaborator names from stored data
+  if (track.collaboratorNames && Array.isArray(track.collaboratorNames)) {
+    names.push(...track.collaboratorNames.filter(Boolean))
+  }
+  
+  // If we have collaborator IDs but no names, fetch them
+  if (track.collaborators && Array.isArray(track.collaborators) && names.length === 0) {
+    const collaboratorNames = await Promise.all(
+      track.collaborators.map(async (id) => {
+        try {
+          const artist = await fetchArtistById(id)
+          return artist?.name
+        } catch (e) {
+          console.warn('Failed to fetch collaborator:', id, e)
+          return null
+        }
+      })
+    )
+    names.push(...collaboratorNames.filter(Boolean))
+  }
+  
+  return uniqueStrings(names)
+}
+
 // Format number helper
 function formatNumber(num) {
   if (typeof num !== 'number') return '0'
@@ -60,14 +114,17 @@ async function loadTrackData() {
       artistData = await fetchArtistById(currentTrack.artist)
     }
     
+    // Resolve collaboration artist names
+    const collaborationNames = await resolveArtistNames(currentTrack)
+    
     // Render track details
-    renderTrackDetails()
+    renderTrackDetails(collaborationNames)
     
     // Setup event listeners
     setupEventListeners()
     
     // Load more from artist
-    await loadMoreFromArtist()
+    await loadMoreFromArtist(collaborationNames)
     
   } catch (error) {
     console.error('[TrackDetail] Error loading track:', error)
@@ -76,7 +133,7 @@ async function loadTrackData() {
 }
 
 // Render track details
-function renderTrackDetails() {
+function renderTrackDetails(collaborationNames = []) {
   const artwork = document.getElementById('trackArtwork')
   const title = document.getElementById('trackTitle')
   const artist = document.getElementById('trackArtist')
@@ -98,7 +155,18 @@ function renderTrackDetails() {
   
   // Set title and artist
   if (title) title.textContent = currentTrack.title || 'Unknown Track'
-  if (artist) artist.textContent = artistData?.name || currentTrack.artistName || 'Unknown Artist'
+  
+  // Handle collaboration artist display
+  let displayArtist = 'Unknown Artist'
+  if (collaborationNames.length > 0) {
+    displayArtist = collaborationNames.join(' & ')
+  } else if (artistData?.name) {
+    displayArtist = artistData.name
+  } else if (currentTrack.artistName) {
+    displayArtist = currentTrack.artistName
+  }
+  
+  if (artist) artist.textContent = displayArtist
   
   // Set meta info
   if (genre) genre.textContent = currentTrack.genre || ''
@@ -112,11 +180,17 @@ function renderTrackDetails() {
   if (streams) streams.textContent = formatNumber(currentTrack.streams || 0)
   if (likes) likes.textContent = formatNumber(currentTrack.likes || 0)
   
-  // Set badge
+  // Set badge - add collaboration indicator
   const badgeData = getTrackBadge(currentTrack)
+  const isCollaboration = collaborationNames.length > 1 || (currentTrack.collaborators && currentTrack.collaborators.length > 0)
+  
   if (badge && badgeData) {
     badge.className = `track-detail-badge ${badgeData.type}`
     badge.textContent = badgeData.text
+    badge.style.display = 'inline-block'
+  } else if (badge && isCollaboration) {
+    badge.className = 'track-detail-badge collaboration'
+    badge.textContent = 'Collaboration'
     badge.style.display = 'inline-block'
   } else if (badge) {
     badge.style.display = 'none'
@@ -373,9 +447,13 @@ function handleShareTrack() {
   
   console.log('[TrackDetail] Sharing track:', currentTrack.title)
   
+  // Get current artist display from the page
+  const artistElement = document.getElementById('trackArtist')
+  const artistDisplay = artistElement ? artistElement.textContent : (currentTrack.artistName || 'Unknown Artist')
+  
   const shareData = {
     title: currentTrack.title,
-    text: `Listen to ${currentTrack.title} by ${currentTrack.artistName || 'Unknown Artist'}`,
+    text: `Listen to ${currentTrack.title} by ${artistDisplay}`,
     url: window.location.href
   }
   
@@ -401,19 +479,37 @@ function openExternalPlayer(url) {
 }
 
 // Load more from artist
-async function loadMoreFromArtist() {
+async function loadMoreFromArtist(collaborationNames = []) {
   const container = document.getElementById('moreTracksGrid')
   const section = document.getElementById('moreFromArtist')
   
-  if (!container || !currentTrack?.artist) {
+  // For collaboration tracks, we need to check if there are any artists to show more from
+  const hasPrimaryArtist = currentTrack?.artist
+  const hasCollaborators = currentTrack?.collaborators && currentTrack.collaborators.length > 0
+  
+  if (!container || (!hasPrimaryArtist && !hasCollaborators)) {
     if (section) section.style.display = 'none'
     return
   }
   
   try {
     const allTracks = await fetchPublishedTracks()
-    const artistTracks = allTracks.filter(t => 
-      t.artist === currentTrack.artist && t.id !== currentTrack.id
+    
+    // For collaboration tracks, find tracks by any of the collaborating artists
+    let artistTracks = []
+    const artistIds = new Set()
+    
+    if (currentTrack.artist) {
+      artistIds.add(currentTrack.artist)
+    }
+    
+    if (currentTrack.collaborators && Array.isArray(currentTrack.collaborators)) {
+      currentTrack.collaborators.forEach(id => artistIds.add(id))
+    }
+    
+    // Find tracks by any of these artists, excluding the current track
+    artistTracks = allTracks.filter(t => 
+      artistIds.has(t.artist) && t.id !== currentTrack.id
     ).slice(0, 4)
     
     if (artistTracks.length === 0) {
@@ -457,6 +553,15 @@ async function loadMoreFromArtist() {
         </div>
       `
     }).join('')
+    
+    // Update section title for collaboration tracks
+    const sectionTitle = section.querySelector('.section-title')
+    if (sectionTitle) {
+      const isCollab = collaborationNames.length > 1 || (currentTrack.collaborators && currentTrack.collaborators.length > 0)
+      if (isCollab) {
+        sectionTitle.textContent = 'More from these Artists'
+      }
+    }
     
     // Setup event listeners for more tracks
     setupMoreTracksListeners()

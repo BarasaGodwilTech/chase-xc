@@ -11765,6 +11765,12 @@ border-radius: 12px;
     color: white;
 }
 
+.track-detail-badge.collaboration {
+    background: linear-gradient(135deg, #ec4899, #f43f5e);
+    color: white;
+    font-weight: 500;
+}
+
 .track-detail-title {
     font-family: var(--font-heading);
     font-size: clamp(2rem, 4vw, 3rem);

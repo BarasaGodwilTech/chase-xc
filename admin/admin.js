@@ -1375,7 +1375,26 @@ class AdminPanel {
         }
 
         container.innerHTML = tracks.map(track => {
-            const artistName = artistMap.get(track.artist) || track.artistName || 'Unknown Artist';
+            // Handle collaboration artist names
+            let artistName = 'Unknown Artist';
+            
+            if (track.collaboratorNames && Array.isArray(track.collaboratorNames) && track.collaboratorNames.length > 0) {
+                artistName = track.collaboratorNames.join(' & ');
+            } else if (track.collaborators && Array.isArray(track.collaborators) && track.collaborators.length > 0) {
+                const collaboratorNames = track.collaborators
+                    .map(id => artistMap.get(id))
+                    .filter(Boolean);
+                if (collaboratorNames.length > 0) {
+                    artistName = collaboratorNames.join(' & ');
+                } else {
+                    artistName = track.artistName || 'Unknown Artist';
+                }
+            } else if (track.artist) {
+                artistName = artistMap.get(track.artist) || track.artistName || 'Unknown Artist';
+            } else {
+                artistName = track.artistName || 'Unknown Artist';
+            }
+            
             return `
                 <tr>
                     <td>
