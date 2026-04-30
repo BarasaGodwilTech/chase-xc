@@ -1,6 +1,9 @@
 import { fetchPublishedTracks, fetchArtistById, fetchArtists } from './data/content-repo.js'
 import { likedTracksManager } from './liked-tracks-manager.js'
 
+let artistsByIdCache = new Map()
+let artistsByNameCache = new Map()
+
 function formatNumber(num) {
   if (typeof num !== 'number') return '0'
   if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M'
@@ -52,7 +55,7 @@ function escapeHtml(str) {
   })
 }
 
-function renderTrackCard(track, index, artistName, artistSocials = {}) {
+function renderTrackCard(track, index, artistName, artistSocials = {}, avatarHtml = '') {
   const categories = getTrackCategories(track)
   const badge = getTrackBadge(track)
   const spotifyUrl = track.spotifyUrl || (track.platformLinks?.spotify) || ''
@@ -73,6 +76,7 @@ function renderTrackCard(track, index, artistName, artistSocials = {}) {
           <div class="track-info">
             <h4 class="track-title">${escapeHtml(track.title || '')}</h4>
             <p class="track-artist">${escapeHtml(artistName || track.artistName || 'Unknown Artist')}</p>
+            ${avatarHtml || ''}
           </div>
           <button class="like-btn-mini ${isLiked ? 'liked' : ''}" title="Like" data-like-track-id="${track.id}" type="button">
             <i class="${isLiked ? 'fas' : 'far'} fa-heart"></i>
@@ -131,6 +135,73 @@ function uniqueStrings(values) {
     out.push(s)
   }
   return out
+}
+
+function splitArtistParts(name) {
+  const raw = String(name || '').trim()
+  if (!raw) return []
+
+  return raw
+    .split(/\s*(?:&|•|\+|,|\/|\bfeat\.?\b|\bft\.?\b|\bx\b)\s*/i)
+    .map((p) => String(p || '').trim())
+    .filter((p) => p && p.toLowerCase() !== 'unknown artist')
+}
+
+function normalizeArtistParts(values) {
+  const parts = []
+  for (const v of values || []) {
+    parts.push(...splitArtistParts(v))
+  }
+  return uniqueStrings(parts)
+}
+
+function getCollabAvatarHtml(track) {
+  const collabIds = safeArray(track?.collaborators).map((x) => String(x))
+
+  let ids = []
+  if (collabIds.length > 0) {
+    ids = collabIds
+  } else {
+    const names = normalizeArtistParts([track?.artistName, ...(safeArray(track?.collaboratorNames))])
+    ids = names
+      .map((n) => artistsByNameCache.get(String(n).toLowerCase())?.id)
+      .filter(Boolean)
+      .map((id) => String(id))
+  }
+
+  const avatars = uniqueStrings(ids)
+    .map((id) => artistsByIdCache.get(String(id))?.image || '')
+    .filter(Boolean)
+    .slice(0, 4)
+
+  if (avatars.length === 0) return ''
+
+  return `
+    <div class="collab-avatars">
+      ${avatars
+        .map(
+          (src) =>
+            `<span class="collab-avatar"><img src="${escapeHtml(src)}" alt="" loading="lazy" decoding="async"></span>`
+        )
+        .join('')}
+    </div>
+  `
+}
+
+function getDisplayArtistLine(track) {
+  const isCollab = safeArray(track?.collaborators).length > 0 || safeArray(track?.collaboratorNames).length > 0
+
+  if (!isCollab) {
+    return track?.artistName || 'Unknown Artist'
+  }
+
+  const parts = normalizeArtistParts([
+    ...(safeArray(track?.collaboratorNames)),
+    track?.artistName,
+    ...safeArray(track?.collaborators).map((id) => artistsByIdCache.get(String(id))?.name || ''),
+  ])
+
+  return parts.length > 0 ? parts.join(' & ') : 'Various Artists'
 }
 
 async function renderCollaborations(tracks, artistsById = new Map()) {
@@ -426,6 +497,13 @@ async function initMusicPage() {
   try {
     const artists = await fetchArtists()
     artistsById = new Map((artists || []).map((a) => [String(a.id), a]))
+
+    artistsByIdCache = artistsById
+    artistsByNameCache = new Map(
+      (artists || [])
+        .filter((a) => a && a.name)
+        .map((a) => [String(a.name).trim().toLowerCase(), a])
+    )
   } catch (e) {
     console.warn('[MusicPage] Failed to fetch artists for collaborations section', e)
   }
@@ -473,9 +551,10 @@ async function initMusicPage() {
   const normalizedTracks = []
   for (let i = 0; i < tracks.length; i++) {
     const artistData = await resolveArtistName(tracks[i])
+    const displayArtistLine = getDisplayArtistLine({ ...tracks[i], artistName: artistData.name })
     const normalized = {
       ...tracks[i],
-      artistName: artistData.name,
+      artistName: displayArtistLine,
     }
     normalizedTracks.push(normalized)
   }
@@ -774,7 +853,12 @@ function renderFilteredTracks(tracks) {
   }
 
   // Render filtered tracks
-  const cards = tracks.map((track, index) => renderTrackCard(track, index, track.artistName))
+  const cards = tracks.map((track, index) => {
+    const displayArtistLine = getDisplayArtistLine(track)
+    const isCollab = safeArray(track?.collaborators).length > 0 || safeArray(track?.collaboratorNames).length > 0
+    const avatars = isCollab ? getCollabAvatarHtml(track) : ''
+    return renderTrackCard(track, index, displayArtistLine, {}, avatars)
+  })
   grid.innerHTML = cards.join('')
 
   // Re-setup event listeners for new cards

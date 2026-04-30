@@ -29,6 +29,26 @@ class PersistentFloatingPlayer {
         this.init();
     }
 
+    normalizeArtistLine(value) {
+        const raw = String(value || '').trim();
+        if (!raw) return '';
+
+        const parts = raw
+            .split(/\s*(?:&|•|\+|,|\/|\bfeat\.?\b|\bft\.?\b|\bx\b)\s*/i)
+            .map((p) => String(p || '').trim())
+            .filter((p) => p && p.toLowerCase() !== 'unknown artist');
+
+        const out = [];
+        const seen = new Set();
+        for (const p of parts) {
+            const key = p.toLowerCase();
+            if (seen.has(key)) continue;
+            seen.add(key);
+            out.push(p);
+        }
+        return out.join(' & ');
+    }
+
     init() {
         this.createPlayerElement();
         this.createVideoWindow();
@@ -909,7 +929,11 @@ class PersistentFloatingPlayer {
         const badgeEl = document.getElementById('flpPlatformBadge');
         
         if (titleEl) titleEl.textContent = this.currentTrack.title || 'Select a track';
-        if (artistEl) artistEl.textContent = this.currentTrack.artistName || this.currentTrack.artist || '--';
+        if (artistEl) {
+            const rawArtist = this.currentTrack.artistName || this.currentTrack.artist || '--';
+            const normalized = this.normalizeArtistLine(rawArtist);
+            artistEl.textContent = normalized || rawArtist;
+        }
         
         // Set main artwork
         if (artworkEl && this.currentTrack.artwork) {

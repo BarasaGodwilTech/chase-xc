@@ -26,6 +26,53 @@ function uniqueStrings(values) {
   return out
 }
 
+function splitArtistParts(name) {
+  const raw = String(name || '').trim()
+  if (!raw) return []
+
+  return raw
+    .split(/\s*(?:&|•|\+|,|\/|\bfeat\.?\b|\bft\.?\b|\bx\b)\s*/i)
+    .map((p) => String(p || '').trim())
+    .filter((p) => p && p.toLowerCase() !== 'unknown artist')
+}
+
+function normalizeArtistParts(values) {
+  const parts = []
+  for (const v of values || []) {
+    parts.push(...splitArtistParts(v))
+  }
+  return uniqueStrings(parts)
+}
+
+async function resolveCollabAvatarUrls(track, collaborationNames = []) {
+  const ids = uniqueStrings(safeArray(track?.collaborators).map((x) => String(x)))
+  const urls = []
+
+  if (ids.length > 0) {
+    const artists = await Promise.all(
+      ids.map(async (id) => {
+        try {
+          return await fetchArtistById(id)
+        } catch (_) {
+          return null
+        }
+      })
+    )
+    for (const a of artists) {
+      const img = a?.image
+      if (img) urls.push(img)
+    }
+  }
+
+  // Fallback: try to map collaborator names to artists by fetching all (only if needed)
+  if (urls.length === 0 && collaborationNames.length > 0) {
+    // Avoid adding additional imports; we only try to resolve if currentTrack has ids.
+    // If no ids exist, we can't reliably map names to images without extra queries.
+  }
+
+  return uniqueStrings(urls).slice(0, 4)
+}
+
 // Resolve artist names for collaboration tracks
 async function resolveArtistNames(track) {
   const names = []
@@ -123,7 +170,8 @@ async function loadTrackData() {
     }
     
     // Resolve collaboration artist names
-    const collaborationNames = await resolveArtistNames(currentTrack)
+    const collaborationNamesRaw = await resolveArtistNames(currentTrack)
+    const collaborationNames = normalizeArtistParts(collaborationNamesRaw)
     
     // Render track details
     renderTrackDetails(collaborationNames)
@@ -145,6 +193,7 @@ function renderTrackDetails(collaborationNames = []) {
   const artwork = document.getElementById('trackArtwork')
   const title = document.getElementById('trackTitle')
   const artist = document.getElementById('trackArtist')
+  const collabAvatars = document.getElementById('trackCollabAvatars')
   const genre = document.getElementById('trackGenre')
   const duration = document.getElementById('trackDuration')
   const release = document.getElementById('trackRelease')
@@ -167,7 +216,7 @@ function renderTrackDetails(collaborationNames = []) {
   // Handle collaboration artist display
   let displayArtist = 'Unknown Artist'
   if (collaborationNames.length > 0) {
-    displayArtist = collaborationNames.join(' & ')
+    displayArtist = normalizeArtistParts(collaborationNames).join(' & ')
   } else if (artistData?.name) {
     displayArtist = artistData.name
   } else if (currentTrack.artistName) {
@@ -175,6 +224,37 @@ function renderTrackDetails(collaborationNames = []) {
   }
   
   if (artist) artist.textContent = displayArtist
+
+  // Collaboration avatar stack
+  if (collabAvatars) {
+    const isCollab = collaborationNames.length > 1 || (currentTrack.collaborators && currentTrack.collaborators.length > 0)
+    if (!isCollab) {
+      collabAvatars.innerHTML = ''
+      collabAvatars.style.display = 'none'
+    } else {
+      collabAvatars.style.display = ''
+      resolveCollabAvatarUrls(currentTrack, collaborationNames)
+        .then((urls) => {
+          if (!urls || urls.length === 0) {
+            collabAvatars.innerHTML = ''
+            return
+          }
+          collabAvatars.innerHTML = `
+            <div class="collab-avatars">
+              ${urls
+                .map(
+                  (src) =>
+                    `<span class="collab-avatar"><img src="${src}" alt="" loading="lazy" decoding="async"></span>`
+                )
+                .join('')}
+            </div>
+          `
+        })
+        .catch(() => {
+          collabAvatars.innerHTML = ''
+        })
+    }
+  }
   
   // Set meta info
   if (genre) genre.textContent = currentTrack.genre || ''
@@ -310,10 +390,14 @@ function handlePlayTrack() {
       window.persistentPlayer.loadTrack(window.persistentPlayer.playlist[existingIndex]);
     } else {
       // Track not in playlist, add it
+      const collabLine = normalizeArtistParts([
+        ...(safeArray(currentTrack.collaboratorNames)),
+        currentTrack.artistName,
+      ]).join(' & ')
       window.persistentPlayer.playlist.push({
         id: currentTrack.id,
         title: currentTrack.title,
-        artistName: currentTrack.artistName,
+        artistName: collabLine || currentTrack.artistName,
         artwork: currentTrack.artwork,
         audioUrl: currentTrack.audioUrl,
         platformLinks: currentTrack.platformLinks || {},
@@ -612,10 +696,14 @@ function setupMoreTracksListeners() {
           window.persistentPlayer.loadTrack(window.persistentPlayer.playlist[existingIndex]);
         } else {
           // Track not in playlist, add it
+          const collabLine = normalizeArtistParts([
+            ...(safeArray(track.collaboratorNames)),
+            track.artistName,
+          ]).join(' & ')
           window.persistentPlayer.playlist.push({
             id: track.id,
             title: track.title,
-            artistName: track.artistName,
+            artistName: collabLine || track.artistName,
             artwork: track.artwork,
             audioUrl: track.audioUrl,
             platformLinks: track.platformLinks || {},

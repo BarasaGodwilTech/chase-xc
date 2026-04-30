@@ -30,6 +30,26 @@ class AudioPlayer {
     this.init();
   }
 
+  normalizeArtistLine(value) {
+    const raw = String(value || '').trim()
+    if (!raw) return ''
+
+    const parts = raw
+      .split(/\s*(?:&|•|\+|,|\/|\bfeat\.?\b|\bft\.?\b|\bx\b)\s*/i)
+      .map((p) => String(p || '').trim())
+      .filter((p) => p && p.toLowerCase() !== 'unknown artist')
+
+    const out = []
+    const seen = new Set()
+    for (const p of parts) {
+      const key = p.toLowerCase()
+      if (seen.has(key)) continue
+      seen.add(key)
+      out.push(p)
+    }
+    return out.join(' & ')
+  }
+
   bindElements() {
     this.audio = document.getElementById("audioElement");
     this.playBtn = document.getElementById("playBtn");
@@ -231,7 +251,7 @@ class AudioPlayer {
       this.tracks = window.__tracks.map((track) => ({
         id: track.id,
         title: track.title,
-        artist: track.artistName || 'Unknown Artist',
+        artist: this.normalizeArtistLine(track.artistName || '') || (track.artistName || 'Unknown Artist'),
         cover: track.artwork,
         src: track.audioUrl || this.getFallbackAudioUrl(track.id),
         duration: track.duration,
@@ -249,7 +269,7 @@ class AudioPlayer {
         return {
           id: track.id,
           title: track.title,
-          artist: artist?.name || track.artistName || 'Unknown Artist',
+          artist: this.normalizeArtistLine(artist?.name || track.artistName || '') || (artist?.name || track.artistName || 'Unknown Artist'),
           cover: track.artwork,
           src: track.audioUrl || this.getFallbackAudioUrl(track.id),
           duration: track.duration,
