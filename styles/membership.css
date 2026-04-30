@@ -77,6 +77,11 @@
     max-width: 100%;
 }
 
+.membership-modal .modal-content {
+    width: 90%;
+    max-width: 500px;
+}
+
 .membership-page-header .btn,
 .current-plan-section .btn,
 .available-plans-section .btn,

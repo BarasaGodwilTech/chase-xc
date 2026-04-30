@@ -23,10 +23,26 @@ class MembershipManager {
                 this.loadMembershipData();
                 this.setupEventListeners();
             } else {
-                // Only redirect if auth is initialized and user is not on auth page
-                if (!window.location.pathname.includes('auth.html')) {
+                // Only redirect if auth is initialized and user is not on auth page.
+                // Delay slightly and double-check currentUser to avoid redirecting logged-in users during auth hydration.
+                if (window.location.pathname.includes('auth.html')) return;
+
+                if (this._redirectTimer) clearTimeout(this._redirectTimer);
+                this._redirectTimer = setTimeout(() => {
+                    if (auth.currentUser) return;
+
+                    try {
+                        if (window.userAuth?.setRedirectUrl) {
+                            window.userAuth.setRedirectUrl(window.location.href)
+                        } else {
+                            sessionStorage.setItem('authRedirectUrl', window.location.href)
+                        }
+                    } catch (_) {
+                        // ignore storage errors
+                    }
+
                     window.location.href = 'auth.html';
-                }
+                }, 800);
             }
         });
     }
