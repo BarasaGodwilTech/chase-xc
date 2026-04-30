@@ -270,32 +270,25 @@ class MembershipPaymentManager {
         // Load from Firebase config - no local fallbacks
         if (window.studioConfig && window.studioConfig.plans && window.studioConfig.plans[planType]) {
             const configPlan = window.studioConfig.plans[planType]
-            const currentPrice = configPlan.currentPrice || 0
-            const mainPrice = configPlan.mainPrice || currentPrice
+            const price = `UGX ${configPlan.price.toLocaleString()}`
             const description = configPlan.description || ''
             
             const plans = {
                 weekly: {
                     name: 'Weekly Pass',
-                    price: `UGX ${currentPrice.toLocaleString()}`,
-                    mainPrice: `UGX ${mainPrice.toLocaleString()}`,
-                    savings: mainPrice > currentPrice ? `Save UGX ${(mainPrice - currentPrice).toLocaleString()}` : null,
+                    price: price,
                     period: 'week',
                     description: description
                 },
                 monthly: {
                     name: 'Monthly Pro',
-                    price: `UGX ${currentPrice.toLocaleString()}`,
-                    mainPrice: `UGX ${mainPrice.toLocaleString()}`,
-                    savings: mainPrice > currentPrice ? `Save UGX ${(mainPrice - currentPrice).toLocaleString()}` : null,
+                    price: price,
                     period: 'month',
                     description: description
                 },
                 yearly: {
                     name: 'Yearly Elite',
-                    price: `UGX ${currentPrice.toLocaleString()}`,
-                    mainPrice: `UGX ${mainPrice.toLocaleString()}`,
-                    savings: mainPrice > currentPrice ? `Save UGX ${(mainPrice - currentPrice).toLocaleString()}` : null,
+                    price: price,
                     period: 'year',
                     description: description
                 }

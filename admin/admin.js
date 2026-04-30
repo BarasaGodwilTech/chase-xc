@@ -1760,14 +1760,14 @@ class AdminPanel {
             applyValue('bankAccountName', c.payment?.bank?.accountName);
             applyValue('supportPhone', c.payment?.supportPhone);
 
+            applyValue('weeklyPrice', c.plans?.weekly?.price);
             applyValue('weeklyMainPrice', c.plans?.weekly?.mainPrice);
-            applyValue('weeklyCurrentPrice', c.plans?.weekly?.currentPrice);
             applyValue('weeklyDescription', c.plans?.weekly?.description);
+            applyValue('monthlyPrice', c.plans?.monthly?.price);
             applyValue('monthlyMainPrice', c.plans?.monthly?.mainPrice);
-            applyValue('monthlyCurrentPrice', c.plans?.monthly?.currentPrice);
             applyValue('monthlyDescription', c.plans?.monthly?.description);
+            applyValue('yearlyPrice', c.plans?.yearly?.price);
             applyValue('yearlyMainPrice', c.plans?.yearly?.mainPrice);
-            applyValue('yearlyCurrentPrice', c.plans?.yearly?.currentPrice);
             applyValue('yearlyDescription', c.plans?.yearly?.description);
 
             applyValue('productionPrice', c.services?.production);
@@ -1795,9 +1795,6 @@ class AdminPanel {
             applyValue('contactPhone', c.contact?.phone);
             applyValue('contactEmail', c.contact?.email);
             applyValue('contactLocation', c.contact?.location);
-
-            applyValue('monthlySavings', c.planSavings?.monthly);
-            applyValue('yearlySavings', c.planSavings?.yearly);
 
             applyValue('statProjects', c.about?.projects);
             applyValue('statArtists', c.about?.artists);
@@ -1853,7 +1850,6 @@ class AdminPanel {
                 base.contact = base.contact || {};
                 base.social = base.social || {};
                 base.about = base.about || {};
-                base.planSavings = base.planSavings || {};
 
                 base.payment.mtn = read('mtnNumber').trim();
                 base.payment.airtel = read('airtelNumber').trim();
@@ -1862,14 +1858,14 @@ class AdminPanel {
                 base.payment.bank.accountName = read('bankAccountName').trim();
                 base.payment.supportPhone = read('supportPhone').trim();
 
+                base.plans.weekly.price = readNum('weeklyPrice');
                 base.plans.weekly.mainPrice = readNum('weeklyMainPrice');
-                base.plans.weekly.currentPrice = readNum('weeklyCurrentPrice');
                 base.plans.weekly.description = read('weeklyDescription').trim();
+                base.plans.monthly.price = readNum('monthlyPrice');
                 base.plans.monthly.mainPrice = readNum('monthlyMainPrice');
-                base.plans.monthly.currentPrice = readNum('monthlyCurrentPrice');
                 base.plans.monthly.description = read('monthlyDescription').trim();
+                base.plans.yearly.price = readNum('yearlyPrice');
                 base.plans.yearly.mainPrice = readNum('yearlyMainPrice');
-                base.plans.yearly.currentPrice = readNum('yearlyCurrentPrice');
                 base.plans.yearly.description = read('yearlyDescription').trim();
 
                 base.services.production = readNum('productionPrice');
@@ -1897,9 +1893,6 @@ class AdminPanel {
                 base.contact.phone = read('contactPhone').trim();
                 base.contact.email = read('contactEmail').trim();
                 base.contact.location = read('contactLocation').trim();
-
-                base.planSavings.monthly = read('monthlySavings').trim();
-                base.planSavings.yearly = read('yearlySavings').trim();
 
                 base.about.projects = read('statProjects').trim();
                 base.about.artists = read('statArtists').trim();

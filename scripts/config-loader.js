@@ -25,14 +25,17 @@ let studioConfig = {
   },
   plans: {
     weekly: {
+      mainPrice: 0,
       price: 0,
       description: ''
     },
     monthly: {
+      mainPrice: 0,
       price: 0,
       description: ''
     },
     yearly: {
+      mainPrice: 0,
       price: 0,
       description: ''
     }

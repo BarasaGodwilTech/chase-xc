@@ -246,17 +246,62 @@ class MembershipManager {
         const config = getConfig();
         if (config && config.plans) {
             const weeklyPrice = document.getElementById('weeklyPrice');
+            const weeklyMainPrice = document.getElementById('weeklyMainPrice');
+            const weeklySavings = document.getElementById('weeklySavings');
             const monthlyPrice = document.getElementById('monthlyPrice');
+            const monthlyMainPrice = document.getElementById('monthlyMainPrice');
+            const monthlySavings = document.getElementById('monthlySavings');
             const yearlyPrice = document.getElementById('yearlyPrice');
+            const yearlyMainPrice = document.getElementById('yearlyMainPrice');
+            const yearlySavings = document.getElementById('yearlySavings');
 
             if (weeklyPrice && config.plans.weekly) {
                 weeklyPrice.textContent = `UGX ${config.plans.weekly.price.toLocaleString()}`;
             }
+            if (weeklyMainPrice && config.plans.weekly) {
+                const main = Number(config.plans.weekly.mainPrice || 0)
+                const current = Number(config.plans.weekly.price || 0)
+                const show = main > current && current > 0
+                weeklyMainPrice.textContent = show ? `UGX ${main.toLocaleString()}` : ''
+                weeklyMainPrice.style.display = show ? 'inline' : 'none'
+
+                const save = main - current
+                if (weeklySavings) {
+                    weeklySavings.textContent = save > 0 ? `Save UGX ${save.toLocaleString()}` : ''
+                    weeklySavings.style.display = save > 0 ? 'block' : 'none'
+                }
+            }
             if (monthlyPrice && config.plans.monthly) {
                 monthlyPrice.textContent = `UGX ${config.plans.monthly.price.toLocaleString()}`;
             }
+            if (monthlyMainPrice && config.plans.monthly) {
+                const main = Number(config.plans.monthly.mainPrice || 0)
+                const current = Number(config.plans.monthly.price || 0)
+                const show = main > current && current > 0
+                monthlyMainPrice.textContent = show ? `UGX ${main.toLocaleString()}` : ''
+                monthlyMainPrice.style.display = show ? 'inline' : 'none'
+
+                const save = main - current
+                if (monthlySavings) {
+                    monthlySavings.textContent = save > 0 ? `Save UGX ${save.toLocaleString()}` : ''
+                    monthlySavings.style.display = save > 0 ? 'block' : 'none'
+                }
+            }
             if (yearlyPrice && config.plans.yearly) {
                 yearlyPrice.textContent = `UGX ${config.plans.yearly.price.toLocaleString()}`;
+            }
+            if (yearlyMainPrice && config.plans.yearly) {
+                const main = Number(config.plans.yearly.mainPrice || 0)
+                const current = Number(config.plans.yearly.price || 0)
+                const show = main > current && current > 0
+                yearlyMainPrice.textContent = show ? `UGX ${main.toLocaleString()}` : ''
+                yearlyMainPrice.style.display = show ? 'inline' : 'none'
+
+                const save = main - current
+                if (yearlySavings) {
+                    yearlySavings.textContent = save > 0 ? `Save UGX ${save.toLocaleString()}` : ''
+                    yearlySavings.style.display = save > 0 ? 'block' : 'none'
+                }
             }
         }
     }
