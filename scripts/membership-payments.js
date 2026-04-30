@@ -267,37 +267,42 @@ class MembershipPaymentManager {
     }
 
     getPlanDetails(planType) {
-        // Load from Firebase config if available
-        let price = ''
-        let description = ''
-        
+        // Load from Firebase config - no local fallbacks
         if (window.studioConfig && window.studioConfig.plans && window.studioConfig.plans[planType]) {
             const configPlan = window.studioConfig.plans[planType]
-            price = `UGX ${configPlan.price.toLocaleString()}`
-            description = configPlan.description || ''
+            const price = `UGX ${configPlan.price.toLocaleString()}`
+            const description = configPlan.description || ''
+            
+            const plans = {
+                weekly: {
+                    name: 'Weekly Pass',
+                    price: price,
+                    period: 'week',
+                    description: description
+                },
+                monthly: {
+                    name: 'Monthly Pro',
+                    price: price,
+                    period: 'month',
+                    description: description
+                },
+                yearly: {
+                    name: 'Yearly Elite',
+                    price: price,
+                    period: 'year',
+                    description: description
+                }
+            };
+            return plans[planType] || plans.monthly;
         }
         
-        const plans = {
-            weekly: {
-                name: 'Weekly Pass',
-                price: price,
-                period: 'week',
-                description: description
-            },
-            monthly: {
-                name: 'Monthly Pro',
-                price: price,
-                period: 'month',
-                description: description
-            },
-            yearly: {
-                name: 'Yearly Elite',
-                price: price,
-                period: 'year',
-                description: description
-            }
+        // Return empty plan if no config available
+        return {
+            name: planType,
+            price: 'UGX 0',
+            period: 'unknown',
+            description: 'Configuration not available'
         };
-        return plans[planType] || plans.monthly;
     }
 
     showPaymentModal() {

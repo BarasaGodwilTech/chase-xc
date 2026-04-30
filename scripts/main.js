@@ -639,25 +639,19 @@ function initMembership() {
         if (phoneEl && !phoneEl.value.trim() && phone) phoneEl.value = phone
     }
 
-    // Load plans from Firebase config
+    // Load plans from Firebase config (no local fallbacks - all pricing comes from Firebase)
     const plans = {
         weekly: {
             name: 'Weekly Pass',
-            price: 'UGX 150,000', // Default fallback
-            period: 'week',
-            description: '10 hours of studio time, basic mixing for 2 tracks' // Default fallback
+            period: 'week'
         },
         monthly: {
             name: 'Monthly Pro',
-            price: 'UGX 500,000', // Default fallback
-            period: 'month',
-            description: '50 hours of studio time, unlimited mixing sessions' // Default fallback
+            period: 'month'
         },
         yearly: {
             name: 'Yearly Elite',
-            price: 'UGX 5,000,000', // Default fallback
-            period: 'year',
-            description: '600 hours of studio time, unlimited mixing & mastering' // Default fallback
+            period: 'year'
         }
     }
 
