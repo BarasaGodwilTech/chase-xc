@@ -702,14 +702,56 @@ function initializeMembershipPaymentManager() {
 
     if (membershipSection || membershipModal) {
         membershipPaymentManager = new MembershipPaymentManager();
-        console.log('✅ Membership Payment Manager initialized successfully');
+        console.log('Membership Payment Manager initialized successfully');
         
         window.membershipPaymentManager = membershipPaymentManager;
+        
+        // Check for pending membership plan after login
+        checkAndOpenPendingMembershipPlan();
     } else {
-        console.log('⏳ Membership elements not found, waiting...');
+        console.log('Membership elements not found, waiting...');
         setTimeout(initializeMembershipPaymentManager, 500);
     }
 }
+
+function checkAndOpenPendingMembershipPlan() {
+    // Check if user is logged in and has a pending plan
+    if (window.userAuth && window.userAuth.isLoggedIn()) {
+        const pendingPlan = sessionStorage.getItem('pendingMembershipPlan');
+        
+        if (pendingPlan) {
+            console.log('Found pending membership plan:', pendingPlan);
+            
+            // Clear the pending plan from storage
+            sessionStorage.removeItem('pendingMembershipPlan');
+            
+            // Show success message
+            if (window.notifications) {
+                window.notifications.show('Welcome back! Continuing with your membership selection...', 'success');
+            }
+            
+            // Open the membership modal with the selected plan after a short delay
+            setTimeout(() => {
+                if (window.membershipPaymentManager) {
+                    // Get plan amount from config or use default
+                    let amount = 150000; // Default fallback
+                    if (window.studioConfig && window.studioConfig.plans && window.studioConfig.plans[pendingPlan]) {
+                        amount = window.studioConfig.plans[pendingPlan].price;
+                    }
+                    window.membershipPaymentManager.selectPlan(pendingPlan, amount);
+                }
+            }, 1000);
+        }
+    }
+}
+
+// Listen for auth state changes to handle pending plans
+document.addEventListener('authStateChanged', (event) => {
+    if (event.detail.user) {
+        // User just logged in, check for pending plans
+        setTimeout(checkAndOpenPendingMembershipPlan, 500);
+    }
+});
 
 // Start initialization
 if (document.readyState === 'loading') {
