@@ -455,14 +455,19 @@
         init() {
             // Use event delegation for dynamically loaded cards
             document.addEventListener('click', (e) => {
+                const target = (e && e.target instanceof Element)
+                    ? e.target
+                    : (Array.isArray(e?.composedPath?.()) ? e.composedPath().find((n) => n instanceof Element) : null)
+
+                if (!target) return
                 // Like button
-                const likeBtn = e.target.closest('.like-btn-mini');
+                const likeBtn = target.closest('.like-btn-mini');
                 if (likeBtn) {
                     this.handleLike(likeBtn);
                 }
 
                 // Play button ripple effect
-                const playBtn = e.target.closest('.play-btn-overlay');
+                const playBtn = target.closest('.play-btn-overlay');
                 if (playBtn) {
                     this.addRippleEffect(playBtn);
                 }
@@ -470,7 +475,10 @@
 
             // Add hover sound effect (optional)
             document.addEventListener('mouseenter', (e) => {
-                const card = e.target.closest('.track-card');
+                const target = (e && e.target instanceof Element)
+                    ? e.target
+                    : (Array.isArray(e?.composedPath?.()) ? e.composedPath().find((n) => n instanceof Element) : null)
+                const card = target ? target.closest('.track-card') : null;
                 if (card && !card.dataset.soundPlayed) {
                     // Could add subtle hover sound here
                     card.dataset.soundPlayed = 'true';
@@ -478,7 +486,10 @@
             }, true);
 
             document.addEventListener('mouseleave', (e) => {
-                const card = e.target.closest('.track-card');
+                const target = (e && e.target instanceof Element)
+                    ? e.target
+                    : (Array.isArray(e?.composedPath?.()) ? e.composedPath().find((n) => n instanceof Element) : null)
+                const card = target ? target.closest('.track-card') : null;
                 if (card) {
                     delete card.dataset.soundPlayed;
                 }

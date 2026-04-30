@@ -230,7 +230,7 @@ async function renderCollaborations(tracks, artistsById = new Map()) {
     const allIds = uniqueStrings([primaryId, ...collabIds].filter(Boolean))
 
     const namesFromDoc = safeArray(track.collaboratorNames)
-    const resolvedNames = uniqueStrings([
+    const resolvedNames = normalizeArtistParts([
       track.artistName || '',
       ...namesFromDoc,
       ...collabIds.map((id) => artistsById.get(String(id))?.name || ''),
@@ -521,7 +521,11 @@ async function initMusicPage() {
       const collaboratorNames = await Promise.all(
         track.collaborators.map(async (id) => {
           try {
-            const artist = artistsById.get(String(id)) || await fetchArtistById(id)
+            const key = String(id)
+            // Only fetch from Firestore if this looks like a real artist doc id we already know.
+            // Some older tracks stored collaborator values as names, not IDs.
+            if (!artistsById.has(key)) return null
+            const artist = artistsById.get(key) || await fetchArtistById(key)
             return artist?.name
           } catch (e) {
             console.warn('Failed to fetch collaborator:', id, e)

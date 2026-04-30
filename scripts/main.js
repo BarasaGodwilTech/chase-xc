@@ -16,7 +16,7 @@ function initApp() {
     initMusicHero()
     initVideoAutoplay()
     initClipboardSupport()
-    initSocialLinks()
+    if (typeof initSocialLinks === 'function') initSocialLinks()
 }
 
 document.addEventListener("DOMContentLoaded", () => {
