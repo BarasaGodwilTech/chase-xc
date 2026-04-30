@@ -146,6 +146,9 @@ class MembershipPaymentManager {
         if (window.userAuth && !window.userAuth.isLoggedIn()) {
             console.log('User not authenticated, redirecting to login');
             
+            // Store the selected plan for after login
+            sessionStorage.setItem('pendingMembershipPlan', planType);
+            
             // Store the current URL for redirect after login
             const currentUrl = window.location.href;
             window.userAuth.setRedirectUrl(currentUrl);
@@ -156,7 +159,7 @@ class MembershipPaymentManager {
             // Redirect to auth page after showing message
             setTimeout(() => {
                 window.location.href = 'auth.html';
-            }, 2500);
+            }, 4000);
             
             return;
         }
@@ -260,7 +263,7 @@ class MembershipPaymentManager {
             if (style.parentNode) {
                 style.remove();
             }
-        }, 2500);
+        }, 4000);
     }
 
     getPlanDetails(planType) {

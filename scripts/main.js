@@ -601,6 +601,9 @@ function initMembership() {
 
     window.__membershipModalController = 'main'
 
+    // Check for pending membership plan after login
+    checkAndOpenPendingMembershipPlan()
+
     const selectedPlanName = document.getElementById('selectedPlanName')
     const selectedPlanPrice = document.getElementById('selectedPlanPrice')
     const selectedPlanDescription = document.getElementById('selectedPlanDescription')
@@ -767,6 +770,9 @@ function initMembership() {
         if (window.userAuth && !window.userAuth.isLoggedIn()) {
             console.log('User not authenticated, redirecting to login');
             
+            // Store the selected plan for after login
+            sessionStorage.setItem('pendingMembershipPlan', planType);
+            
             // Store the current URL for redirect after login
             const currentUrl = window.location.href;
             window.userAuth.setRedirectUrl(currentUrl);
@@ -777,7 +783,7 @@ function initMembership() {
             // Redirect to auth page after showing message
             setTimeout(() => {
                 window.location.href = 'auth.html';
-            }, 2500);
+            }, 4000);
             
             return;
         }
@@ -874,10 +880,42 @@ function initMembership() {
             if (style.parentNode) {
                 style.remove();
             }
-        }, 2500);
+        }, 4000);
     }
 
     window.openMembershipModal = openMembershipModal
+
+    function checkAndOpenPendingMembershipPlan() {
+        // Check if user is logged in and has a pending plan
+        if (window.userAuth && window.userAuth.isLoggedIn()) {
+            const pendingPlan = sessionStorage.getItem('pendingMembershipPlan');
+            
+            if (pendingPlan) {
+                console.log('Found pending membership plan:', pendingPlan);
+                
+                // Clear the pending plan from storage
+                sessionStorage.removeItem('pendingMembershipPlan');
+                
+                // Show success message
+                if (window.notifications) {
+                    window.notifications.show('Welcome back! Continuing with your membership selection...', 'success');
+                }
+                
+                // Open the membership modal with the selected plan after a short delay
+                setTimeout(() => {
+                    openMembershipModal(pendingPlan);
+                }, 1000);
+            }
+        }
+    }
+
+    // Listen for auth state changes to handle pending plans
+    document.addEventListener('authStateChanged', (event) => {
+        if (event.detail.user) {
+            // User just logged in, check for pending plans
+            setTimeout(checkAndOpenPendingMembershipPlan, 500);
+        }
+    });
 
     if (billingCycle) {
         billingCycle.addEventListener('change', function () {
