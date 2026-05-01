@@ -7,6 +7,11 @@ class PersistentFloatingPlayer {
         this.currentTrack = null;
         this.playerElement = null;
         this.videoWindow = null;
+        this.ytPlayer = null;
+        this._ytReady = false;
+        this._ytPending = null;
+        this.scWidget = null;
+        this._scPending = null;
         this._abortController = null;
         this.isDragging = false;
         this.wasDragged = false;
@@ -403,7 +408,7 @@ class PersistentFloatingPlayer {
                     } else if (state.platform && state.platform !== 'audio') {
                         // For embeds, rebuild the iframe so play() can actually control it
                         this.isPlaying = false;
-                        this.loadTrack(state.track);
+                        this.loadTrack(state.track, { autoplay: false });
 
                         if (state.isPlaying) {
                             // Best-effort resume. May be blocked by browser autoplay policy.
@@ -417,7 +422,7 @@ class PersistentFloatingPlayer {
                         const { platform } = this.detectPlatform(state.track);
                         this.currentPlatform = platform;
                         this.isPlaying = false;
-                        this.loadTrack(state.track);
+                        this.loadTrack(state.track, { autoplay: false });
 
                         if (state.isPlaying) {
                             // Best-effort resume. May be blocked by browser autoplay policy.
@@ -537,8 +542,10 @@ class PersistentFloatingPlayer {
         }
     }
 
-    loadTrack(track) {
+    loadTrack(track, options = {}) {
         if (!track) return;
+
+        const { autoplay = true } = options;
         
         this.currentTrack = track;
         this.resetStreamTracking();
@@ -555,19 +562,84 @@ class PersistentFloatingPlayer {
             this.loadAudioFile(track, url);
         } else if (platform === 'youtubemusic') {
             // YouTube Music - treat as audio (no video window)
-            this.loadYouTubeMusicEmbed(track, url);
+            this.loadYouTubeMusicEmbed(track, url, autoplay);
         } else if (platform === 'youtube') {
             // YouTube - show video window
-            this.loadYouTubeEmbed(track, url);
+            this.loadYouTubeEmbed(track, url, autoplay);
         } else if (platform === 'spotify') {
             // Spotify embed
-            this.loadSpotifyEmbed(track, url);
+            this.loadSpotifyEmbed(track, url, autoplay);
         } else if (platform === 'soundcloud') {
             // SoundCloud embed
-            this.loadSoundCloudEmbed(track, url);
+            this.loadSoundCloudEmbed(track, url, autoplay);
         } else {
             this.showNotification('No playable source found', 'warning');
         }
+    }
+
+    ensureYouTubeApiLoaded() {
+        if (window.YT && typeof window.YT.Player === 'function') {
+            return Promise.resolve();
+        }
+
+        if (this._ytPending) return this._ytPending;
+
+        this._ytPending = new Promise((resolve, reject) => {
+            const existing = document.querySelector('script[src="https://www.youtube.com/iframe_api"]');
+            if (!existing) {
+                const tag = document.createElement('script');
+                tag.src = 'https://www.youtube.com/iframe_api';
+                tag.async = true;
+                tag.onerror = () => reject(new Error('Failed to load YouTube IFrame API'));
+                document.head.appendChild(tag);
+            }
+
+            const prev = window.onYouTubeIframeAPIReady;
+            window.onYouTubeIframeAPIReady = () => {
+                try { if (typeof prev === 'function') prev(); } catch (_) {}
+                resolve();
+            };
+
+            // Fallback polling in case callback doesn't fire (rare)
+            const startedAt = Date.now();
+            const poll = () => {
+                if (window.YT && typeof window.YT.Player === 'function') return resolve();
+                if (Date.now() - startedAt > 10000) return reject(new Error('Timed out loading YouTube IFrame API'));
+                setTimeout(poll, 50);
+            };
+            poll();
+        });
+
+        return this._ytPending;
+    }
+
+    ensureSoundCloudApiLoaded() {
+        if (window.SC && window.SC.Widget) {
+            return Promise.resolve();
+        }
+        if (this._scPending) return this._scPending;
+
+        this._scPending = new Promise((resolve, reject) => {
+            const existing = document.querySelector('script[src="https://w.soundcloud.com/player/api.js"]');
+            if (!existing) {
+                const tag = document.createElement('script');
+                tag.src = 'https://w.soundcloud.com/player/api.js';
+                tag.async = true;
+                tag.onload = () => resolve();
+                tag.onerror = () => reject(new Error('Failed to load SoundCloud Widget API'));
+                document.head.appendChild(tag);
+            } else {
+                const startedAt = Date.now();
+                const poll = () => {
+                    if (window.SC && window.SC.Widget) return resolve();
+                    if (Date.now() - startedAt > 10000) return reject(new Error('Timed out loading SoundCloud Widget API'));
+                    setTimeout(poll, 50);
+                };
+                poll();
+            }
+        });
+
+        return this._scPending;
     }
 
     resetStreamTracking() {
@@ -710,7 +782,7 @@ class PersistentFloatingPlayer {
         if (toggleBtn) toggleBtn.style.display = 'none';
     }
 
-    loadYouTubeEmbed(track, url) {
+    loadYouTubeEmbed(track, url, autoplay = true) {
         const videoId = this.extractYouTubeId(url);
         if (!videoId) {
             this.showNotification('Invalid YouTube URL', 'error');
@@ -730,25 +802,62 @@ class PersistentFloatingPlayer {
         // Create YouTube embed in video window with ad-blocking parameters
         const videoContent = document.getElementById('flpVideoContent');
         const videoTitle = document.getElementById('flpVideoTitle');
-        
+
         if (videoContent) {
-            // Embed parameters to minimize ads and UI elements
-            // - modestbranding=1: Hide YouTube logo
-            // - rel=0: Hide related videos
-            // - iv_load_policy=3: Hide annotations
-            // - fs=0: Disable fullscreen button
-            // - controls=0: Hide player controls
-            // - disablekb=1: Disable keyboard controls
-            // - playsinline=1: Play inline on mobile
-            videoContent.innerHTML = `
-                <iframe 
-                    id="flpYouTubeEmbed"
-                    src="https://www.youtube.com/embed/${videoId}?enablejsapi=1&autoplay=1&origin=${window.location.origin}&modestbranding=1&rel=0&iv_load_policy=3&fs=0&controls=0&disablekb=1&playsinline=1"
-                    frameborder="0"
-                    allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
-                    sandbox="allow-scripts allow-same-origin allow-presentation"
-                ></iframe>
-            `;
+            videoContent.innerHTML = `<div id="flpYouTubeEmbed"></div>`;
+            this.ensureYouTubeApiLoaded().then(() => {
+                try {
+                    if (this.ytPlayer && typeof this.ytPlayer.destroy === 'function') {
+                        this.ytPlayer.destroy();
+                    }
+                } catch (_) {}
+
+                this._ytReady = false;
+                this.ytPlayer = new window.YT.Player('flpYouTubeEmbed', {
+                    videoId,
+                    playerVars: {
+                        autoplay: autoplay ? 1 : 0,
+                        playsinline: 1,
+                        modestbranding: 1,
+                        rel: 0,
+                        iv_load_policy: 3,
+                        fs: 0,
+                        controls: 0,
+                        disablekb: 1
+                    },
+                    events: {
+                        onReady: () => {
+                            this._ytReady = true;
+                            if (autoplay) {
+                                try { this.ytPlayer.playVideo(); } catch (_) {}
+                            }
+                        },
+                        onStateChange: (e) => {
+                            // 1 = playing, 2 = paused, 0 = ended
+                            if (e && e.data === 1) {
+                                this.isPlaying = true;
+                                this.updatePlayButton();
+                                this.saveState();
+                            } else if (e && e.data === 2) {
+                                this.isPlaying = false;
+                                this.updatePlayButton();
+                                this.saveState();
+                            }
+                        }
+                    }
+                });
+            }).catch(() => {
+                // If API fails, fall back to a plain iframe (limited control)
+                const autoplayParam = autoplay ? 1 : 0;
+                videoContent.innerHTML = `
+                    <iframe 
+                        id="flpYouTubeEmbed"
+                        src="https://www.youtube.com/embed/${videoId}?enablejsapi=1&autoplay=${autoplayParam}&origin=${window.location.origin}&playsinline=1"
+                        frameborder="0"
+                        allow="autoplay; encrypted-media; picture-in-picture"
+                    ></iframe>
+                `;
+            });
         }
         
         if (videoTitle) {
@@ -769,12 +878,12 @@ class PersistentFloatingPlayer {
         }
         
         this.updateVideoToggleButton();
-        this.isPlaying = true;
+        this.isPlaying = !!autoplay;
         this.updatePlayButton();
         this.saveState();
     }
     
-    loadYouTubeMusicEmbed(track, url) {
+    loadYouTubeMusicEmbed(track, url, autoplay = true) {
         // YouTube Music - extract video ID and play as audio-only
         const videoId = this.extractYouTubeId(url);
         if (!videoId) {
@@ -793,26 +902,69 @@ class PersistentFloatingPlayer {
         const videoContent = document.getElementById('flpVideoContent');
         
         if (videoContent) {
-            videoContent.innerHTML = `
-                <iframe 
-                    id="flpYouTubeMusicEmbed"
-                    src="https://www.youtube.com/embed/${videoId}?enablejsapi=1&autoplay=1&origin=${window.location.origin}&modestbranding=1&rel=0&iv_load_policy=3&fs=0&controls=0&disablekb=1"
-                    frameborder="0"
-                    allow="accelerometer; autoplay; encrypted-media"
-                    sandbox="allow-scripts allow-same-origin"
-                    style="position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none;"
-                ></iframe>
-            `;
+            videoContent.innerHTML = `<div id="flpYouTubeMusicEmbed" style="position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none;"></div>`;
+            this.ensureYouTubeApiLoaded().then(() => {
+                try {
+                    if (this.ytPlayer && typeof this.ytPlayer.destroy === 'function') {
+                        this.ytPlayer.destroy();
+                    }
+                } catch (_) {}
+
+                this._ytReady = false;
+                this.ytPlayer = new window.YT.Player('flpYouTubeMusicEmbed', {
+                    videoId,
+                    playerVars: {
+                        autoplay: autoplay ? 1 : 0,
+                        playsinline: 1,
+                        modestbranding: 1,
+                        rel: 0,
+                        iv_load_policy: 3,
+                        fs: 0,
+                        controls: 0,
+                        disablekb: 1
+                    },
+                    events: {
+                        onReady: () => {
+                            this._ytReady = true;
+                            if (autoplay) {
+                                try { this.ytPlayer.playVideo(); } catch (_) {}
+                            }
+                        },
+                        onStateChange: (e) => {
+                            if (e && e.data === 1) {
+                                this.isPlaying = true;
+                                this.updatePlayButton();
+                                this.saveState();
+                            } else if (e && e.data === 2) {
+                                this.isPlaying = false;
+                                this.updatePlayButton();
+                                this.saveState();
+                            }
+                        }
+                    }
+                });
+            }).catch(() => {
+                const autoplayParam = autoplay ? 1 : 0;
+                videoContent.innerHTML = `
+                    <iframe 
+                        id="flpYouTubeMusicEmbed"
+                        src="https://www.youtube.com/embed/${videoId}?enablejsapi=1&autoplay=${autoplayParam}&origin=${window.location.origin}"
+                        frameborder="0"
+                        allow="autoplay; encrypted-media"
+                        style="position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none;"
+                    ></iframe>
+                `;
+            });
         }
         
         // Explicitly close video window for YouTube Music
         this.closeVideoWindow();
-        this.isPlaying = true;
+        this.isPlaying = !!autoplay;
         this.updatePlayButton();
         this.saveState();
     }
 
-    loadSpotifyEmbed(track, url) {
+    loadSpotifyEmbed(track, url, autoplay = true) {
         const spotifyUri = this.extractSpotifyUri(url);
         if (!spotifyUri) {
             this.showNotification('Invalid Spotify URL', 'error');
@@ -849,12 +1001,12 @@ class PersistentFloatingPlayer {
         
         // Don't show video window for Spotify - it's audio only
         this.videoVisible = false;
-        this.isPlaying = true;
+        this.isPlaying = !!autoplay;
         this.updatePlayButton();
         this.saveState();
     }
 
-    loadSoundCloudEmbed(track, url) {
+    loadSoundCloudEmbed(track, url, autoplay = true) {
         this.updateUI('soundcloud');
         this.show();
         
@@ -867,14 +1019,46 @@ class PersistentFloatingPlayer {
         const videoTitle = document.getElementById('flpVideoTitle');
         
         if (videoContent) {
+            const autoplayParam = autoplay ? 'true' : 'false';
             videoContent.innerHTML = `
                 <iframe 
                     id="flpSoundCloudEmbed"
-                    src="https://w.soundcloud.com/player/?url=${encodeURIComponent(url)}&color=%231db954&auto_play=true&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true"
+                    src="https://w.soundcloud.com/player/?url=${encodeURIComponent(url)}&color=%231db954&auto_play=${autoplayParam}&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true"
                     frameborder="0"
                     allow="autoplay"
                 ></iframe>
             `;
+
+            const iframeEl = document.getElementById('flpSoundCloudEmbed');
+            if (iframeEl) {
+                this.ensureSoundCloudApiLoaded().then(() => {
+                    try {
+                        this.scWidget = window.SC.Widget(iframeEl);
+                        this.scWidget.bind(window.SC.Widget.Events.PLAY, () => {
+                            this.isPlaying = true;
+                            this.updatePlayButton();
+                            this.saveState();
+                        });
+                        this.scWidget.bind(window.SC.Widget.Events.PAUSE, () => {
+                            this.isPlaying = false;
+                            this.updatePlayButton();
+                            this.saveState();
+                        });
+                        this.scWidget.bind(window.SC.Widget.Events.FINISH, () => {
+                            this.isPlaying = false;
+                            this.updatePlayButton();
+                            this.saveState();
+                        });
+                        if (!autoplay) {
+                            try { this.scWidget.pause(); } catch (_) {}
+                        }
+                    } catch (_) {
+                        // ignore
+                    }
+                }).catch(() => {
+                    // ignore
+                });
+            }
         }
         
         if (videoTitle) {
@@ -883,7 +1067,7 @@ class PersistentFloatingPlayer {
         
         // Don't show video window for SoundCloud - it's audio only
         this.videoVisible = false;
-        this.isPlaying = true;
+        this.isPlaying = !!autoplay;
         this.updatePlayButton();
         this.saveState();
     }
@@ -970,15 +1154,24 @@ class PersistentFloatingPlayer {
     sendYouTubeCommand(command) {
         const iframe = document.getElementById('flpYouTubeEmbed') || document.getElementById('flpYouTubeMusicEmbed');
         if (!iframe || !iframe.contentWindow) return;
-        
-        iframe.contentWindow.postMessage(JSON.stringify({
-            event: 'command',
-            func: command
-        }), 'https://www.youtube.com');
+
+        try {
+            iframe.contentWindow.postMessage(JSON.stringify({
+                event: 'command',
+                func: command,
+                args: []
+            }), '*');
+        } catch (_) {
+            // ignore
+        }
     }
 
     attemptYouTubePlay(retries = 6) {
         if (this.currentPlatform !== 'youtube' && this.currentPlatform !== 'youtubemusic') return;
+        if (this.ytPlayer && typeof this.ytPlayer.playVideo === 'function') {
+            try { this.ytPlayer.playVideo(); } catch (_) {}
+            return;
+        }
         const iframe = document.getElementById('flpYouTubeEmbed') || document.getElementById('flpYouTubeMusicEmbed');
         if (!iframe) return;
 
@@ -993,9 +1186,39 @@ class PersistentFloatingPlayer {
         setTimeout(tick, 0);
     }
 
+    attemptYouTubePause(retries = 6) {
+        if (this.currentPlatform !== 'youtube' && this.currentPlatform !== 'youtubemusic') return;
+        if (this.ytPlayer && typeof this.ytPlayer.pauseVideo === 'function') {
+            try { this.ytPlayer.pauseVideo(); } catch (_) {}
+            return;
+        }
+        const iframe = document.getElementById('flpYouTubeEmbed') || document.getElementById('flpYouTubeMusicEmbed');
+        if (!iframe) return;
+
+        let attempt = 0;
+        const tick = () => {
+            attempt += 1;
+            this.sendYouTubeCommand('pauseVideo');
+            if (attempt < retries) {
+                setTimeout(tick, 250 + attempt * 250);
+            }
+        };
+        setTimeout(tick, 0);
+    }
+
     play() {
         // Handle embeds (YouTube, Spotify, SoundCloud)
         if (this.currentPlatform && this.currentPlatform !== 'audio') {
+            if (this.currentPlatform === 'soundcloud' && this.scWidget && typeof this.scWidget.play === 'function') {
+                try { this.scWidget.play(); } catch (_) {}
+                this.isPlaying = true;
+                this.updatePlayButton();
+                this.animateWaveform(true);
+                this.dispatchStateChange();
+                this.saveState();
+                return;
+            }
+
             // Check if embed needs to be loaded (after page navigation)
             const videoContent = document.getElementById('flpVideoContent');
             if (!videoContent || !videoContent.innerHTML.trim()) {
@@ -1018,11 +1241,14 @@ class PersistentFloatingPlayer {
             if (this.currentPlatform === 'youtube' || this.currentPlatform === 'youtubemusic') {
                 this.attemptYouTubePlay();
             }
+
+            // Spotify embeds do not provide reliable programmatic play control.
             
             this.isPlaying = true;
             this.updatePlayButton();
             this.animateWaveform(true);
             this.dispatchStateChange();
+            this.saveState();
             return;
         }
         
@@ -1059,10 +1285,16 @@ class PersistentFloatingPlayer {
         if (this.currentPlatform && this.currentPlatform !== 'audio') {
             // Control YouTube embed via postMessage API
             if (this.currentPlatform === 'youtube' || this.currentPlatform === 'youtubemusic') {
-                this.sendYouTubeCommand('pauseVideo');
+                this.attemptYouTubePause();
+            } else if (this.currentPlatform === 'soundcloud' && this.scWidget && typeof this.scWidget.pause === 'function') {
+                try { this.scWidget.pause(); } catch (_) {}
             }
+
+            // Spotify embeds cannot be reliably paused programmatically.
+            // We still update our UI/state, but the platform may continue playing.
             this.isPlaying = false;
             this.updatePlayButton();
+            this.saveState();
             this.animateWaveform(false);
             this.dispatchStateChange();
             return;

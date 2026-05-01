@@ -960,9 +960,9 @@ async function handleAudioUploadSubmit(e) {
     }
 
     if (window.notifications) {
-      window.notifications.show(isEdit ? 'Track updated successfully' : 'Track uploaded successfully', 'success')
+      window.notifications.show(isEdit ? 'Track updated successfully' : 'Track saved successfully!', 'success')
     } else {
-      console.log(isEdit ? 'Track updated successfully' : 'Track uploaded successfully')
+      console.log(isEdit ? 'Track updated successfully' : 'Track saved successfully!')
     }
     form.reset()
 
@@ -980,6 +980,15 @@ async function handleAudioUploadSubmit(e) {
       artworkPreview.classList.remove('has-image')
       artworkPreview.style.backgroundImage = ''
     }
+
+    // Clear audio URL preview
+    const audioUrlPreview = document.getElementById('audioUrlInlinePreview')
+    if (audioUrlPreview) {
+      audioUrlPreview.innerHTML = ''
+    }
+
+    // Reset last tested URL to force re-validation for next track
+    window.__lastTestedAudioUrl = null
   } catch (err) {
     console.error(err)
     if (window.notifications) {
