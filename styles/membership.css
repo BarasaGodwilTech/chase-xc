@@ -347,16 +347,33 @@
 
 .plan-price {
     display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.price-row {
+    display: flex;
     align-items: baseline;
     justify-content: center;
     gap: 0.25rem;
-    margin-top: 0.5rem;
+    flex-wrap: wrap;
 }
 
 .price-value {
     font-size: 1.8rem;
     font-weight: 700;
     color: var(--primary);
+}
+
+.price-base {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    text-decoration: line-through;
+    opacity: 0.6;
+    margin-right: 0.5rem;
 }
 
 .price-period {
@@ -676,6 +693,19 @@
         padding: 0.4rem 0.8rem;
         font-size: 0.8rem;
     }
+    
+    /* Price alignment for mobile */
+    .price-value {
+        font-size: 1.5rem;
+    }
+    
+    .price-base {
+        font-size: 1rem;
+    }
+    
+    .price-period {
+        font-size: 0.8rem;
+    }
 }
 
 @media (max-width: 480px) {
@@ -761,6 +791,19 @@
     
     .payment-method-card .btn-text {
         padding: 0.35rem 0.7rem;
+        font-size: 0.75rem;
+    }
+    
+    /* Price alignment for extra small screens */
+    .price-value {
+        font-size: 1.3rem;
+    }
+    
+    .price-base {
+        font-size: 0.9rem;
+    }
+    
+    .price-period {
         font-size: 0.75rem;
     }
 }

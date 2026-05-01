@@ -158,16 +158,16 @@ class PersistentFloatingPlayer {
                 <div class="flp-video-header">
                     <span class="flp-video-title" id="flpVideoTitle">Now Playing</span>
                     <div class="flp-video-actions">
-                        <button class="flp-video-btn" id="flpMinimizeVideo" title="Minimize to audio only">
-                            <i class="fas fa-compress-alt"></i>
+                        <button class="flp-video-btn" id="flpMinimizeVideo" aria-label="Minimize">
+                            <i class="fas fa-minus"></i>
                         </button>
-                        <button class="flp-video-btn" id="flpCloseVideo" title="Close video">
+                        <button class="flp-video-btn" id="flpCloseVideo" aria-label="Close">
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
                 </div>
                 <div class="flp-video-content" id="flpVideoContent">
-                    <!-- Embed will be inserted here -->
+                    <!-- Video/embed will be loaded here -->
                 </div>
             </div>
         `;
@@ -184,6 +184,23 @@ class PersistentFloatingPlayer {
         }
         if (closeBtn) {
             closeBtn.addEventListener('click', () => this.closeVideoWindow());
+        }
+
+        // Make the video window content area clickable to focus/interact with embeds
+        const videoContent = document.getElementById('flpVideoContent');
+        if (videoContent) {
+            videoContent.addEventListener('click', (e) => {
+                // Only handle clicks on the container, not on the embed itself
+                if (e.target === videoContent) {
+                    // Focus the embed if it exists
+                    const embed = videoContent.querySelector('iframe, div[id*="Embed"]');
+                    if (embed) {
+                        try {
+                            embed.focus();
+                        } catch (_) {}
+                    }
+                }
+            });
         }
     }
 
@@ -999,11 +1016,43 @@ class PersistentFloatingPlayer {
             videoTitle.textContent = track.title || 'Now Playing';
         }
         
-        // Don't show video window for Spotify - it's audio only
-        this.videoVisible = false;
-        this.isPlaying = !!autoplay;
+        // For Spotify, we want the embed visible so user can interact with it
+        this.videoVisible = true;
+        this.showVideoWindow();
+        // Ensure the video window is positioned and visible
+        this.positionVideoWindow();
+
+        // Spotify embeds do not provide reliable programmatic play control.
+        // We never mark as playing automatically; user must start playback in the embed.
+        this.isPlaying = false;
         this.updatePlayButton();
         this.saveState();
+    }
+
+    highlightSpotifyEmbed() {
+        const embed = document.getElementById('flpSpotifyEmbed');
+        const videoWindow = document.getElementById('flpVideoWindow');
+        if (!embed || !videoWindow) return;
+
+        videoWindow.style.transition = 'none';
+        videoWindow.style.boxShadow = '0 0 0 3px #1DB954, 0 0 20px #1DB954';
+
+        setTimeout(() => {
+            videoWindow.style.transition = 'box-shadow 0.6s ease';
+            videoWindow.style.boxShadow = '';
+        }, 1200);
+
+        // Optionally scroll/center the video window briefly
+        const rect = videoWindow.getBoundingClientRect();
+        const inViewport = rect.top >= 0 && rect.left >= 0 && rect.bottom <= window.innerHeight && rect.right <= window.innerWidth;
+        if (!inViewport) {
+            videoWindow.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+        }
+    }
+
+    showSpotifyPlayPrompt() {
+        this.showNotification('Tap the green play button inside the Spotify widget to start playback.', 'info');
+        this.highlightSpotifyEmbed();
     }
 
     loadSoundCloudEmbed(track, url, autoplay = true) {
@@ -1219,6 +1268,14 @@ class PersistentFloatingPlayer {
                 return;
             }
 
+            if (this.currentPlatform === 'spotify') {
+                this.isPlaying = false;
+                this.updatePlayButton();
+                this.saveState();
+                this.showSpotifyPlayPrompt();
+                return;
+            }
+
             // Check if embed needs to be loaded (after page navigation)
             const videoContent = document.getElementById('flpVideoContent');
             if (!videoContent || !videoContent.innerHTML.trim()) {
@@ -1242,8 +1299,6 @@ class PersistentFloatingPlayer {
                 this.attemptYouTubePlay();
             }
 
-            // Spotify embeds do not provide reliable programmatic play control.
-            
             this.isPlaying = true;
             this.updatePlayButton();
             this.animateWaveform(true);
@@ -1288,6 +1343,12 @@ class PersistentFloatingPlayer {
                 this.attemptYouTubePause();
             } else if (this.currentPlatform === 'soundcloud' && this.scWidget && typeof this.scWidget.pause === 'function') {
                 try { this.scWidget.pause(); } catch (_) {}
+            } else if (this.currentPlatform === 'spotify') {
+                this.isPlaying = false;
+                this.updatePlayButton();
+                this.saveState();
+                this.showNotification('Pause playback inside the Spotify widget.', 'info');
+                return;
             }
 
             // Spotify embeds cannot be reliably paused programmatically.
