@@ -608,6 +608,11 @@ class AudioPlayer {
       trackCards[index].classList.add('active');
     }
     
+    // Fetch duration for external tracks
+    if (track.isExternal && track.originalData) {
+      this.fetchDurationForExternalTrack(track.originalData);
+    }
+    
     // Sync with persistent floating player
     this.syncWithPersistentPlayer();
 
@@ -775,7 +780,10 @@ class AudioPlayer {
       }
     } else if (this.audio.duration) {
       const progress = (this.audio.currentTime / this.audio.duration) * 100;
-      if (this.progressBar) this.progressBar.style.width = progress + "%";
+      if (this.progressBar) {
+        this.progressBar.style.width = progress + "%";
+        this.progressBar.style.transition = 'width 0.1s ease-out';
+      }
       if (this.seekBar) this.seekBar.value = progress;
       if (this.currentTimeDisplay) this.currentTimeDisplay.textContent = this.formatTime(this.audio.currentTime);
       
@@ -786,6 +794,17 @@ class AudioPlayer {
       }
 
       this.scheduleSaveState();
+    } else {
+      // When duration is not yet available, show progress based on current time
+      if (this.audio.currentTime > 0) {
+        const estimatedProgress = Math.min(95, (this.audio.currentTime / 180) * 100); // Assume 3 minutes
+        if (this.progressBar) {
+          this.progressBar.style.width = estimatedProgress + "%";
+          this.progressBar.style.transition = 'width 0.1s ease-out';
+        }
+        if (this.seekBar) this.seekBar.value = estimatedProgress;
+        if (this.currentTimeDisplay) this.currentTimeDisplay.textContent = this.formatTime(this.audio.currentTime);
+      }
     }
   }
 
@@ -1057,32 +1076,6 @@ class AudioPlayer {
     window.persistentPlayer.isPlaying = this.isPlaying;
     window.persistentPlayer.updatePlayButton();
     
-    // Sync current time if audio exists
-    if (window.persistentPlayer.audio && this.audio) {
-      window.persistentPlayer.audio.currentTime = this.audio.currentTime;
-    }
-    
-    // Dispatch event for persistent player
-    document.dispatchEvent(new CustomEvent('trackChanged', {
-      detail: {
-        track: trackData,
-        isPlaying: this.isPlaying,
-        currentTime: this.audio?.currentTime || 0,
-        isShuffled: this.isShuffled,
-        repeatMode: this.repeatMode
-      }
-    }));
-
-    // Keep persistent player shuffle/repeat modes aligned with the main player
-    window.persistentPlayer.isShuffled = this.isShuffled;
-    window.persistentPlayer.repeatMode = ['none', 'all', 'one'][this.repeatMode] || 'none';
-    if (typeof window.persistentPlayer.updateShuffleRepeatUI === 'function') {
-      window.persistentPlayer.updateShuffleRepeatUI();
-    }
-    if (typeof window.persistentPlayer.saveState === 'function') {
-      window.persistentPlayer.saveState();
-    }
-    
     // Also set playlist in persistent player
     if (this.tracks.length > 0 && window.persistentPlayer.playlist?.length !== this.tracks.length) {
       const playlist = this.tracks.map(t => ({
@@ -1096,6 +1089,70 @@ class AudioPlayer {
       }));
       window.persistentPlayer.setPlaylist(playlist, this.currentTrackIndex);
     }
+  }
+  
+  async fetchDurationForExternalTrack(trackData) {
+    // Load duration fetcher if not available
+    if (!window.durationFetcher) {
+      if (!document.querySelector('script[src*="duration-fetcher.js"]')) {
+        const script = document.createElement('script');
+        script.src = './scripts/duration-fetcher.js';
+        document.head.appendChild(script);
+        
+        // Wait for script to load
+        await new Promise(resolve => {
+          script.onload = resolve;
+          setTimeout(resolve, 1000); // Fallback timeout
+        });
+      }
+    }
+    
+    if (window.durationFetcher && trackData.url) {
+      try {
+        const platform = this.detectPlatformFromUrl(trackData.url);
+        const duration = await window.durationFetcher.fetchDuration(trackData.url, platform);
+        
+        if (duration) {
+          const formattedDuration = window.durationFetcher.formatDuration(duration);
+          
+          // Update main player duration display
+          if (this.durationDisplay) {
+            this.durationDisplay.textContent = formattedDuration;
+            this.durationDisplay.setAttribute('data-seconds', duration);
+          }
+          
+          // Update track data
+          if (this.currentTrack) {
+            this.currentTrack.duration = formattedDuration;
+          }
+          
+          // Update floating player duration if it exists
+          const floatingDuration = document.getElementById('flpDuration');
+          if (floatingDuration) {
+            floatingDuration.textContent = formattedDuration;
+            floatingDuration.setAttribute('data-seconds', duration);
+            floatingDuration.setAttribute('data-fetched', 'true');
+          }
+        }
+      } catch (error) {
+        console.warn('[AudioPlayer] Failed to fetch duration for external track:', error);
+      }
+    }
+  }
+  
+  detectPlatformFromUrl(url) {
+    if (!url) return null;
+    
+    if (/^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\//i.test(url)) {
+      return 'youtube';
+    }
+    if (/^(https?:\/\/)?(open\.)?spotify\.com\//i.test(url)) {
+      return 'spotify';
+    }
+    if (/^(https?:\/\/)?(www\.)?soundcloud\.com\//i.test(url)) {
+      return 'soundcloud';
+    }
+    return null;
   }
 }
 

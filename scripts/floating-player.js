@@ -30,6 +30,7 @@ class PersistentFloatingPlayer {
 
         this._streamTimer = null;
         this._streamCountedForTrackId = null;
+        this._progressTrackingInterval = null;
         
         this.init();
     }
@@ -538,8 +539,26 @@ class PersistentFloatingPlayer {
         });
         
         this.audio.addEventListener('loadedmetadata', () => {
+            // Update duration when metadata is loaded
             const durationEl = document.getElementById('flpDuration');
-            if (durationEl) durationEl.textContent = this.formatTime(this.audio.duration);
+            if (durationEl && this.audio.duration && !isNaN(this.audio.duration)) {
+                durationEl.textContent = this.formatTime(this.audio.duration);
+                durationEl.setAttribute('data-seconds', this.audio.duration);
+                durationEl.setAttribute('data-fetched', 'true');
+                console.log('[FloatingPlayer] Audio duration loaded:', this.audio.duration, 'seconds');
+            }
+        });
+        
+        this.audio.addEventListener('play', () => {
+            this.isPlaying = true;
+            this.updatePlayButton();
+            this.startProgressTracking();
+        });
+        
+        this.audio.addEventListener('pause', () => {
+            this.isPlaying = false;
+            this.updatePlayButton();
+            this.stopProgressTracking();
         });
         
         this.audio.addEventListener('ended', () => {
@@ -548,6 +567,13 @@ class PersistentFloatingPlayer {
         
         this.audio.addEventListener('error', (e) => {
             console.error('[FloatingPlayer] Audio error:', e);
+            // Reset duration display on error
+            const durationEl = document.getElementById('flpDuration');
+            if (durationEl) {
+                durationEl.textContent = '0:00';
+                durationEl.removeAttribute('data-seconds');
+                durationEl.removeAttribute('data-fetched');
+            }
         });
     }
 
@@ -570,9 +596,22 @@ class PersistentFloatingPlayer {
         this.isCollapsed = false;
         this.playerElement?.classList.remove('collapsed');
         
+        // Reset duration display for new track
+        const durationEl = document.getElementById('flpDuration');
+        if (durationEl) {
+            durationEl.textContent = '0:00';
+            durationEl.removeAttribute('data-seconds');
+            durationEl.removeAttribute('data-fetched');
+        }
+        
         // Detect platform and get URL
         const { platform, url } = this.detectPlatform(track);
         this.currentPlatform = platform;
+        
+        // Fetch duration for external platforms
+        if (platform && platform !== 'audio' && url) {
+            this.fetchAndUpdateDuration(url, platform);
+        }
         
         if (platform === 'audio' && url) {
             // Direct audio file
@@ -794,6 +833,9 @@ class PersistentFloatingPlayer {
         this.show();
         this.saveState();
         
+        // Start progress tracking for audio files
+        this.startProgressTracking();
+        
         // Hide video toggle for audio files
         const toggleBtn = document.getElementById('flpVideoToggle');
         if (toggleBtn) toggleBtn.style.display = 'none';
@@ -845,6 +887,19 @@ class PersistentFloatingPlayer {
                     events: {
                         onReady: () => {
                             this._ytReady = true;
+                            // Update duration when YouTube player is ready
+                            if (this.ytPlayer && this.ytPlayer.getDuration) {
+                                const duration = this.ytPlayer.getDuration();
+                                if (duration && !isNaN(duration) && duration > 0) {
+                                    const durationEl = document.getElementById('flpDuration');
+                                    if (durationEl) {
+                                        durationEl.textContent = this.formatTime(duration);
+                                        durationEl.setAttribute('data-seconds', duration);
+                                        durationEl.setAttribute('data-fetched', 'true');
+                                        console.log('[FloatingPlayer] YouTube duration loaded:', duration, 'seconds');
+                                    }
+                                }
+                            }
                             if (autoplay) {
                                 try { this.ytPlayer.playVideo(); } catch (_) {}
                             }
@@ -854,10 +909,17 @@ class PersistentFloatingPlayer {
                             if (e && e.data === 1) {
                                 this.isPlaying = true;
                                 this.updatePlayButton();
+                                this.startProgressTracking();
                                 this.saveState();
                             } else if (e && e.data === 2) {
                                 this.isPlaying = false;
                                 this.updatePlayButton();
+                                this.stopProgressTracking();
+                                this.saveState();
+                            } else if (e && e.data === 0) {
+                                this.isPlaying = false;
+                                this.updatePlayButton();
+                                this.stopProgressTracking();
                                 this.saveState();
                             }
                         }
@@ -936,25 +998,45 @@ class PersistentFloatingPlayer {
                         modestbranding: 1,
                         rel: 0,
                         iv_load_policy: 3,
-                        fs: 0,
-                        controls: 0,
-                        disablekb: 1
                     },
                     events: {
-                        onReady: () => {
+                        onReady: (e) => {
                             this._ytReady = true;
+                            // Update duration when YouTube player is ready
+                            if (this.ytPlayer && this.ytPlayer.getDuration) {
+                                const duration = this.ytPlayer.getDuration();
+                                if (duration && !isNaN(duration) && duration > 0) {
+                                    const durationEl = document.getElementById('flpDuration');
+                                    if (durationEl) {
+                                        durationEl.textContent = this.formatTime(duration);
+                                        durationEl.setAttribute('data-seconds', duration);
+                                        durationEl.setAttribute('data-fetched', 'true');
+                                        console.log('[FloatingPlayer] YouTube duration loaded:', duration, 'seconds');
+                                    }
+                                }
+                            }
                             if (autoplay) {
                                 try { this.ytPlayer.playVideo(); } catch (_) {}
                             }
                         },
                         onStateChange: (e) => {
                             if (e && e.data === 1) {
+                                // Video started playing
                                 this.isPlaying = true;
                                 this.updatePlayButton();
+                                this.startProgressTracking();
                                 this.saveState();
                             } else if (e && e.data === 2) {
+                                // Video paused
                                 this.isPlaying = false;
                                 this.updatePlayButton();
+                                this.stopProgressTracking();
+                                this.saveState();
+                            } else if (e && e.data === 0) {
+                                // Video ended
+                                this.isPlaying = false;
+                                this.updatePlayButton();
+                                this.stopProgressTracking();
                                 this.saveState();
                             }
                         }
@@ -1083,19 +1165,41 @@ class PersistentFloatingPlayer {
                 this.ensureSoundCloudApiLoaded().then(() => {
                     try {
                         this.scWidget = window.SC.Widget(iframeEl);
+                        
+                        // Get duration when widget is ready
+                        this.scWidget.bind(window.SC.Widget.Events.READY, () => {
+                            this.scWidget.getDuration((duration) => {
+                                if (duration && !isNaN(duration) && duration > 0) {
+                                    const durationEl = document.getElementById('flpDuration');
+                                    if (durationEl) {
+                                        durationEl.textContent = this.formatTime(duration);
+                                        durationEl.setAttribute('data-seconds', duration);
+                                        durationEl.setAttribute('data-fetched', 'true');
+                                        console.log('[FloatingPlayer] SoundCloud duration loaded:', duration, 'seconds');
+                                    }
+                                }
+                            });
+                        });
+                        
                         this.scWidget.bind(window.SC.Widget.Events.PLAY, () => {
                             this.isPlaying = true;
                             this.updatePlayButton();
+                            this.animateWaveform(true);
+                            this.startProgressTracking();
                             this.saveState();
                         });
                         this.scWidget.bind(window.SC.Widget.Events.PAUSE, () => {
                             this.isPlaying = false;
                             this.updatePlayButton();
+                            this.animateWaveform(false);
+                            this.stopProgressTracking();
                             this.saveState();
                         });
                         this.scWidget.bind(window.SC.Widget.Events.FINISH, () => {
                             this.isPlaying = false;
                             this.updatePlayButton();
+                            this.animateWaveform(false);
+                            this.stopProgressTracking();
                             this.saveState();
                         });
                         if (!autoplay) {
@@ -1212,6 +1316,91 @@ class PersistentFloatingPlayer {
             }), '*');
         } catch (_) {
             // ignore
+        }
+    }
+    
+    sendYouTubeSeekCommand(percentage) {
+        const iframe = document.getElementById('flpYouTubeEmbed') || document.getElementById('flpYouTubeMusicEmbed');
+        if (!iframe || !iframe.contentWindow) return;
+
+        try {
+            // Get duration from cached data or estimate
+            const duration = this.getCachedDuration();
+            if (duration) {
+                const seekTime = (percentage / 100) * duration;
+                iframe.contentWindow.postMessage(JSON.stringify({
+                    event: 'command',
+                    func: 'seekTo',
+                    args: [seekTime]
+                }), '*');
+            }
+        } catch (_) {
+            // ignore
+        }
+    }
+    
+    getCachedDuration() {
+        const durationEl = document.getElementById('flpDuration');
+        if (durationEl && durationEl.hasAttribute('data-seconds')) {
+            return parseFloat(durationEl.getAttribute('data-seconds'));
+        }
+        return null;
+    }
+    
+    async fetchAndUpdateDuration(url, platform) {
+        if (!window.durationFetcher) {
+            // Load duration fetcher if not available
+            if (!document.querySelector('script[src*="duration-fetcher.js"]')) {
+                const script = document.createElement('script');
+                script.src = './scripts/duration-fetcher.js';
+                document.head.appendChild(script);
+                
+                // Wait for script to load
+                await new Promise(resolve => {
+                    script.onload = resolve;
+                    setTimeout(resolve, 1000); // Fallback timeout
+                });
+            }
+        }
+        
+        if (window.durationFetcher) {
+            try {
+                console.log(`[FloatingPlayer] Fetching duration for ${platform}:`, url);
+                const duration = await window.durationFetcher.fetchDuration(url, platform);
+                
+                if (duration && !isNaN(duration) && duration > 0) {
+                    const durationEl = document.getElementById('flpDuration');
+                    if (durationEl) {
+                        const formattedDuration = window.durationFetcher.formatDuration(duration);
+                        durationEl.textContent = formattedDuration;
+                        durationEl.setAttribute('data-seconds', duration);
+                        durationEl.setAttribute('data-fetched', 'true');
+                        console.log(`[FloatingPlayer] Duration fetched and set:`, duration, 'seconds (', formattedDuration, ')');
+                    }
+                    
+                    // Also update the seek bar max value
+                    const seekEl = document.getElementById('flpSeek');
+                    if (seekEl) {
+                        seekEl.max = 100;
+                    }
+                } else {
+                    console.warn(`[FloatingPlayer] Could not fetch duration for ${platform}:`, url);
+                    // Set placeholder duration
+                    const durationEl = document.getElementById('flpDuration');
+                    if (durationEl && !durationEl.hasAttribute('data-fetched')) {
+                        durationEl.textContent = '--:--';
+                    }
+                }
+            } catch (error) {
+                console.warn('[FloatingPlayer] Failed to fetch duration:', error);
+                // Set error placeholder
+                const durationEl = document.getElementById('flpDuration');
+                if (durationEl && !durationEl.hasAttribute('data-fetched')) {
+                    durationEl.textContent = '--:--';
+                }
+            }
+        } else {
+            console.warn('[FloatingPlayer] Duration fetcher not available');
         }
     }
 
@@ -1447,21 +1636,99 @@ class PersistentFloatingPlayer {
     }
 
     updateProgress() {
-        if (!this.audio || !this.audio.duration) return;
+        let currentTime = 0;
+        let duration = 0;
         
-        const progress = (this.audio.currentTime / this.audio.duration) * 100;
+        if (this.currentPlatform === 'audio' && this.audio) {
+            currentTime = this.audio.currentTime;
+            duration = this.audio.duration;
+        } else if (this.currentPlatform === 'youtube' || this.currentPlatform === 'youtubemusic') {
+            if (this.ytPlayer) {
+                currentTime = this.ytPlayer.getCurrentTime() || 0;
+                duration = this.ytPlayer.getDuration() || 0;
+            }
+        } else if (this.currentPlatform === 'soundcloud' && this.scWidget) {
+            // SoundCloud widget progress
+            this.scWidget.getPosition((position) => {
+                this.scWidget.getDuration((duration) => {
+                    this.updateProgressUI(position, duration);
+                });
+            });
+            return; // Return early as we handle async
+        }
+        
+        this.updateProgressUI(currentTime, duration);
+    }
+    
+    updateProgressUI(currentTime, duration) {
         const fillEl = document.getElementById('flpProgressFill');
         const seekEl = document.getElementById('flpSeek');
         const currentTimeEl = document.getElementById('flpCurrentTime');
+        const durationEl = document.getElementById('flpDuration');
         
-        if (fillEl) fillEl.style.width = progress + '%';
-        if (seekEl) seekEl.value = progress;
-        if (currentTimeEl) currentTimeEl.textContent = this.formatTime(this.audio.currentTime);
+        // Always update current time
+        if (currentTimeEl) currentTimeEl.textContent = this.formatTime(currentTime);
+        
+        // Update duration if available and not already fetched
+        if (durationEl && duration && !isNaN(duration)) {
+            if (!durationEl.hasAttribute('data-fetched') || !durationEl.getAttribute('data-seconds')) {
+                durationEl.textContent = this.formatTime(duration);
+                durationEl.setAttribute('data-seconds', duration);
+                durationEl.setAttribute('data-fetched', 'true');
+            }
+        }
+        
+        // Update progress bar and slider if duration is available
+        if (duration && !isNaN(duration) && duration > 0) {
+            const progress = Math.min(100, Math.max(0, (currentTime / duration) * 100));
+            
+            if (fillEl) {
+                fillEl.style.width = progress + '%';
+                // Add smooth transition
+                fillEl.style.transition = 'width 0.1s ease-out';
+            }
+            
+            if (seekEl) {
+                seekEl.value = progress;
+                seekEl.max = 100;
+                seekEl.min = 0;
+            }
+        } else {
+            // If no duration available, show indeterminate progress based on current time
+            if (currentTime > 0) {
+                const estimatedProgress = Math.min(95, (currentTime / 180) * 100); // Assume 3 minutes as fallback
+                if (fillEl) {
+                    fillEl.style.width = estimatedProgress + '%';
+                    fillEl.style.transition = 'width 0.1s ease-out';
+                }
+                if (seekEl) {
+                    seekEl.value = estimatedProgress;
+                }
+            } else {
+                // Reset to 0 if no current time
+                if (fillEl) fillEl.style.width = '0%';
+                if (seekEl) seekEl.value = 0;
+            }
+        }
     }
 
     seek(percentage) {
-        if (this.audio && this.audio.duration) {
+        if (this.currentPlatform === 'audio' && this.audio && this.audio.duration) {
             this.audio.currentTime = (percentage / 100) * this.audio.duration;
+        } else if (this.currentPlatform === 'youtube' || this.currentPlatform === 'youtubemusic') {
+            if (this.ytPlayer && this.ytPlayer.getDuration) {
+                const duration = this.ytPlayer.getDuration();
+                const seekTime = (percentage / 100) * duration;
+                this.ytPlayer.seekTo(seekTime);
+            } else {
+                // Fallback to postMessage API
+                this.sendYouTubeSeekCommand(percentage);
+            }
+        } else if (this.currentPlatform === 'soundcloud' && this.scWidget) {
+            this.scWidget.getDuration((duration) => {
+                const seekTime = (percentage / 100) * duration;
+                this.scWidget.seekTo(seekTime);
+            });
         }
         
         // Update progress fill immediately for visual feedback
@@ -1476,6 +1743,39 @@ class PersistentFloatingPlayer {
         const mins = Math.floor(seconds / 60);
         const secs = Math.floor(seconds % 60);
         return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+    }
+    
+    startProgressTracking() {
+        this.stopProgressTracking(); // Clear any existing interval
+        
+        // For external platforms, use different tracking methods
+        if (this.currentPlatform === 'youtube' || this.currentPlatform === 'youtubemusic') {
+            this._progressTrackingInterval = setInterval(() => {
+                this.updateProgress();
+            }, 500); // Update every 500ms for smoother progress
+        } else if (this.currentPlatform === 'soundcloud' && this.scWidget) {
+            // SoundCloud progress is updated via widget events
+            // But we still want periodic updates as fallback
+            this._progressTrackingInterval = setInterval(() => {
+                this.updateProgress();
+            }, 500);
+        } else if (this.currentPlatform === 'audio' && this.audio) {
+            // HTML5 audio has native timeupdate event
+            // This is handled in setupAudioEvents
+            // But we also add a fallback interval
+            this._progressTrackingInterval = setInterval(() => {
+                if (this.audio && !this.audio.paused) {
+                    this.updateProgress();
+                }
+            }, 500);
+        }
+    }
+    
+    stopProgressTracking() {
+        if (this._progressTrackingInterval) {
+            clearInterval(this._progressTrackingInterval);
+            this._progressTrackingInterval = null;
+        }
     }
 
     show() {
@@ -1564,36 +1864,42 @@ class PersistentFloatingPlayer {
         this._abortController = new AbortController();
         const signal = this._abortController.signal;
 
+        // Control buttons
         const playBtn = document.getElementById('flpPlayBtn');
         const prevBtn = document.getElementById('flpPrevBtn');
         const nextBtn = document.getElementById('flpNextBtn');
-        const closeBtn = document.getElementById('flpCloseBtn');
-        const seekBar = document.getElementById('flpSeek');
-        const videoToggleBtn = document.getElementById('flpVideoToggle');
-        const collapseBtn = document.getElementById('flpCollapseBtn');
-        const miniThumb = document.getElementById('flpMiniThumb');
         const shuffleBtn = document.getElementById('flpShuffleBtn');
         const repeatBtn = document.getElementById('flpRepeatBtn');
+        const closeBtn = document.getElementById('flpCloseBtn');
+        const collapseBtn = document.getElementById('flpCollapseBtn');
+        const videoToggleBtn = document.getElementById('flpVideoToggle');
+        const miniThumb = document.getElementById('flpMiniThumb');
         
+        // Progress bar
+        const seekBar = document.getElementById('flpSeek');
+
         if (playBtn) playBtn.addEventListener('click', () => this.togglePlay(), { signal });
         if (prevBtn) prevBtn.addEventListener('click', () => this.prevTrack(), { signal });
         if (nextBtn) nextBtn.addEventListener('click', () => this.nextTrack(), { signal });
-        if (closeBtn) closeBtn.addEventListener('click', () => this.close(), { signal });
-        if (seekBar) seekBar.addEventListener('input', (e) => this.seek(e.target.value), { signal });
-        if (videoToggleBtn) videoToggleBtn.addEventListener('click', () => this.toggleVideoWindow(), { signal });
-        if (collapseBtn) collapseBtn.addEventListener('click', () => this.collapse(), { signal });
-        if (miniThumb) {
-            // Use pointerup to detect click after potential drag
-            miniThumb.addEventListener('pointerup', (e) => {
-                // Only expand if there was no significant drag movement
-                if (!this.wasDragged) {
-                    this.expand();
-                }
-                this.wasDragged = false;
-            }, { signal });
-        }
         if (shuffleBtn) shuffleBtn.addEventListener('click', () => this.toggleShuffle(), { signal });
         if (repeatBtn) repeatBtn.addEventListener('click', () => this.toggleRepeat(), { signal });
+        if (closeBtn) closeBtn.addEventListener('click', () => this.close(), { signal });
+        if (collapseBtn) collapseBtn.addEventListener('click', () => this.toggleCollapse(), { signal });
+        if (videoToggleBtn) videoToggleBtn.addEventListener('click', () => this.toggleVideoWindow(), { signal });
+        if (miniThumb) miniThumb.addEventListener('click', () => this.toggleCollapse(), { signal });
+        
+        // Seek bar event listeners
+        if (seekBar) {
+            seekBar.addEventListener('input', (e) => {
+                const percentage = parseFloat(e.target.value);
+                this.seek(percentage);
+            }, { signal });
+            
+            seekBar.addEventListener('change', (e) => {
+                const percentage = parseFloat(e.target.value);
+                this.seek(percentage);
+            }, { signal });
+        }
         
         // Listen for page navigation to persist player
         window.addEventListener('beforeunload', () => {

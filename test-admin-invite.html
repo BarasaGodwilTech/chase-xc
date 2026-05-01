@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Admin Invite</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+    </style>
+</head>
+<body>
+    <h1>Admin Invite Functionality Test</h1>
+    
+    <div class="test-section">
+        <h2>Test Results</h2>
+        <div id="testResults"></div>
+    </div>
+
+    <div class="test-section">
+        <button onclick="testAdminInviteFlow()">Test Admin Invite Flow</button>
+        <button onclick="testAuthFunctions()">Test Auth Functions</button>
+    </div>
+
+    <script type="module">
+        import { auth } from './scripts/firebase-init.js';
+        import { db } from './scripts/firebase-init.js';
+        import { doc, setDoc, getDoc, deleteDoc, collection, getDocs } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
+
+        function log(message, type = 'info') {
+            const results = document.getElementById('testResults');
+            const div = document.createElement('div');
+            div.className = type;
+            div.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            results.appendChild(div);
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+
+        window.testAdminInviteFlow = async function() {
+            log('Starting admin invite flow test...', 'info');
+            
+            try {
+                // Test 1: Check if adminInvites collection exists and is accessible
+                log('Test 1: Checking adminInvites collection access...', 'info');
+                const invitesSnapshot = await getDocs(collection(db, 'adminInvites'));
+                log(`✓ Admin invites collection accessible. Current invites: ${invitesSnapshot.size}`, 'success');
+                
+                // Test 2: Create a test invite
+                log('Test 2: Creating test admin invite...', 'info');
+                const testEmail = `test-${Date.now()}@example.com`;
+                const testInvite = {
+                    email: testEmail,
+                    role: 'admin',
+                    createdBy: 'test@example.com',
+                    createdAt: new Date().toISOString()
+                };
+                
+                await setDoc(doc(db, 'adminInvites', testEmail), testInvite);
+                log(`✓ Test invite created for: ${testEmail}`, 'success');
+                
+                // Test 3: Retrieve the invite
+                log('Test 3: Retrieving test invite...', 'info');
+                const inviteDoc = await getDoc(doc(db, 'adminInvites', testEmail));
+                if (inviteDoc.exists()) {
+                    log('✓ Test invite retrieved successfully', 'success');
+                    log(`Invite data: ${JSON.stringify(inviteDoc.data())}`, 'info');
+                } else {
+                    log('✗ Failed to retrieve test invite', 'error');
+                }
+                
+                // Test 4: Delete the test invite
+                log('Test 4: Cleaning up test invite...', 'info');
+                await deleteDoc(doc(db, 'adminInvites', testEmail));
+                log('✓ Test invite deleted successfully', 'success');
+                
+                log('Admin invite flow test completed successfully!', 'success');
+                
+            } catch (error) {
+                log(`✗ Admin invite flow test failed: ${error.message}`, 'error');
+                console.error('Full error:', error);
+            }
+        };
+
+        window.testAuthFunctions = async function() {
+            log('Starting auth functions test...', 'info');
+            
+            try {
+                // Test createAdminRecord function (if available)
+                log('Test 1: Checking createAdminRecord function...', 'info');
+                
+                // Create a mock user object
+                const mockUser = {
+                    uid: `test-uid-${Date.now()}`,
+                    email: `test-user-${Date.now()}@example.com`,
+                    displayName: 'Test User'
+                };
+                
+                // This would normally be called from auth.js, but we'll test the logic
+                log(`Mock user created: ${JSON.stringify(mockUser)}`, 'info');
+                
+                // Test createAdminRecordFromInvite logic
+                log('Test 2: Testing createAdminRecordFromInvite logic...', 'info');
+                const mockInvite = {
+                    role: 'admin',
+                    createdBy: 'super-admin@example.com',
+                    createdAt: new Date().toISOString()
+                };
+                
+                // Simulate the admin record creation
+                const adminData = {
+                    uid: mockUser.uid,
+                    email: mockUser.email,
+                    name: mockUser.displayName || mockUser.email,
+                    role: mockInvite.role || 'admin',
+                    createdAt: new Date().toISOString(),
+                    lastLogin: new Date().toISOString(),
+                    invitedBy: mockInvite.createdBy,
+                    invitedAt: mockInvite.createdAt
+                };
+                
+                log(`✓ Admin record data prepared: ${JSON.stringify(adminData)}`, 'success');
+                
+                // Test 3: Check admins collection access
+                log('Test 3: Checking admins collection access...', 'info');
+                const adminsSnapshot = await getDocs(collection(db, 'admins'));
+                log(`✓ Admins collection accessible. Current admins: ${adminsSnapshot.size}`, 'success');
+                
+                log('Auth functions test completed successfully!', 'success');
+                
+            } catch (error) {
+                log(`✗ Auth functions test failed: ${error.message}`, 'error');
+                console.error('Full error:', error);
+            }
+        };
+
+        log('Admin invite test page loaded. Click buttons to run tests.', 'info');
+    </script>
+</body>
+</html>

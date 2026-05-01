@@ -467,6 +467,59 @@ class AdminAuth {
         }
     }
 
+    async createAdminRecord(user) {
+        try {
+            const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js')
+            const adminData = {
+                uid: user.uid,
+                email: user.email,
+                name: user.displayName || user.email,
+                role: 'super_admin',
+                createdAt: new Date().toISOString(),
+                lastLogin: new Date().toISOString()
+            }
+            
+            await setDoc(doc(db, 'admins', user.uid), adminData)
+            console.log('Admin record created successfully for:', user.email)
+            return { id: user.uid, ...adminData }
+        } catch (error) {
+            console.error('Error creating admin record:', error)
+            throw error
+        }
+    }
+
+    async createAdminRecordFromInvite(user, invite) {
+        try {
+            const { doc, setDoc, deleteDoc } = await import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js')
+            const adminData = {
+                uid: user.uid,
+                email: user.email,
+                name: user.displayName || user.email,
+                role: invite.role || 'admin',
+                createdAt: new Date().toISOString(),
+                lastLogin: new Date().toISOString(),
+                invitedBy: invite.createdBy,
+                invitedAt: invite.createdAt
+            }
+            
+            await setDoc(doc(db, 'admins', user.uid), adminData)
+            
+            // Delete the invite after creating the admin record
+            try {
+                await deleteDoc(doc(db, 'adminInvites', user.email))
+                console.log('Admin invite deleted after creating admin record for:', user.email)
+            } catch (deleteError) {
+                console.warn('Failed to delete admin invite after creating admin record:', deleteError)
+            }
+            
+            console.log('Admin record created from invite for:', user.email)
+            return { id: user.uid, ...adminData }
+        } catch (error) {
+            console.error('Error creating admin record from invite:', error)
+            throw error
+        }
+    }
+
     isLoggedIn() {
         return this.isAuthenticated && this.isAdmin
     }
