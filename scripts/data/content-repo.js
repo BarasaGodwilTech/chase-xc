@@ -6,6 +6,8 @@ import {
   query,
   where,
   orderBy,
+  limit,
+  startAfter,
 } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js'
 
 import { db } from '../firebase-init.js'
@@ -27,6 +29,23 @@ export async function fetchPublishedTracks() {
     return tracks
   } catch (error) {
     console.error('[ContentRepo] Error fetching published tracks:', error)
+    throw error
+  }
+}
+
+export async function fetchPublishedTracksPage({ pageSize = 24, cursor = null } = {}) {
+  console.log('[ContentRepo] Fetching published tracks page...', { pageSize, hasCursor: !!cursor })
+  try {
+    const tracksRef = collection(db, 'tracks')
+    const base = [where('status', '==', 'published'), orderBy('releaseDate', 'desc'), limit(pageSize)]
+    const q = cursor ? query(tracksRef, ...base, startAfter(cursor)) : query(tracksRef, ...base)
+    const snap = await getDocs(q)
+    const tracks = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+    const lastDoc = snap.docs.length > 0 ? snap.docs[snap.docs.length - 1] : null
+    console.log('[ContentRepo] Fetched page size:', tracks.length)
+    return { tracks, lastDoc }
+  } catch (error) {
+    console.error('[ContentRepo] Error fetching published tracks page:', error)
     throw error
   }
 }

@@ -1,8 +1,16 @@
-import { fetchPublishedTracks, fetchArtistById, fetchArtists } from './data/content-repo.js'
+import { fetchPublishedTracks, fetchPublishedTracksPage, fetchArtistById, fetchArtists } from './data/content-repo.js'
 import { likedTracksManager } from './liked-tracks-manager.js'
 
 let artistsByIdCache = new Map()
 let artistsByNameCache = new Map()
+
+const paginationState = {
+  pageSize: 24,
+  cursor: null,
+  hasMore: true,
+  isLoading: false,
+  mode: 'page',
+}
 
 function formatNumber(num) {
   if (typeof num !== 'number') return '0'
@@ -85,6 +93,155 @@ function renderTrackCard(track, index, artistName, artistSocials = {}, avatarHtm
       </div>
     </div>
   `
+}
+
+function renderShelfCard(track) {
+  const artistLine = getDisplayArtistLine(track)
+  return `
+    <div class="shelf-card" data-shelf-track-id="${escapeHtml(track.id || '')}">
+      <div class="shelf-card-art">
+        <img src="${escapeHtml(track.artwork || '')}" alt="${escapeHtml(track.title || '')}" loading="lazy" decoding="async">
+        <button class="shelf-card-play" type="button" aria-label="Play ${escapeHtml(track.title || '')}" data-shelf-play-track-id="${escapeHtml(track.id || '')}">
+          <i class="fas fa-play"></i>
+        </button>
+      </div>
+      <div class="shelf-card-body">
+        <p class="shelf-card-title">${escapeHtml(track.title || '')}</p>
+        <p class="shelf-card-subtitle">${escapeHtml(artistLine)}</p>
+      </div>
+    </div>
+  `
+}
+
+function renderMadeForYou(tracks) {
+  const row = document.getElementById('madeForYouRow')
+  if (!row) return
+
+  const likedIds = new Set(likedTracksManager?.likedTrackIds ? Array.from(likedTracksManager.likedTrackIds) : [])
+  const likedTracks = (tracks || []).filter((t) => t?.id && likedIds.has(t.id))
+
+  let picks = []
+  if (likedTracks.length > 0) {
+    picks = likedTracks.slice().sort((a, b) => (Number(b.streams || 0) - Number(a.streams || 0))).slice(0, 6)
+  } else {
+    picks = (tracks || [])
+      .slice()
+      .sort((a, b) => (Number(b.streams || 0) - Number(a.streams || 0)))
+      .slice(0, 6)
+  }
+
+  if (picks.length === 0) {
+    row.innerHTML = '<p class="shelf-empty">No picks yet</p>'
+    return
+  }
+
+  row.innerHTML = picks.map(renderShelfCard).join('')
+}
+
+function getTopLikedGenres(tracks, limit = 2) {
+  const likedIds = new Set(likedTracksManager?.likedTrackIds ? Array.from(likedTracksManager.likedTrackIds) : [])
+  const counts = new Map()
+  for (const t of tracks || []) {
+    if (!t?.id || !likedIds.has(t.id)) continue
+    const g = String(t.genre || '').trim()
+    if (!g) continue
+    const key = g.toLowerCase()
+    counts.set(key, { genre: g, count: (counts.get(key)?.count || 0) + 1 })
+  }
+  return Array.from(counts.values())
+    .sort((a, b) => b.count - a.count)
+    .slice(0, limit)
+    .map((x) => x.genre)
+}
+
+function renderBecauseYouLikedShelves(tracks) {
+  const container = document.getElementById('becauseYouLikedShelves')
+  if (!container) return
+
+  const topGenres = getTopLikedGenres(tracks, 2)
+  if (topGenres.length === 0) {
+    container.innerHTML = ''
+    return
+  }
+
+  const shelvesHtml = topGenres
+    .map((genre) => {
+      const genreKey = String(genre).toLowerCase()
+      const picks = (tracks || [])
+        .filter((t) => String(t.genre || '').toLowerCase().includes(genreKey))
+        .slice()
+        .sort((a, b) => (Number(b.streams || 0) - Number(a.streams || 0)))
+        .slice(0, 8)
+
+      if (picks.length === 0) return ''
+
+      return `
+        <div class="music-shelf">
+          <div class="music-shelf-header">
+            <div>
+              <h3 class="section-title">Because you liked ${escapeHtml(genre)}</h3>
+              <p class="section-subtitle">More ${escapeHtml(genre)} tracks you might enjoy</p>
+            </div>
+            <a class="music-shelf-link" href="#musicSection">See all</a>
+          </div>
+          <div class="music-shelf-row">
+            ${picks.map(renderShelfCard).join('')}
+          </div>
+        </div>
+      `
+    })
+    .join('')
+
+  container.innerHTML = shelvesHtml
+}
+
+function renderTopPicks(tracks) {
+  const row = document.getElementById('topPicksRow')
+  if (!row) return
+
+  const picks = (tracks || [])
+    .slice()
+    .sort((a, b) => (Number(b.streams || 0) - Number(a.streams || 0)))
+    .slice(0, 10)
+
+  if (picks.length === 0) {
+    row.innerHTML = '<p class="shelf-empty">No top picks yet</p>'
+    return
+  }
+
+  row.innerHTML = picks.map(renderShelfCard).join('')
+}
+
+function setupShelfListeners() {
+  const shelves = document.getElementById('musicShelves')
+  if (!shelves) return
+
+  if (shelves._shelfHandlersAttached) return
+  shelves._shelfHandlersAttached = true
+
+  shelves.addEventListener('click', (e) => {
+    const playBtn = e.target.closest('[data-shelf-play-track-id]')
+    if (playBtn) {
+      e.preventDefault()
+      e.stopPropagation()
+      const trackId = playBtn.dataset.shelfPlayTrackId
+      const track = (window.__tracks || []).find((t) => String(t.id) === String(trackId))
+      if (track) handlePlayTrack(track)
+      return
+    }
+
+    const card = e.target.closest('[data-shelf-track-id]')
+    if (card) {
+      const trackId = card.dataset.shelfTrackId
+      if (!trackId) return
+      const href = `track-detail.html?id=${encodeURIComponent(trackId)}`
+      if (typeof window.spaNavigate === 'function') {
+        window.spaNavigate(href)
+      } else {
+        window.location.href = href
+      }
+    }
+  })
 }
 
 async function renderLatestReleases(tracks) {
@@ -453,43 +610,16 @@ function filterByGenre(genre) {
 async function initMusicPage() {
   const grid = document.getElementById('musicGrid')
   const resultsCount = document.getElementById('resultsCount')
+  const loadMoreBtn = document.getElementById('loadMoreBtn')
 
   console.log('[MusicPage] Initializing music page...')
-  let tracks
-  try {
-    console.log('[MusicPage] Fetching published tracks from Firestore...')
-    tracks = await fetchPublishedTracks()
-    console.log('[MusicPage] Fetched tracks:', tracks)
-  } catch (e) {
-    console.error('[MusicPage] Error fetching tracks:', e)
-    if (grid) grid.innerHTML = '<p class="text-center">Error loading tracks. Please check console for details.</p>'
-    if (resultsCount) resultsCount.textContent = '0 tracks'
-    return
-  }
+  let tracks = []
 
-  if (!Array.isArray(tracks) || tracks.length === 0) {
-    console.log('[MusicPage] No tracks found')
-    if (grid) {
-      grid.innerHTML = `
-        <div class="no-results-message">
-          <div class="no-results-content">
-            <i class="fas fa-music"></i>
-            <h4>No Tracks Yet</h4>
-            <p>Please check back soon.</p>
-          </div>
-        </div>
-      `
-    }
-    if (resultsCount) resultsCount.textContent = '0 tracks'
-    document.dispatchEvent(new CustomEvent('music:loaded'))
-
-    // Ensure dependent sections also show empty states.
-    const latestReleases = document.getElementById('latestReleases')
-    if (latestReleases) latestReleases.innerHTML = '<p class="text-center">No latest releases yet</p>'
-
-    const collaborationsGrid = document.getElementById('collaborationsGrid')
-    if (collaborationsGrid) collaborationsGrid.innerHTML = '<p class="text-center">No collaborations available yet</p>'
-    return
+  if (loadMoreBtn && !loadMoreBtn._musicPageLoadMoreHandler) {
+    loadMoreBtn._musicPageLoadMoreHandler = async () => {}
+    loadMoreBtn.addEventListener('click', async () => {
+      await loadNextTracksPage(resolveArtistName)
+    })
   }
 
   let artistsById = new Map()
@@ -551,23 +681,66 @@ async function initMusicPage() {
     return artistData
   }
 
-  const normalizedTracks = []
-  for (let i = 0; i < tracks.length; i++) {
-    const artistData = await resolveArtistName(tracks[i])
-    const displayArtistLine = getDisplayArtistLine({ ...tracks[i], artistName: artistData.name })
-    const normalized = {
-      ...tracks[i],
-      artistName: displayArtistLine,
+  try {
+    console.log('[MusicPage] Fetching first page of published tracks from Firestore...')
+    const page = await fetchPublishedTracksPage({ pageSize: paginationState.pageSize, cursor: null })
+    tracks = page.tracks || []
+    paginationState.cursor = page.lastDoc
+    if (!page.lastDoc || tracks.length < paginationState.pageSize) {
+      paginationState.hasMore = false
     }
-    normalizedTracks.push(normalized)
+  } catch (e) {
+    console.warn('[MusicPage] Page fetch failed, falling back to full fetch', e)
+    paginationState.mode = 'all'
+    paginationState.hasMore = false
+    try {
+      tracks = await fetchPublishedTracks()
+    } catch (err) {
+      console.error('[MusicPage] Error fetching tracks:', err)
+      if (grid) grid.innerHTML = '<p class="text-center">Error loading tracks. Please check console for details.</p>'
+      if (resultsCount) resultsCount.textContent = '0 tracks'
+      paginationState.isLoading = false
+      updateLoadMoreVisibility()
+      return
+    }
   }
+
+  if (!Array.isArray(tracks) || tracks.length === 0) {
+    console.log('[MusicPage] No tracks found')
+    if (grid) {
+      grid.innerHTML = `
+        <div class="no-results-message">
+          <div class="no-results-content">
+            <i class="fas fa-music"></i>
+            <h4>No Tracks Yet</h4>
+            <p>Please check back soon.</p>
+          </div>
+        </div>
+      `
+    }
+    if (resultsCount) resultsCount.textContent = '0 tracks'
+    paginationState.hasMore = false
+    updateLoadMoreVisibility()
+    document.dispatchEvent(new CustomEvent('music:loaded'))
+
+    // Ensure dependent sections also show empty states.
+    const latestReleases = document.getElementById('latestReleases')
+    if (latestReleases) latestReleases.innerHTML = '<p class="text-center">No latest releases yet</p>'
+
+    const collaborationsGrid = document.getElementById('collaborationsGrid')
+    if (collaborationsGrid) collaborationsGrid.innerHTML = '<p class="text-center">No collaborations available yet</p>'
+    return
+  }
+
+  const normalizedTracks = await normalizeTracksBatch(tracks || [], resolveArtistName)
 
   // Used by audio-player.js (which prefers window.__tracks when present)
   window.__tracks = normalizedTracks
 
-  // Render all tracks initially using the filtered rendering system
+  // Render all loaded tracks initially using the filtered rendering system
   renderFilteredTracks(normalizedTracks)
   if (resultsCount) resultsCount.textContent = `${normalizedTracks.length} track${normalizedTracks.length !== 1 ? 's' : ''}`
+  updateLoadMoreVisibility()
 
   // Dispatch event for loading skeleton to hide
   document.dispatchEvent(new CustomEvent('music:loaded'))
@@ -578,6 +751,19 @@ async function initMusicPage() {
   // Render Collaborations section
   await renderCollaborations(normalizedTracks, artistsById)
 
+  renderMadeForYou(normalizedTracks)
+  renderTopPicks(normalizedTracks)
+  renderBecauseYouLikedShelves(normalizedTracks)
+  setupShelfListeners()
+
+  if (!document._madeForYouLikedListenerAttached) {
+    document._madeForYouLikedListenerAttached = true
+    document.addEventListener('likedTracksUpdated', () => {
+      renderMadeForYou(window.__tracks || [])
+      renderBecauseYouLikedShelves(window.__tracks || [])
+    })
+  }
+
   // Setup button event listeners
   setupTrackCardListeners()
   
@@ -586,33 +772,45 @@ async function initMusicPage() {
 }
 
 function setupTrackCardListeners() {
-  // Play button listeners - plays track on all devices
-  document.querySelectorAll('.track-play-btn, .featured-play-btn, .side-play-btn, .collab-play-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
+  if (document._musicPageTrackListenersAttached) return
+  document._musicPageTrackListenersAttached = true
+
+  document.addEventListener('click', (e) => {
+    // Play buttons
+    const collabPlayBtn = e.target.closest('.collab-play-btn')
+    if (collabPlayBtn) {
+      e.preventDefault()
       e.stopPropagation()
-      if (btn.matches('.collab-play-btn')) {
-        const trackId = btn.dataset.collabPlayTrackId
-        const track = (window.__tracks || []).find((t) => t.id === trackId)
-        if (track) handlePlayTrack(track)
+      const trackId = collabPlayBtn.dataset.collabPlayTrackId
+      const track = (window.__tracks || []).find((t) => String(t.id) === String(trackId))
+      if (track) handlePlayTrack(track)
+      return
+    }
+
+    const playBtn = e.target.closest('.track-play-btn, .featured-play-btn, .side-play-btn')
+    if (playBtn) {
+      e.preventDefault()
+      e.stopPropagation()
+      const card = playBtn.closest('.track-card, .featured-release-card, .side-release-card')
+      const trackId = card?.dataset?.trackId
+      const trackById = trackId ? (window.__tracks || []).find((t) => String(t.id) === String(trackId)) : null
+      if (trackById) {
+        handlePlayTrack(trackById)
         return
       }
 
-      const card = btn.closest('.track-card, .featured-release-card, .side-release-card')
-      const trackIndex = parseInt(card.dataset.track)
-      const track = window.__tracks[trackIndex]
-      if (track) handlePlayTrack(track)
-    })
-  })
-
-  // Artist avatar link listeners
-  document.querySelectorAll('.artist-avatar-link[data-artist-id]').forEach((link) => {
-    if (link._artistNavHandler) {
-      link.removeEventListener('click', link._artistNavHandler)
+      const trackIndex = parseInt(card?.dataset?.track)
+      const trackByIndex = Number.isFinite(trackIndex) ? window.__tracks?.[trackIndex] : null
+      if (trackByIndex) handlePlayTrack(trackByIndex)
+      return
     }
-    link._artistNavHandler = (e) => {
+
+    // Artist avatar navigation
+    const artistLink = e.target.closest('.artist-avatar-link[data-artist-id]')
+    if (artistLink) {
       e.preventDefault()
       e.stopPropagation()
-      const artistId = link.dataset.artistId
+      const artistId = artistLink.dataset.artistId
       if (!artistId) return
       const href = `artist-detail.html?id=${encodeURIComponent(artistId)}`
       if (typeof window.spaNavigate === 'function') {
@@ -620,62 +818,42 @@ function setupTrackCardListeners() {
       } else {
         window.location.href = href
       }
+      return
     }
-    link.addEventListener('click', link._artistNavHandler)
-  })
 
-  // Card click listeners - navigate to detail page on all devices
-  document.querySelectorAll('.track-card, .featured-release-card, .side-release-card, .collab-card').forEach(card => {
-    if (card._clickHandler) {
-      card.removeEventListener('click', card._clickHandler)
-    }
-    
-    card._clickHandler = (e) => {
-      // Don't navigate if clicking on play button, like button, or spotify indicator
-      if (e.target.closest('.track-play-btn') || e.target.closest('.like-btn-mini') || e.target.closest('.spotify-indicator') || e.target.closest('.artist-avatar-link')) {
-        return
-      }
-
-      const trackId = card.dataset.trackId || card.dataset.collabTrackId || card.dataset.trackId
-      if (trackId) {
-        const href = `track-detail.html?id=${trackId}`
-        if (typeof window.spaNavigate === 'function') {
-          window.spaNavigate(href)
-        } else {
-          window.location.href = href
-        }
-      }
-    }
-    card.addEventListener('click', card._clickHandler)
-  })
-
-  // Like button listeners
-  document.querySelectorAll('.like-btn-mini[data-like-track-id], .featured-like-btn[data-like-track-id], .side-like-btn[data-like-track-id]').forEach(btn => {
-    if (btn._likeHandler) {
-      btn.removeEventListener('click', btn._likeHandler)
-    }
-    btn._likeHandler = (e) => {
+    // Like buttons
+    const likeBtn = e.target.closest('.like-btn-mini[data-like-track-id], .featured-like-btn[data-like-track-id], .side-like-btn[data-like-track-id]')
+    if (likeBtn) {
+      e.preventDefault()
       e.stopPropagation()
-      const trackId = btn.dataset.likeTrackId
-      handleLikeTrack(trackId, btn)
+      const trackId = likeBtn.dataset.likeTrackId
+      handleLikeTrack(trackId, likeBtn)
+      return
     }
-    btn.addEventListener('click', btn._likeHandler)
-  })
 
-  // Spotify indicator click
-  document.querySelectorAll('.spotify-indicator, .featured-spotify-btn').forEach(indicator => {
-    if (indicator._spotifyHandler) {
-      indicator.removeEventListener('click', indicator._spotifyHandler)
-    }
-    indicator._spotifyHandler = (e) => {
+    // Spotify indicator
+    const spotifyIndicator = e.target.closest('.spotify-indicator, .featured-spotify-btn')
+    if (spotifyIndicator) {
+      e.preventDefault()
       e.stopPropagation()
-      const card = indicator.closest('.track-card, .featured-release-card')
-      const spotifyUrl = card.dataset.spotifyUrl
-      if (spotifyUrl) {
-        window.open(spotifyUrl, '_blank')
+      const card = spotifyIndicator.closest('.track-card, .featured-release-card')
+      const spotifyUrl = card?.dataset?.spotifyUrl
+      if (spotifyUrl) window.open(spotifyUrl, '_blank')
+      return
+    }
+
+    // Card navigation
+    const card = e.target.closest('.track-card, .featured-release-card, .side-release-card, .collab-card')
+    if (card) {
+      const trackId = card.dataset.trackId || card.dataset.collabTrackId
+      if (!trackId) return
+      const href = `track-detail.html?id=${trackId}`
+      if (typeof window.spaNavigate === 'function') {
+        window.spaNavigate(href)
+      } else {
+        window.location.href = href
       }
     }
-    indicator.addEventListener('click', indicator._spotifyHandler)
   })
   
   // Search functionality
@@ -887,6 +1065,59 @@ function renderFilteredTracks(tracks) {
 
   // Re-setup event listeners for new cards
   setupTrackCardListeners()
+}
+
+function updateLoadMoreVisibility() {
+  const btn = document.getElementById('loadMoreBtn')
+  if (!btn) return
+  btn.style.display = paginationState.hasMore ? 'inline-flex' : 'none'
+  btn.disabled = paginationState.isLoading
+}
+
+async function normalizeTracksBatch(tracks, resolveArtistName) {
+  const artistDatas = await Promise.all((tracks || []).map((t) => resolveArtistName(t)))
+  return (tracks || []).map((t, i) => {
+    const artistData = artistDatas[i] || { name: t?.artistName || 'Unknown Artist' }
+    const displayArtistLine = getDisplayArtistLine({ ...t, artistName: artistData.name })
+    return {
+      ...t,
+      artistName: displayArtistLine,
+    }
+  })
+}
+
+async function loadNextTracksPage(resolveArtistName) {
+  if (paginationState.isLoading || !paginationState.hasMore) return
+  paginationState.isLoading = true
+  updateLoadMoreVisibility()
+
+  try {
+    const { tracks, lastDoc } = await fetchPublishedTracksPage({
+      pageSize: paginationState.pageSize,
+      cursor: paginationState.cursor,
+    })
+
+    paginationState.cursor = lastDoc
+    if (!lastDoc || (tracks || []).length < paginationState.pageSize) {
+      paginationState.hasMore = false
+    }
+
+    const normalized = await normalizeTracksBatch(tracks || [], resolveArtistName)
+    window.__tracks = Array.isArray(window.__tracks) ? window.__tracks.concat(normalized) : normalized
+    applyAllFilters()
+  } catch (e) {
+    console.warn('[MusicPage] Pagination failed, falling back to full fetch', e)
+    paginationState.mode = 'all'
+    paginationState.hasMore = false
+
+    const tracks = await fetchPublishedTracks()
+    const normalized = await normalizeTracksBatch(tracks || [], resolveArtistName)
+    window.__tracks = normalized
+    applyAllFilters()
+  } finally {
+    paginationState.isLoading = false
+    updateLoadMoreVisibility()
+  }
 }
 
 function handleSearch(query) {
