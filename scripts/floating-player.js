@@ -7,6 +7,8 @@ class PersistentFloatingPlayer {
         this.currentTrack = null;
         this.playerElement = null;
         this.videoWindow = null;
+        this.pipWindow = null;
+        this.isPiP = false;
         this.ytPlayer = null;
         this._ytReady = false;
         this._ytPending = null;
@@ -105,6 +107,9 @@ class PersistentFloatingPlayer {
                     <div class="flp-drag-handle">
                         <i class="fas fa-grip-vertical"></i>
                     </div>
+                    <button class="flp-pip" id="flpPiPBtn" aria-label="Picture in Picture">
+                        <i class="fas fa-external-link-alt"></i>
+                    </button>
                     <button class="flp-collapse" id="flpCollapseBtn" aria-label="Collapse player">
                         <i class="fas fa-chevron-down"></i>
                     </button>
@@ -163,6 +168,303 @@ class PersistentFloatingPlayer {
         document.body.insertAdjacentHTML('beforeend', playerHTML);
         this.playerElement = document.getElementById('persistentFloatingPlayer');
         this.attachDragEvents();
+    }
+
+    canUseDocumentPiP() {
+        return !!(window.documentPictureInPicture && typeof window.documentPictureInPicture.requestWindow === 'function');
+    }
+
+    async togglePiP() {
+        if (this.isPiP) {
+            this.closePiP();
+            return;
+        }
+
+        if (!this.canUseDocumentPiP()) {
+            this.showNotification('Picture-in-Picture is not supported in this browser. Try Chrome/Edge.', 'info');
+            return;
+        }
+
+        await this.openPiP();
+    }
+
+    async openPiP() {
+        if (this.isPiP || this.pipWindow) return;
+
+        try {
+            const pipWindow = await window.documentPictureInPicture.requestWindow({ width: 360, height: 180 });
+            this.pipWindow = pipWindow;
+            this.isPiP = true;
+
+            const doc = pipWindow.document;
+            doc.title = 'Chase XC Player';
+            doc.body.innerHTML = `
+                <div class="pip-shell">
+                    <div class="pip-top">
+                        <div class="pip-brand">
+                            <span class="pip-status" id="pipStatus" aria-hidden="true"></span>
+                            <span class="pip-brand-name">Chase XC</span>
+                            <span class="pip-platform" id="pipPlatform" aria-hidden="true"></span>
+                        </div>
+                        <button class="pip-close" id="pipClose" type="button" aria-label="Close">×</button>
+                    </div>
+                    <div class="pip-root">
+                        <div class="pip-art-wrap">
+                            <img class="pip-art" id="pipArt" alt="Artwork" />
+                        </div>
+                        <div class="pip-meta">
+                            <div class="pip-title" id="pipTitle">Select a track</div>
+                            <div class="pip-artist" id="pipArtist">--</div>
+                            <div class="pip-controls">
+                                <button class="pip-ctl" id="pipPrev" type="button" aria-label="Previous">⟨⟨</button>
+                                <button class="pip-ctl pip-play" id="pipPlay" type="button" aria-label="Play">▶</button>
+                                <button class="pip-ctl" id="pipNext" type="button" aria-label="Next">⟩⟩</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            const style = doc.createElement('style');
+            style.textContent = `
+                :root {
+                    --pip-text: rgba(255,255,255,0.94);
+                    --pip-muted: rgba(255,255,255,0.72);
+                    --pip-border: rgba(255,255,255,0.10);
+                    --pip-glass: rgba(18, 18, 34, 0.62);
+                    --pip-glass-2: rgba(26, 26, 46, 0.82);
+                    --pip-btn: rgba(255,255,255,0.10);
+                    --pip-btn-hover: rgba(255,255,255,0.14);
+                    --pip-btn-border: rgba(255,255,255,0.14);
+                    --pip-accent: rgba(99, 102, 241, 0.85);
+                    --pip-accent-soft: rgba(99, 102, 241, 0.30);
+                    --pip-shadow: 0 18px 60px rgba(0,0,0,0.55);
+                }
+                html, body {
+                    margin: 0;
+                    padding: 0;
+                    background: transparent;
+                    color: var(--pip-text);
+                    font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+                    -webkit-font-smoothing: antialiased;
+                    -moz-osx-font-smoothing: grayscale;
+                }
+                .pip-shell {
+                    height: 100vh;
+                    box-sizing: border-box;
+                    border-radius: 16px;
+                    overflow: hidden;
+                    border: 1px solid var(--pip-border);
+                    background:
+                        radial-gradient(120% 130% at 0% 0%, rgba(99,102,241,0.35) 0%, rgba(99,102,241,0.06) 38%, rgba(0,0,0,0) 60%),
+                        radial-gradient(120% 130% at 100% 0%, rgba(16,185,129,0.18) 0%, rgba(16,185,129,0.03) 45%, rgba(0,0,0,0) 70%),
+                        linear-gradient(180deg, var(--pip-glass) 0%, var(--pip-glass-2) 100%);
+                    box-shadow: var(--pip-shadow);
+                    backdrop-filter: blur(18px);
+                    -webkit-backdrop-filter: blur(18px);
+                }
+                .pip-top {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    padding: 10px 12px;
+                    border-bottom: 1px solid rgba(255,255,255,0.08);
+                }
+                .pip-brand {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 8px;
+                    min-width: 0;
+                }
+                .pip-brand-name {
+                    font-size: 12px;
+                    letter-spacing: 0.10em;
+                    text-transform: uppercase;
+                    opacity: 0.92;
+                    white-space: nowrap;
+                }
+                .pip-status {
+                    width: 8px;
+                    height: 8px;
+                    border-radius: 999px;
+                    background: rgba(255,255,255,0.20);
+                    box-shadow: 0 0 0 4px rgba(255,255,255,0.05);
+                }
+                .pip-status.playing {
+                    background: rgba(16,185,129,0.95);
+                    box-shadow: 0 0 0 4px rgba(16,185,129,0.18);
+                }
+                .pip-platform {
+                    font-size: 11px;
+                    color: var(--pip-muted);
+                    padding: 3px 8px;
+                    border-radius: 999px;
+                    border: 1px solid rgba(255,255,255,0.10);
+                    background: rgba(255,255,255,0.06);
+                    white-space: nowrap;
+                    max-width: 130px;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                }
+                .pip-close {
+                    width: 30px;
+                    height: 30px;
+                    border-radius: 10px;
+                    border: 1px solid rgba(255,255,255,0.10);
+                    background: rgba(255,255,255,0.06);
+                    color: #fff;
+                    cursor: pointer;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 18px;
+                    line-height: 1;
+                }
+                .pip-close:hover { background: rgba(255,255,255,0.10); }
+                .pip-close:active { transform: translateY(1px); }
+
+                .pip-root { display: flex; gap: 12px; padding: 12px; align-items: center; }
+                .pip-art-wrap {
+                    width: 68px;
+                    height: 68px;
+                    border-radius: 14px;
+                    background: rgba(255,255,255,0.06);
+                    border: 1px solid rgba(255,255,255,0.10);
+                    overflow: hidden;
+                    flex: 0 0 auto;
+                }
+                .pip-art { width: 100%; height: 100%; object-fit: cover; display: block; }
+                .pip-meta { flex: 1 1 auto; min-width: 0; }
+                .pip-title {
+                    font-weight: 800;
+                    font-size: 14px;
+                    letter-spacing: 0.01em;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                }
+                .pip-artist {
+                    font-size: 12px;
+                    color: var(--pip-muted);
+                    margin-top: 3px;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                }
+                .pip-controls { display: flex; gap: 10px; margin-top: 10px; align-items: center; }
+                .pip-ctl {
+                    width: 36px;
+                    height: 32px;
+                    border-radius: 12px;
+                    background: var(--pip-btn);
+                    border: 1px solid var(--pip-btn-border);
+                    color: #fff;
+                    cursor: pointer;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 14px;
+                    line-height: 1;
+                    user-select: none;
+                    transition: transform 0.12s ease, background 0.12s ease, border-color 0.12s ease;
+                }
+                .pip-ctl:hover { background: var(--pip-btn-hover); }
+                .pip-ctl:active { transform: translateY(1px); }
+                .pip-play {
+                    width: 46px;
+                    height: 36px;
+                    border-color: rgba(99, 102, 241, 0.70);
+                    background: var(--pip-accent-soft);
+                    box-shadow: 0 10px 24px rgba(99, 102, 241, 0.25);
+                    font-size: 16px;
+                }
+                .pip-play:hover { border-color: var(--pip-accent); }
+            `;
+            doc.head.appendChild(style);
+
+            const prevBtn = doc.getElementById('pipPrev');
+            const playBtn = doc.getElementById('pipPlay');
+            const nextBtn = doc.getElementById('pipNext');
+            const closeBtn = doc.getElementById('pipClose');
+
+            if (prevBtn) prevBtn.addEventListener('click', () => this.prevTrack());
+            if (playBtn) playBtn.addEventListener('click', () => this.togglePlay());
+            if (nextBtn) nextBtn.addEventListener('click', () => this.nextTrack());
+            if (closeBtn) closeBtn.addEventListener('click', () => this.closePiP());
+
+            pipWindow.addEventListener('pagehide', () => {
+                this.isPiP = false;
+                this.pipWindow = null;
+                this.updatePiPButton();
+            }, { once: true });
+
+            this.updatePiPUI();
+            this.updatePiPButton();
+        } catch (e) {
+            this.pipWindow = null;
+            this.isPiP = false;
+            this.showNotification('Unable to open Picture-in-Picture window.', 'warning');
+        }
+    }
+
+    closePiP() {
+        if (this.pipWindow && !this.pipWindow.closed) {
+            try { this.pipWindow.close(); } catch (_) {}
+        }
+        this.pipWindow = null;
+        this.isPiP = false;
+        this.updatePiPButton();
+    }
+
+    updatePiPButton() {
+        const btn = document.getElementById('flpPiPBtn');
+        if (!btn) return;
+        btn.classList.toggle('active', !!this.isPiP);
+        btn.title = this.isPiP ? 'Close Picture-in-Picture' : 'Open Picture-in-Picture';
+    }
+
+    updatePiPUI() {
+        if (!this.pipWindow || this.pipWindow.closed) return;
+        const doc = this.pipWindow.document;
+        const titleEl = doc.getElementById('pipTitle');
+        const artistEl = doc.getElementById('pipArtist');
+        const artEl = doc.getElementById('pipArt');
+        const playBtn = doc.getElementById('pipPlay');
+        const statusEl = doc.getElementById('pipStatus');
+        const platformEl = doc.getElementById('pipPlatform');
+
+        const title = this.currentTrack?.title || 'Select a track';
+        const rawArtist = this.currentTrack?.artistName || this.currentTrack?.artist || '--';
+        const artist = this.normalizeArtistLine(rawArtist) || rawArtist;
+
+        if (titleEl) titleEl.textContent = title;
+        if (artistEl) artistEl.textContent = artist;
+        if (artEl) {
+            const src = this.currentTrack?.artwork || '';
+            if (src) artEl.src = src;
+        }
+        if (playBtn) {
+            playBtn.textContent = this.isPlaying ? '❚❚' : '▶';
+            playBtn.setAttribute('aria-label', this.isPlaying ? 'Pause' : 'Play');
+        }
+
+        if (statusEl) {
+            statusEl.classList.toggle('playing', !!this.isPlaying);
+        }
+
+        if (platformEl) {
+            const platform = this.currentPlatform || '';
+            const labelMap = {
+                audio: 'Audio',
+                youtube: 'YouTube',
+                youtubemusic: 'YouTube Music',
+                spotify: 'Spotify',
+                soundcloud: 'SoundCloud'
+            };
+            const label = labelMap[platform] || (platform ? String(platform) : '');
+            platformEl.textContent = label;
+            platformEl.style.display = label ? 'inline-flex' : 'none';
+        }
     }
 
     createVideoWindow() {
@@ -1350,6 +1652,8 @@ class PersistentFloatingPlayer {
         } else if (badgeEl) {
             badgeEl.style.display = 'none';
         }
+
+        this.updatePiPUI();
     }
 
     getPlatformIcon(platform) {
@@ -1634,6 +1938,8 @@ class PersistentFloatingPlayer {
         if (playIndicator) {
             playIndicator.className = this.isPlaying ? 'fas fa-pause' : 'fas fa-play';
         }
+
+        this.updatePiPUI();
     }
     
     collapse() {
@@ -1909,6 +2215,7 @@ class PersistentFloatingPlayer {
         const repeatBtn = document.getElementById('flpRepeatBtn');
         const closeBtn = document.getElementById('flpCloseBtn');
         const collapseBtn = document.getElementById('flpCollapseBtn');
+        const pipBtn = document.getElementById('flpPiPBtn');
         const videoToggleBtn = document.getElementById('flpVideoToggle');
         const miniThumb = document.getElementById('flpMiniThumb');
         
@@ -1922,6 +2229,7 @@ class PersistentFloatingPlayer {
         if (repeatBtn) repeatBtn.addEventListener('click', () => this.toggleRepeat(), { signal });
         if (closeBtn) closeBtn.addEventListener('click', () => this.close(), { signal });
         if (collapseBtn) collapseBtn.addEventListener('click', () => this.toggleCollapse(), { signal });
+        if (pipBtn) pipBtn.addEventListener('click', () => this.togglePiP(), { signal });
         if (videoToggleBtn) videoToggleBtn.addEventListener('click', () => this.toggleVideoWindow(), { signal });
         if (miniThumb) miniThumb.addEventListener('click', () => this.toggleCollapse(), { signal });
         
