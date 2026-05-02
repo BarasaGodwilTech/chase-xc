@@ -236,12 +236,22 @@ function initTestimonialCarousel() {
     }
 
     function showSlide(n) {
+        if (!slides || slides.length === 0) return;
+        
+        // Ensure n is within bounds
+        n = ((n % slides.length) + slides.length) % slides.length;
+        
         slides.forEach((slide) => slide.classList.remove("active"))
         document.querySelectorAll(".carousel-dot").forEach((dot) => dot.classList.remove("active"))
 
-        slides[n].classList.add("active")
+        if (slides[n]) {
+            slides[n].classList.add("active")
+        }
         if (dotsContainer) {
-            document.querySelectorAll(".carousel-dot")[n].classList.add("active")
+            const dots = document.querySelectorAll(".carousel-dot");
+            if (dots[n]) {
+                dots[n].classList.add("active")
+            }
         }
     }
 
@@ -1059,6 +1069,7 @@ function initMembership() {
 }
 
 // === MUSIC FILTERS FUNCTIONALITY ===
+if (typeof MusicFilters === 'undefined') {
 class MusicFilters {
     constructor() {
         this.filterButtons = document.querySelectorAll('.filter-btn');
@@ -1168,6 +1179,7 @@ class MusicFilters {
         return names[filter] || 'Tracks';
     }
 }
+} // Close the if (typeof MusicFilters === 'undefined') block
 
 // Initialize music filters when DOM is ready (but not on music page)
 document.addEventListener('DOMContentLoaded', () => {
@@ -1182,6 +1194,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // === MUSIC SEARCH FUNCTIONALITY ===
+if (typeof MusicSearch === 'undefined') {
 class MusicSearch {
     constructor() {
         this.searchInput = document.getElementById('musicSearch');
@@ -1471,6 +1484,7 @@ class MusicSearch {
         this.searchFilterToggle.classList.toggle('active');
     }
 }
+} // Close the if (typeof MusicSearch === 'undefined') block
 
 function initFooterCtaRotator() {
     const root = document.querySelector('[data-footer-cta-rotator]')

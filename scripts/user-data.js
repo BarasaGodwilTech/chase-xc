@@ -53,19 +53,19 @@ export async function incrementTrackStreams(trackId, delta = 1, { eventId } = {}
       await call({ trackId, delta, eventId: trimmedEventId })
       return
     } catch (e) {
-      // Fall through to single fallback below
+      console.warn('[user-data] incrementTrackStreams callable failed (CORS or network issue), falling back to client-side:', e.message || e)
+      // Fall back to client-side increment
     }
   }
 
-  // Fallback to direct update (may be blocked by Firestore rules in prod).
+  // Fallback: client-side increment (no dedup, respects rules).
   try {
-    const ref = trackDocRef(trackId)
-    await updateDoc(ref, {
+    await updateDoc(doc(db, 'tracks', trackId), {
       streams: increment(delta)
     })
   } catch (inner) {
-    console.error('[user-data] incrementTrackStreams failed:', inner)
-    throw inner
+    console.warn('[user-data] incrementTrackStreams client-side failed (likely permissions):', inner.message || inner)
+    // Don't throw error to prevent breaking playback flow
   }
 }
 

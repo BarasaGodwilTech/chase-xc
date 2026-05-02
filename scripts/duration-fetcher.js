@@ -61,6 +61,7 @@ class DurationFetcher {
             }
         } catch (error) {
             console.warn('[DurationFetcher] YouTube page parsing failed:', error);
+            // Don't throw error, just return null to prevent breaking the flow
         }
 
         return null;
@@ -118,11 +119,13 @@ class DurationFetcher {
                     return response.data.lengthSeconds;
                 }
             } catch (error) {
+                console.warn(`[DurationFetcher] Failed to fetch from ${instance}:`, error.message);
                 continue; // Try next instance
             }
         }
         
-        throw new Error('All Invidious instances failed');
+        // Return null instead of throwing to prevent breaking the flow
+        return null;
     }
 
     // Fetch Spotify track duration

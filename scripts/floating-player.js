@@ -29,6 +29,9 @@ class PersistentFloatingPlayer {
         this.isMobile = window.innerWidth <= 480;
         this.isShuffled = false;
         this.repeatMode = 'none'; // 'none', 'one', 'all'
+        this.userManuallyClosedPiP = false; // Track if user closed PiP in this session
+        this.autoPiPEnabled = true; // Can be toggled via settings later
+        this.pipEverEnabled = false; // Document PiP often requires a user gesture; only auto-open after manual enable
         
         // Shuffle functionality
         this.originalPlaylist = [];
@@ -78,7 +81,7 @@ class PersistentFloatingPlayer {
         this.loadStateFromStorage();
         this.setupEventListeners();
         this.startSyncInterval();
-        this.handleVisibilityChange();
+        this.setupVisibilityHandler();
         
         // Listen for resize to update mobile state and reposition video
         window.addEventListener('resize', () => {
@@ -170,6 +173,41 @@ class PersistentFloatingPlayer {
         this.attachDragEvents();
     }
 
+    setupVisibilityHandler() {
+        // Handle page visibility changes for auto-PiP
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                // Page is now hidden (user switched tabs/minimized)
+                this.handlePageHidden();
+            } else {
+                // Page is now visible again
+                this.handlePageVisible();
+            }
+        });
+    }
+
+    handlePageHidden() {
+        // Auto-open PiP when page becomes hidden and music is playing
+        if (!this.autoPiPEnabled) return;
+        if (this.userManuallyClosedPiP) return; // Respect user's manual close
+        if (!this.pipEverEnabled) return; // Browser requires a prior user gesture to allow PiP
+        if (!this.isPlaying) return; // Only if music is playing
+        if (this.isPiP) return; // Already in PiP mode
+        if (!this.canUseDocumentPiP()) return; // Browser doesn't support PiP
+        
+        // Small delay to avoid immediate opening on quick tab switches
+        setTimeout(() => {
+            if (document.hidden && this.isPlaying && !this.isPiP && !this.userManuallyClosedPiP) {
+                this.openPiP({ silent: true });
+            }
+        }, 500);
+    }
+
+    handlePageVisible() {
+        // When page becomes visible, we could optionally close PiP
+        // For now, leave PiP open so user can control it manually
+    }
+
     canUseDocumentPiP() {
         return !!(window.documentPictureInPicture && typeof window.documentPictureInPicture.requestWindow === 'function');
     }
@@ -185,16 +223,20 @@ class PersistentFloatingPlayer {
             return;
         }
 
-        await this.openPiP();
+        // Mark that user has explicitly enabled PiP at least once (required for reliable auto-PiP)
+        this.pipEverEnabled = true;
+
+        await this.openPiP({ silent: false });
     }
 
-    async openPiP() {
+    async openPiP({ silent = false } = {}) {
         if (this.isPiP || this.pipWindow) return;
 
         try {
             const pipWindow = await window.documentPictureInPicture.requestWindow({ width: 360, height: 180 });
             this.pipWindow = pipWindow;
             this.isPiP = true;
+            this.userManuallyClosedPiP = false; // Reset manual close flag when PiP opens
 
             const doc = pipWindow.document;
             doc.title = 'Chase XC Player';
@@ -403,7 +445,9 @@ class PersistentFloatingPlayer {
         } catch (e) {
             this.pipWindow = null;
             this.isPiP = false;
-            this.showNotification('Unable to open Picture-in-Picture window.', 'warning');
+            if (!silent) {
+                this.showNotification('Unable to open Picture-in-Picture window.', 'warning');
+            }
         }
     }
 
@@ -413,6 +457,8 @@ class PersistentFloatingPlayer {
         }
         this.pipWindow = null;
         this.isPiP = false;
+        // Mark that user manually closed PiP to prevent auto-reopen
+        this.userManuallyClosedPiP = true;
         this.updatePiPButton();
     }
 
