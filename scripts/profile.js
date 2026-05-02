@@ -98,6 +98,7 @@ class UserProfile {
         this.userProfile = null;
         this.authInitialized = false;
         this._artistsById = new Map();
+        this._artistsByName = new Map();
         this._profileClickHandlersBound = false;
         this.init();
     }
@@ -125,7 +126,7 @@ class UserProfile {
                 }
             }
         });
-        
+
         // Listen for liked tracks updates to refresh UI
         if (!window.__profileLikedTracksListenerBound) {
             window.__profileLikedTracksListenerBound = true
@@ -276,6 +277,40 @@ class UserProfile {
                 this.closeEditModal();
             }
         });
+    }
+
+    getTrackArtistAvatarHtml(track) {
+        const t = track || {}
+        const primaryId = String(t.artist || '').trim()
+        const collabIds = Array.isArray(t.collaborators) ? t.collaborators.map((x) => String(x)) : []
+
+        const nameParts = normalizeArtistParts([
+            t.artistName,
+            ...(Array.isArray(t.collaboratorNames) ? t.collaboratorNames : [])
+        ])
+
+        const idsFromNames = nameParts
+            .map((n) => this._artistsByName?.get(String(n).toLowerCase())?.id)
+            .filter(Boolean)
+            .map((id) => String(id))
+
+        const ids = uniqueStrings([primaryId, ...collabIds, ...idsFromNames].filter(Boolean))
+        const items = ids
+            .map((id) => ({ id, src: this._artistsById?.get(String(id))?.image || '' }))
+            .filter((x) => x.id && x.src)
+            .slice(0, 4)
+
+        if (items.length === 0) return ''
+
+        return `
+            <div class="collab-avatars profile-track-artist-avatars">
+                ${items
+                    .map(({ id, src }) =>
+                        `<a class="collab-avatar artist-avatar-link" href="artist-detail.html?id=${encodeURIComponent(id)}" data-artist-id="${String(id).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}" aria-label="View artist" tabindex="0"><img src="${String(src).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}" alt="" loading="lazy" decoding="async"></a>`
+                    )
+                    .join('')}
+            </div>
+        `
     }
 
     bindProfileListClickHandlers() {
@@ -457,9 +492,15 @@ class UserProfile {
                 try {
                     const artists = await fetchArtists()
                     this._artistsById = new Map((artists || []).map((a) => [String(a.id), a]))
+                    this._artistsByName = new Map(
+                        (artists || [])
+                            .filter((a) => a && a.name)
+                            .map((a) => [String(a.name).trim().toLowerCase(), a])
+                    )
                 } catch (e) {
                     console.warn('[Profile] Failed to fetch artists for favorites collaboration resolution', e)
                     this._artistsById = new Map()
+                    this._artistsByName = new Map()
                 }
             }
 
@@ -484,6 +525,7 @@ class UserProfile {
             favoritesGrid.innerHTML = resolvedFavorites.map((track, index) => {
                 const spotifyUrl = track.spotifyUrl || track.platformLinks?.spotify || '';
                 const isLiked = likedTracksManager.isTrackLiked(track.trackId);
+                const avatarHtml = this.getTrackArtistAvatarHtml(track)
                 return `
                 <div class="track-card" data-track="${index}" data-track-id="${track.trackId}" data-spotify-url="${spotifyUrl}">
                     <div class="track-artwork">
@@ -498,6 +540,7 @@ class UserProfile {
                             <div class="track-info">
                                 <h4 class="track-title">${track.title}</h4>
                                 <p class="track-artist">${track.artistName}</p>
+                                ${avatarHtml || ''}
                             </div>
                             <button class="like-btn-mini ${isLiked ? 'liked' : ''}" title="Like" data-like-track-id="${track.trackId}" type="button">
                                 <i class="${isLiked ? 'fas' : 'far'} fa-heart"></i>
@@ -820,6 +863,26 @@ class UserProfile {
             });
         });
 
+        // Artist avatar navigation
+        document.querySelectorAll('#favoritesGrid .artist-avatar-link[data-artist-id]').forEach((link) => {
+            if (link._artistNavHandler) {
+                link.removeEventListener('click', link._artistNavHandler)
+            }
+            link._artistNavHandler = (e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                const artistId = link.dataset.artistId
+                if (!artistId) return
+                const href = `artist-detail.html?id=${encodeURIComponent(artistId)}`
+                if (typeof window.spaNavigate === 'function') {
+                    window.spaNavigate(href)
+                } else {
+                    window.location.href = href
+                }
+            }
+            link.addEventListener('click', link._artistNavHandler)
+        })
+
         // Like button listeners (already liked, so remove from favorites)
         document.querySelectorAll('#favoritesGrid .like-btn-mini').forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -834,7 +897,8 @@ class UserProfile {
             card.addEventListener('click', (e) => {
                 if (e.target.closest('.track-play-btn') || 
                     e.target.closest('.like-btn-mini') || 
-                    e.target.closest('.spotify-indicator')) {
+                    e.target.closest('.spotify-indicator') ||
+                    e.target.closest('.artist-avatar-link')) {
                     return;
                 }
                 const trackId = card.dataset.trackId;

@@ -155,33 +155,32 @@ function normalizeArtistParts(values) {
   return uniqueStrings(parts)
 }
 
-function getCollabAvatarHtml(track) {
+function getTrackArtistAvatarHtml(track) {
+  const primaryId = String(track?.artist || '').trim()
   const collabIds = safeArray(track?.collaborators).map((x) => String(x))
 
-  let ids = []
-  if (collabIds.length > 0) {
-    ids = collabIds
-  } else {
-    const names = normalizeArtistParts([track?.artistName, ...(safeArray(track?.collaboratorNames))])
-    ids = names
-      .map((n) => artistsByNameCache.get(String(n).toLowerCase())?.id)
-      .filter(Boolean)
-      .map((id) => String(id))
-  }
-
-  const avatars = uniqueStrings(ids)
-    .map((id) => artistsByIdCache.get(String(id))?.image || '')
+  const idsFromNames = normalizeArtistParts([
+    track?.artistName,
+    ...(safeArray(track?.collaboratorNames)),
+  ])
+    .map((n) => artistsByNameCache.get(String(n).toLowerCase())?.id)
     .filter(Boolean)
+    .map((id) => String(id))
+
+  const ids = uniqueStrings([primaryId, ...collabIds, ...idsFromNames].filter(Boolean))
+  const items = ids
+    .map((id) => ({ id, src: artistsByIdCache.get(String(id))?.image || '' }))
+    .filter((x) => x.id && x.src)
     .slice(0, 4)
 
-  if (avatars.length === 0) return ''
+  if (items.length === 0) return ''
 
   return `
-    <div class="collab-avatars">
-      ${avatars
+    <div class="collab-avatars track-artist-avatars">
+      ${items
         .map(
-          (src) =>
-            `<span class="collab-avatar"><img src="${escapeHtml(src)}" alt="" loading="lazy" decoding="async"></span>`
+          ({ id, src }) =>
+            `<a class="collab-avatar artist-avatar-link" href="artist-detail.html?id=${encodeURIComponent(id)}" data-artist-id="${escapeHtml(id)}" aria-label="View artist" tabindex="0"><img src="${escapeHtml(src)}" alt="" loading="lazy" decoding="async"></a>`
         )
         .join('')}
     </div>
@@ -605,6 +604,26 @@ function setupTrackCardListeners() {
     })
   })
 
+  // Artist avatar link listeners
+  document.querySelectorAll('.artist-avatar-link[data-artist-id]').forEach((link) => {
+    if (link._artistNavHandler) {
+      link.removeEventListener('click', link._artistNavHandler)
+    }
+    link._artistNavHandler = (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+      const artistId = link.dataset.artistId
+      if (!artistId) return
+      const href = `artist-detail.html?id=${encodeURIComponent(artistId)}`
+      if (typeof window.spaNavigate === 'function') {
+        window.spaNavigate(href)
+      } else {
+        window.location.href = href
+      }
+    }
+    link.addEventListener('click', link._artistNavHandler)
+  })
+
   // Card click listeners - navigate to detail page on all devices
   document.querySelectorAll('.track-card, .featured-release-card, .side-release-card, .collab-card').forEach(card => {
     if (card._clickHandler) {
@@ -613,7 +632,7 @@ function setupTrackCardListeners() {
     
     card._clickHandler = (e) => {
       // Don't navigate if clicking on play button, like button, or spotify indicator
-      if (e.target.closest('.track-play-btn') || e.target.closest('.like-btn-mini') || e.target.closest('.spotify-indicator')) {
+      if (e.target.closest('.track-play-btn') || e.target.closest('.like-btn-mini') || e.target.closest('.spotify-indicator') || e.target.closest('.artist-avatar-link')) {
         return
       }
 
@@ -861,8 +880,7 @@ function renderFilteredTracks(tracks) {
   // Render filtered tracks
   const cards = tracks.map((track, index) => {
     const displayArtistLine = getDisplayArtistLine(track)
-    const isCollab = safeArray(track?.collaborators).length > 0 || safeArray(track?.collaboratorNames).length > 0
-    const avatars = isCollab ? getCollabAvatarHtml(track) : ''
+    const avatars = getTrackArtistAvatarHtml(track)
     return renderTrackCard(track, index, displayArtistLine, {}, avatars)
   })
   grid.innerHTML = cards.join('')
