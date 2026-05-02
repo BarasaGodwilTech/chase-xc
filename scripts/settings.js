@@ -30,7 +30,12 @@ class SettingsManager {
             } else {
                 // Only redirect if auth is initialized and user is not on auth page
                 if (!window.location.pathname.includes('auth.html')) {
-                    window.location.href = 'auth.html';
+                    const href = 'auth.html'
+                    if (typeof window.spaNavigate === 'function') {
+                        window.spaNavigate(href)
+                    } else {
+                        window.location.href = href;
+                    }
                 }
             }
         });
@@ -476,13 +481,31 @@ class SettingsManager {
     }
 }
 
+function initSettingsPage() {
+    const root = document.querySelector('.settings-content')
+    if (!root) return
+    if (root.dataset.settingsInit === '1') return
+    root.dataset.settingsInit = '1'
+    new SettingsManager()
+}
+
 // Initialize settings page
 document.addEventListener('DOMContentLoaded', () => {
-    new SettingsManager();
-});
+    initSettingsPage()
+})
+
+document.addEventListener('includes:loaded', () => {
+    initSettingsPage()
+})
+
+document.addEventListener('spa:navigated', () => {
+    initSettingsPage()
+})
 
 // Add notification animations
+if (!document.getElementById('settingsNotificationAnimations')) {
 const style = document.createElement('style');
+style.id = 'settingsNotificationAnimations'
 style.textContent = `
     @keyframes slideIn {
         from { transform: translateX(100%); opacity: 0; }
@@ -494,3 +517,4 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
+}

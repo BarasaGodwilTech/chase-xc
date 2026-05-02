@@ -7,6 +7,7 @@ import {
     getRecentListeningEvents,
     getTopTracks,
     getNotifications,
+    markNotificationRead,
     markAllNotificationsRead,
     getWeeklyListeningActivity,
     getFavorites,
@@ -14,13 +15,90 @@ import {
     createPlaylist
 } from './user-data.js'
 import { likedTracksManager } from './liked-tracks-manager.js'
-import { fetchTrackById } from './data/content-repo.js'
+import { fetchArtists, fetchArtistById, fetchTrackById } from './data/content-repo.js'
+
+function uniqueStrings(values) {
+    const out = []
+    const seen = new Set()
+    for (const v of values || []) {
+        const s = String(v || '').trim()
+        if (!s) continue
+        const key = s.toLowerCase()
+        if (seen.has(key)) continue
+        seen.add(key)
+        out.push(s)
+    }
+    return out
+}
+
+function splitArtistParts(name) {
+    const raw = String(name || '').trim()
+    if (!raw) return []
+    return raw
+        .split(/\s*(?:&|•|\+|,|\/|\bfeat\.?\b|\bft\.?\b|\bx\b)\s*/i)
+        .map((p) => String(p || '').trim())
+        .filter((p) => p && p.toLowerCase() !== 'unknown artist')
+}
+
+function normalizeArtistParts(values) {
+    const parts = []
+    for (const v of values || []) {
+        parts.push(...splitArtistParts(v))
+    }
+    return uniqueStrings(parts)
+}
+
+async function resolveTrackArtistLine(track, artistsById) {
+    const t = track || {}
+    const namesFromDoc = Array.isArray(t.collaboratorNames) ? t.collaboratorNames : []
+    const collabIds = Array.isArray(t.collaborators) ? t.collaborators : []
+
+    const parts = []
+    parts.push(...namesFromDoc)
+
+    if (collabIds.length > 0) {
+        const fetched = await Promise.all(
+            collabIds.map(async (id) => {
+                const key = String(id || '').trim()
+                if (!key) return ''
+                const fromCache = artistsById?.get(key)
+                if (fromCache?.name) return fromCache.name
+                try {
+                    const a = await fetchArtistById(key)
+                    return a?.name || ''
+                } catch (_) {
+                    return ''
+                }
+            })
+        )
+        parts.push(...fetched)
+    }
+
+    if (t.artistName) parts.push(t.artistName)
+
+    const primaryId = String(t.artist || '').trim()
+    if (primaryId) {
+        const fromCache = artistsById?.get(primaryId)
+        if (fromCache?.name) parts.push(fromCache.name)
+        else {
+            try {
+                const a = await fetchArtistById(primaryId)
+                if (a?.name) parts.push(a.name)
+            } catch (_) {}
+        }
+    }
+
+    const normalized = normalizeArtistParts(parts)
+    return normalized.length > 0 ? normalized.join(' & ') : (t.artistName || 'Unknown Artist')
+}
 
 class UserProfile {
     constructor() {
         this.currentUser = null;
         this.userProfile = null;
         this.authInitialized = false;
+        this._artistsById = new Map();
+        this._profileClickHandlersBound = false;
         this.init();
     }
 
@@ -38,20 +116,28 @@ class UserProfile {
             } else {
                 // Only redirect if auth is initialized and user is not on auth page
                 if (!window.location.pathname.includes('auth.html')) {
-                    window.location.href = 'auth.html';
+                    const href = 'auth.html'
+                    if (typeof window.spaNavigate === 'function') {
+                        window.spaNavigate(href)
+                    } else {
+                        window.location.href = href;
+                    }
                 }
             }
         });
         
         // Listen for liked tracks updates to refresh UI
-        document.addEventListener('likedTracksUpdated', (e) => {
-            const { trackId, isLiked } = e.detail;
-            if (trackId && isLiked !== undefined) {
-                likedTracksManager.updateTrackHeartIcons(trackId, isLiked);
-            } else {
-                likedTracksManager.updateAllHeartIcons();
-            }
-        });
+        if (!window.__profileLikedTracksListenerBound) {
+            window.__profileLikedTracksListenerBound = true
+            document.addEventListener('likedTracksUpdated', (e) => {
+                const { trackId, isLiked } = e.detail;
+                if (trackId && isLiked !== undefined) {
+                    likedTracksManager.updateTrackHeartIcons(trackId, isLiked);
+                } else {
+                    likedTracksManager.updateAllHeartIcons();
+                }
+            });
+        }
     }
 
     async loadUserProfile() {
@@ -133,6 +219,8 @@ class UserProfile {
             });
         });
 
+        this.bindProfileListClickHandlers();
+
         // Edit profile modal
         const editProfileBtn = document.getElementById('editProfileBtn');
         const editPersonalInfo = document.getElementById('editPersonalInfo');
@@ -188,6 +276,68 @@ class UserProfile {
                 this.closeEditModal();
             }
         });
+    }
+
+    bindProfileListClickHandlers() {
+        if (this._profileClickHandlersBound) return;
+        this._profileClickHandlersBound = true;
+
+        const navigateToTrack = (trackId) => {
+            const id = String(trackId || '').trim();
+            if (!id) return;
+            const href = `track-detail.html?id=${encodeURIComponent(id)}`;
+            if (typeof window.spaNavigate === 'function') {
+                window.spaNavigate(href);
+            } else {
+                window.location.href = href;
+            }
+        };
+
+        const topTracksList = document.getElementById('topTracksList');
+        if (topTracksList) {
+            topTracksList.addEventListener('click', (e) => {
+                const item = e.target.closest('.top-track-item');
+                if (!item) return;
+                const trackId = item.dataset.trackId;
+                if (trackId) navigateToTrack(trackId);
+            });
+        }
+
+        const historyList = document.getElementById('historyList');
+        if (historyList) {
+            historyList.addEventListener('click', (e) => {
+                const item = e.target.closest('.history-item');
+                if (!item) return;
+                const trackId = item.dataset.trackId;
+                if (trackId) navigateToTrack(trackId);
+            });
+        }
+
+        const notificationsList = document.getElementById('notificationsList');
+        if (notificationsList) {
+            notificationsList.addEventListener('click', async (e) => {
+                const item = e.target.closest('.notification-item');
+                if (!item) return;
+                const trackId = item.dataset.trackId;
+                const notificationId = item.dataset.notificationId;
+                if (notificationId && this.currentUser?.uid) {
+                    try {
+                        await markNotificationRead(this.currentUser.uid, notificationId)
+                    } catch (_) {}
+                }
+                if (item.classList.contains('unread')) {
+                    item.classList.remove('unread');
+                }
+                if (notificationId) {
+                    const href = `notifications.html?id=${encodeURIComponent(notificationId)}`;
+                    if (typeof window.spaNavigate === 'function') {
+                        window.spaNavigate(href);
+                    } else {
+                        window.location.href = href;
+                    }
+                }
+            });
+        }
     }
 
     switchTab(tabId) {
@@ -285,11 +435,12 @@ class UserProfile {
         }
     }
 
-    loadFavorites() {
+    async loadFavorites() {
         const favoritesGrid = document.getElementById('favoritesGrid');
         if (!favoritesGrid) return;
 
-        getFavorites(this.currentUser.uid, 50).then((favorites) => {
+        try {
+            const favorites = await getFavorites(this.currentUser.uid, 50)
             if (!favorites || favorites.length === 0) {
                 favoritesGrid.innerHTML = `
                     <div class="empty-state">
@@ -302,10 +453,35 @@ class UserProfile {
                 return;
             }
 
-            // Store tracks for event handlers
-            window.__profileTracks = favorites;
+            if (!this._artistsById || this._artistsById.size === 0) {
+                try {
+                    const artists = await fetchArtists()
+                    this._artistsById = new Map((artists || []).map((a) => [String(a.id), a]))
+                } catch (e) {
+                    console.warn('[Profile] Failed to fetch artists for favorites collaboration resolution', e)
+                    this._artistsById = new Map()
+                }
+            }
 
-            favoritesGrid.innerHTML = favorites.map((track, index) => {
+            const resolvedFavorites = []
+            for (const fav of favorites) {
+                const id = fav?.trackId || fav?.id
+                if (!id) continue
+                try {
+                    const t = await fetchTrackById(id)
+                    const base = t || fav
+                    const artistName = await resolveTrackArtistLine(base, this._artistsById)
+                    resolvedFavorites.push({ ...base, ...fav, id: base?.id || id, trackId: id, artistName })
+                } catch (_) {
+                    const artistName = await resolveTrackArtistLine(fav, this._artistsById)
+                    resolvedFavorites.push({ ...fav, id, trackId: id, artistName })
+                }
+            }
+
+            // Store tracks for event handlers
+            window.__profileTracks = resolvedFavorites;
+
+            favoritesGrid.innerHTML = resolvedFavorites.map((track, index) => {
                 const spotifyUrl = track.spotifyUrl || track.platformLinks?.spotify || '';
                 const isLiked = likedTracksManager.isTrackLiked(track.trackId);
                 return `
@@ -333,9 +509,9 @@ class UserProfile {
 
             // Setup event listeners after rendering
             this.setupTrackCardListeners();
-        }).catch((e) => {
+        } catch (e) {
             console.error('Error loading favorites:', e)
-        })
+        }
     }
 
     loadHistory() {
@@ -344,6 +520,7 @@ class UserProfile {
 
         getRecentListeningEvents(this.currentUser.uid, 20).then((events) => {
             const history = events.map((e) => ({
+                trackId: e.trackId,
                 title: e.title,
                 artist: e.artistName,
                 artwork: e.artwork,
@@ -363,7 +540,7 @@ class UserProfile {
             }
 
             historyList.innerHTML = history.slice(0, 20).map(track => `
-                <div class="history-item">
+                <div class="history-item" data-track-id="${track.trackId || ''}" role="button" tabindex="0">
                     <img src="${track.artwork || 'public/player-cover-1.jpg'}" alt="${track.title}">
                     <div class="history-info">
                         <h4>${track.title}</h4>
@@ -421,7 +598,7 @@ class UserProfile {
             }
 
             list.innerHTML = top.map((t, idx) => `
-                <div class="top-track-item">
+                <div class="top-track-item" data-track-id="${t.trackId || ''}" role="button" tabindex="0">
                     <span class="track-rank">${idx + 1}</span>
                     <div class="track-info">
                         <p class="track-title">${t.title || ''}</p>
@@ -457,8 +634,9 @@ class UserProfile {
                 const time = created ? this.formatTimeAgo(created) : ''
                 const icon = n.type === 'welcome' ? 'fa-music' : n.type === 'tip' ? 'fa-info-circle' : 'fa-bell'
                 const unread = n.read === false ? 'unread' : ''
+                const trackId = n.trackId || n.data?.trackId || ''
                 return `
-                    <div class="notification-item ${unread}">
+                    <div class="notification-item ${unread}" data-notification-id="${n.id || ''}" data-track-id="${trackId}">
                         <div class="notification-icon">
                             <i class="fas ${icon}"></i>
                         </div>
@@ -633,7 +811,6 @@ class UserProfile {
                         title: t.title,
                         artistName: t.artistName,
                         artwork: t.artwork,
-                        audioUrl: t.audioUrl,
                         platformLinks: t.platformLinks || {},
                         originalData: t
                     }));
@@ -662,7 +839,12 @@ class UserProfile {
                 }
                 const trackId = card.dataset.trackId;
                 if (trackId) {
-                    window.location.href = `track-detail.html?id=${trackId}`;
+                    const href = `track-detail.html?id=${trackId}`;
+                    if (typeof window.spaNavigate === 'function') {
+                        window.spaNavigate(href)
+                    } else {
+                        window.location.href = href;
+                    }
                 }
             });
         });
@@ -691,11 +873,57 @@ class UserProfile {
                 
                 if (playlist && playlist.tracks && playlist.tracks.length > 0) {
                     // Play first track in playlist
-                    const firstTrack = playlist.tracks[0];
+                    const firstTrackId = playlist.tracks[0];
+                    if (!firstTrackId) {
+                        this.showNotification('Playlist is empty', 'info');
+                        return;
+                    }
+
                     if (window.persistentPlayer) {
-                        window.persistentPlayer.loadTrack(firstTrack);
-                        window.persistentPlayer.play();
-                        this.showNotification(`Playing ${playlist.name}`, 'success');
+                        fetchTrackById(firstTrackId).then((t) => {
+                            if (!t) {
+                                this.showNotification('Track not found', 'error');
+                                return;
+                            }
+                            const ensureArtistsLoaded = async () => {
+                                if (this._artistsById && this._artistsById.size > 0) return
+                                try {
+                                    const artists = await fetchArtists()
+                                    this._artistsById = new Map((artists || []).map((a) => [String(a.id), a]))
+                                } catch (_) {
+                                    this._artistsById = new Map()
+                                }
+                            }
+                            const loadWithResolvedArtist = async () => {
+                                await ensureArtistsLoaded()
+                                const artistName = await resolveTrackArtistLine(t, this._artistsById)
+                                window.persistentPlayer.loadTrack({
+                                    id: t.id,
+                                    title: t.title,
+                                    artistName,
+                                    artwork: t.artwork,
+                                    platformLinks: t.platformLinks || {},
+                                    originalData: { ...t, artistName }
+                                });
+                                window.persistentPlayer.play();
+                                this.showNotification(`Playing ${playlist.name}`, 'success');
+                            }
+                            loadWithResolvedArtist().catch(() => {
+                                window.persistentPlayer.loadTrack({
+                                    id: t.id,
+                                    title: t.title,
+                                    artistName: t.artistName,
+                                    artwork: t.artwork,
+                                    platformLinks: t.platformLinks || {},
+                                    originalData: t
+                                });
+                                window.persistentPlayer.play();
+                                this.showNotification(`Playing ${playlist.name}`, 'success');
+                            })
+                        }).catch((err) => {
+                            console.error('[Profile] Failed to load first track:', err);
+                            this.showNotification('Failed to load track', 'error');
+                        });
                     }
                 } else {
                     this.showNotification('Playlist is empty', 'info');
@@ -741,7 +969,12 @@ class UserProfile {
                     return;
                 }
                 const playlistId = card.dataset.playlistId;
-                window.location.href = `playlist-detail.html?id=${playlistId}`;
+                const href = `playlist-detail.html?id=${playlistId}`;
+                if (typeof window.spaNavigate === 'function') {
+                    window.spaNavigate(href)
+                } else {
+                    window.location.href = href;
+                }
             });
         });
     }
@@ -844,13 +1077,31 @@ class UserProfile {
     }
 }
 
+function initUserProfilePage() {
+    const root = document.querySelector('.profile-header')
+    if (!root) return
+    if (root.dataset.profileInit === '1') return
+    root.dataset.profileInit = '1'
+    new UserProfile()
+}
+
 // Initialize profile page
 document.addEventListener('DOMContentLoaded', () => {
-    new UserProfile();
-});
+    initUserProfilePage()
+})
+
+document.addEventListener('includes:loaded', () => {
+    initUserProfilePage()
+})
+
+document.addEventListener('spa:navigated', () => {
+    initUserProfilePage()
+})
 
 // Add notification animations
+if (!document.getElementById('profileNotificationAnimations')) {
 const style = document.createElement('style');
+style.id = 'profileNotificationAnimations'
 style.textContent = `
     @keyframes slideIn {
         from { transform: translateX(100%); opacity: 0; }
@@ -862,3 +1113,4 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
+}

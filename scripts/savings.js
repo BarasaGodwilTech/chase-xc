@@ -598,10 +598,24 @@ completePaymentProcess(confirmation) {
 
 // Initialize savings manager when DOM is ready
 let savingsManager
+function initSavingsPage() {
+    const root = document.getElementById('savingsForm')
+    if (!root) return
+    if (root.dataset.savingsInit === '1') return
+    root.dataset.savingsInit = '1'
+    savingsManager = new SavingsManager()
+}
+
 document.addEventListener('DOMContentLoaded', () => {
-    if (document.getElementById('savingsForm')) {
-        savingsManager = new SavingsManager()
-    }
+    initSavingsPage()
+})
+
+document.addEventListener('includes:loaded', () => {
+    initSavingsPage()
+})
+
+document.addEventListener('spa:navigated', () => {
+    initSavingsPage()
 })
 
 // Development Payment Bypass removed - using real payment verification system

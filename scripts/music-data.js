@@ -5,6 +5,64 @@ class MusicDataRenderer {
         this.init();
     }
 
+    splitArtistParts(name) {
+        const raw = String(name || '').trim()
+        if (!raw) return []
+        return raw
+            .split(/\s*(?:&|•|\+|,|\/|\bfeat\.?\b|\bft\.?\b|\bx\b)\s*/i)
+            .map((p) => String(p || '').trim())
+            .filter((p) => p && p.toLowerCase() !== 'unknown artist')
+    }
+
+    uniqueStrings(values) {
+        const out = []
+        const seen = new Set()
+        for (const v of values || []) {
+            const s = String(v || '').trim()
+            if (!s) continue
+            const key = s.toLowerCase()
+            if (seen.has(key)) continue
+            seen.add(key)
+            out.push(s)
+        }
+        return out
+    }
+
+    normalizeArtistParts(values) {
+        const parts = []
+        for (const v of values || []) {
+            parts.push(...this.splitArtistParts(v))
+        }
+        return this.uniqueStrings(parts)
+    }
+
+    getDisplayArtistLine(track) {
+        const t = track || {}
+        const collaboratorNames = Array.isArray(t.collaboratorNames) ? t.collaboratorNames : []
+        const collaborators = Array.isArray(t.collaborators) ? t.collaborators : []
+
+        const isCollab = collaboratorNames.length > 0 || collaborators.length > 0
+        if (!isCollab) {
+            const primaryArtist = this.dataManager?.getArtist?.(t.artist)
+            return primaryArtist?.name || t.artistName || 'Unknown Artist'
+        }
+
+        const collaboratorNamesResolved = collaborators
+            .map((id) => {
+                const a = this.dataManager?.getArtist?.(id)
+                return a?.name || ''
+            })
+            .filter(Boolean)
+
+        const parts = this.normalizeArtistParts([
+            ...collaboratorNames,
+            ...collaboratorNamesResolved,
+            t.artistName,
+        ])
+
+        return parts.length > 0 ? parts.join(' & ') : 'Various Artists'
+    }
+
     init() {
         this.renderMusicGrid();
         this.setupEventListeners();
@@ -36,16 +94,13 @@ class MusicDataRenderer {
         const tracks = this.dataManager.getPublishedTracks();
 
         // Populate window.__tracks for audio player compatibility (same as music-page.js)
-        window.__tracks = tracks.map((track) => {
-            const artist = this.dataManager.getArtist(track.artist);
-            return {
-                ...track,
-                artistName: artist?.name || track.artistName || 'Unknown Artist'
-            };
-        });
+        window.__tracks = tracks.map((track) => ({
+            ...track,
+            artistName: this.getDisplayArtistLine(track)
+        }));
 
         container.innerHTML = tracks.map((track, index) => {
-            const artist = this.dataManager.getArtist(track.artist);
+            const artistLine = this.getDisplayArtistLine(track)
             const categories = this.getTrackCategories(track);
             const badge = this.getTrackBadge(track);
             const spotifyUrl = track.spotifyUrl || (track.platformLinks?.spotify) || '';
@@ -64,7 +119,7 @@ class MusicDataRenderer {
                         <div class="track-header">
                             <div class="track-info">
                                 <h4 class="track-title">${this.escapeHtml(track.title)}</h4>
-                                <p class="track-artist">${this.escapeHtml(artist?.name || track.artistName || 'Unknown Artist')}</p>
+                                <p class="track-artist">${this.escapeHtml(artistLine)}</p>
                             </div>
                             <button class="like-btn-mini" title="Like" data-like-track-id="${track.id}" type="button">
                                 <i class="far fa-heart"></i>
@@ -327,7 +382,11 @@ class MusicDataRenderer {
     redirectToAuth() {
         const currentUrl = window.location.href;
         const authUrl = `auth.html?redirect=${encodeURIComponent(currentUrl)}`;
-        window.location.href = authUrl;
+        if (typeof window.spaNavigate === 'function') {
+            window.spaNavigate(authUrl)
+        } else {
+            window.location.href = authUrl;
+        }
     }
 
     formatNumber(num) {
@@ -384,7 +443,12 @@ class MusicDataRenderer {
                 }
                 const trackId = card.dataset.trackId;
                 if (trackId) {
-                    window.location.href = `track-detail.html?id=${trackId}`;
+                    const href = `track-detail.html?id=${trackId}`;
+                    if (typeof window.spaNavigate === 'function') {
+                        window.spaNavigate(href)
+                    } else {
+                        window.location.href = href;
+                    }
                 }
             };
             card.addEventListener('click', card._clickHandler);
@@ -432,7 +496,6 @@ class MusicDataRenderer {
                     title: t.title,
                     artistName: t.artistName,
                     artwork: t.artwork,
-                    audioUrl: t.audioUrl,
                     platformLinks: t.platformLinks || {},
                     originalData: t
                 }));
@@ -451,7 +514,6 @@ class MusicDataRenderer {
                     title: track.title,
                     artistName: track.artistName,
                     artwork: track.artwork,
-                    audioUrl: track.audioUrl,
                     platformLinks: track.platformLinks || {},
                     originalData: track
                 });

@@ -95,7 +95,14 @@ function setupTrackInteractions(tracks) {
         return
       }
       const trackId = card.dataset.trackId
-      if (trackId) window.location.href = `track-detail.html?id=${encodeURIComponent(trackId)}`
+      if (trackId) {
+        const href = `track-detail.html?id=${encodeURIComponent(trackId)}`
+        if (typeof window.spaNavigate === 'function') {
+          window.spaNavigate(href)
+        } else {
+          window.location.href = href
+        }
+      }
     }
 
     card.addEventListener('click', card._clickHandler)
@@ -108,7 +115,12 @@ function setupTrackInteractions(tracks) {
       if (!trackId) return
       if (!window.userAuth || !window.userAuth.isLoggedIn()) {
         const currentUrl = window.location.href
-        window.location.href = `auth.html?redirect=${encodeURIComponent(currentUrl)}`
+        const href = `auth.html?redirect=${encodeURIComponent(currentUrl)}`
+        if (typeof window.spaNavigate === 'function') {
+          window.spaNavigate(href)
+        } else {
+          window.location.href = href
+        }
         return
       }
       const track = tracks.find((t) => t.id === trackId) || { id: trackId }
@@ -141,7 +153,6 @@ function playTrackList(tracks, trackId) {
     title: t.title,
     artistName: t.artistName,
     artwork: t.artwork,
-    audioUrl: t.audioUrl,
     platformLinks: t.platformLinks || {},
     originalData: t,
   }))
@@ -233,5 +244,15 @@ document.addEventListener('DOMContentLoaded', () => {
 })
 
 document.addEventListener('includes:loaded', () => {
+  boot()
+})
+
+document.addEventListener('spa:navigated', () => {
+  const root = document.getElementById('artistHero')
+  if (!root) return
+  const artistId = getArtistIdFromQuery()
+  if (!artistId) return
+  if (root.dataset.loadedArtistId === artistId) return
+  root.dataset.loadedArtistId = artistId
   boot()
 })

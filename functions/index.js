@@ -3,6 +3,27 @@ const admin = require('firebase-admin')
 
 admin.initializeApp()
 
+async function incrementTrackStreamsWithDedup({ uid, trackId, eventId, delta = 1 }) {
+  const db = admin.firestore()
+  const trackRef = db.doc(`tracks/${trackId}`)
+  const eventRef = db.doc(`users/${uid}/streamEvents/${eventId}`)
+
+  return await db.runTransaction(async (tx) => {
+    const eventSnap = await tx.get(eventRef)
+    if (eventSnap.exists) {
+      return { counted: false, reason: 'duplicate_event' }
+    }
+
+    const now = admin.firestore.Timestamp.now()
+    tx.set(eventRef, {
+      trackId,
+      createdAt: now,
+    })
+    tx.set(trackRef, { streams: admin.firestore.FieldValue.increment(delta) }, { merge: true })
+    return { counted: true }
+  })
+}
+
 function assertString(v, name) {
   if (typeof v !== 'string' || !v.trim()) {
     throw new HttpsError('invalid-argument', `Missing or invalid ${name}`)
@@ -123,6 +144,44 @@ exports.githubUploadProfileImage = onCall(
       path,
       url: publicUrl,
       downloadUrl
+    }
+  }
+)
+
+exports.incrementTrackStreams = onCall(
+  {
+    timeoutSeconds: 10,
+    memory: '128MiB',
+    cors: true,
+  },
+  async (request) => {
+    if (!request.auth?.uid) {
+      throw new HttpsError('unauthenticated', 'Authentication required')
+    }
+
+    const data = request.data || {}
+    const trackId = String(data.trackId || '').trim()
+    const eventId = String(data.eventId || '').trim()
+    const delta = Number.isFinite(Number(data.delta)) ? Number(data.delta) : 1
+
+    assertString(trackId, 'trackId')
+    assertString(eventId, 'eventId')
+    if (!Number.isFinite(delta) || delta <= 0 || delta > 5) {
+      throw new HttpsError('invalid-argument', 'Invalid delta')
+    }
+
+    try {
+      const result = await incrementTrackStreamsWithDedup({
+        uid: request.auth.uid,
+        trackId,
+        eventId,
+        delta,
+      })
+
+      return { ok: true, ...result }
+    } catch (e) {
+      console.error('[incrementTrackStreams] Failed:', e)
+      throw new HttpsError('internal', 'Failed to increment streams')
     }
   }
 )

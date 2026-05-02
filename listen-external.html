@@ -324,20 +324,6 @@
       box-shadow: 0 10px 30px rgba(16, 185, 129, 0.3);
     }
 
-    /* Audio-only player for video content */
-    .audio-only-player {
-      display: none;
-      margin-bottom: 25px;
-    }
-
-    .audio-only-player.active {
-      display: block;
-    }
-
-    .audio-only-player audio {
-      width: 100%;
-      border-radius: 12px;
-    }
   </style>
 </head>
 <body>
@@ -396,11 +382,6 @@
     </div>
   </div>
 
-  <!-- Audio-only player for video content -->
-  <div class="audio-only-player" id="audioOnlyPlayer">
-    <audio id="audioOnlyElement" controls></audio>
-  </div>
-
   <script>
     // Get URL parameters
     const params = new URLSearchParams(window.location.search)
@@ -422,8 +403,6 @@
     const collapseBtn = document.getElementById('collapseBtn')
     const continueBtn = document.getElementById('continueBtn')
     const playInOurPlayerBtn = document.getElementById('playInOurPlayerBtn')
-    const audioOnlyPlayer = document.getElementById('audioOnlyPlayer')
-    const audioOnlyElement = document.getElementById('audioOnlyElement')
     const externalPlayerContainer = document.querySelector('.external-player-container')
 
     // Set track info
@@ -607,56 +586,26 @@
 
     // Play in Our Player functionality
     playInOurPlayerBtn.addEventListener('click', () => {
-      // For YouTube, try to extract audio
-      if (currentPlatform === 'youtube' && isVideo) {
-        // Extract video ID and create audio-only URL
-        let videoId = ''
-        if (url.includes('youtu.be')) {
-          videoId = url.split('/').pop().split('?')[0]
+      // Communicate with main player (embed-based)
+      try {
+        if (window.opener && !window.opener.closed) {
+          window.opener.postMessage({
+            type: 'loadExternalTrack',
+            data: {
+              url: url,
+              title: title,
+              artist: artist,
+              artwork: artwork,
+              platform: currentPlatform
+            }
+          }, '*')
+          alert('Track sent to main player. Please check the music page.')
         } else {
-          const match = url.match(/[?&]v=([^&]+)/)
-          if (match) videoId = match[1]
+          alert('Could not communicate with main player. Please open the music page and try again.')
         }
-
-        if (videoId) {
-          // Use a service to get audio-only stream
-          // Note: This requires a backend service or YouTube API
-          // For now, we'll try a direct approach with YouTube embed
-          const audioUrl = `https://www.youtube.com/embed/${videoId}?enablejsapi=1`
-
-          // Hide iframe and show audio-only player
-          playerIframe.parentElement.style.display = 'none'
-          audioOnlyPlayer.classList.add('active')
-
-          // Try to load audio (this may not work due to CORS)
-          // In production, you'd use a backend service to extract audio
-          audioOnlyElement.src = audioUrl
-
-          // Notify user about limitations
-          alert('Audio-only mode for YouTube requires a backend service. The video will continue to play in the embed player.')
-        }
-      } else {
-        // For other platforms, try to communicate with main player
-        try {
-          if (window.opener && !window.opener.closed) {
-            window.opener.postMessage({
-              type: 'loadExternalTrack',
-              data: {
-                url: url,
-                title: title,
-                artist: artist,
-                artwork: artwork,
-                platform: currentPlatform
-              }
-            }, '*')
-            alert('Track sent to main player. Please check the music page.')
-          } else {
-            alert('Could not communicate with main player. Please open the music page and try again.')
-          }
-        } catch (e) {
-          console.log('Could not communicate with opener:', e)
-          alert('Could not communicate with main player.')
-        }
+      } catch (e) {
+        console.log('Could not communicate with opener:', e)
+        alert('Could not communicate with main player.')
       }
     })
 

@@ -50,7 +50,12 @@ function renderArtistCard(artist, stats) {
 function setupArtistCardNavigation() {
   const go = (artistId) => {
     if (!artistId) return
-    window.location.href = `artist-detail.html?id=${encodeURIComponent(artistId)}`
+    const href = `artist-detail.html?id=${encodeURIComponent(artistId)}`
+    if (typeof window.spaNavigate === 'function') {
+      window.spaNavigate(href)
+    } else {
+      window.location.href = href
+    }
   }
 
   document.querySelectorAll('.artist-card[data-artist-id]').forEach((card) => {
@@ -140,5 +145,17 @@ document.addEventListener('DOMContentLoaded', () => {
 })
 
 document.addEventListener('includes:loaded', () => {
+  boot()
+})
+
+document.addEventListener('spa:navigated', () => {
+  const grid = document.getElementById('artistsGrid')
+  if (!grid) return
+  const page = (window.location.pathname.split('/').pop() || 'index.html')
+  if (page !== 'artists.html') return
+  // Prevent duplicate reloads for same URL.
+  const url = window.location.href
+  if (grid.dataset.loadedUrl === url) return
+  grid.dataset.loadedUrl = url
   boot()
 })

@@ -202,6 +202,49 @@ body {
   color: var(--primary);
 }
 
+.nav-notifications {
+  position: relative;
+  margin-left: var(--spacing-sm);
+}
+
+.notifications-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 1.25rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+}
+
+.notifications-btn:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.notifications-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #1db954;
+  color: #0a0e27;
+  font-size: 0.75rem;
+  font-weight: 800;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+
 .profile-dropdown {
   position: absolute;
   top: calc(100% + 0.5rem);
@@ -415,6 +458,7 @@ button.profile-menu-item {
   gap: var(--spacing-md);
   justify-content: center;
   flex-wrap: wrap;
+  margin-top: 60px;
 }
 
 /* Buttons */
@@ -429,7 +473,7 @@ button.profile-menu-item {
   text-decoration: none;
   display: inline-block;
   font-family: var(--font-primary);
-  margin-top: 60px;
+  margin-top: 0;
 }
 
 .btn-primary {

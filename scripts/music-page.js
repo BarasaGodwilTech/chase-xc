@@ -613,16 +613,18 @@ function setupTrackCardListeners() {
     
     card._clickHandler = (e) => {
       // Don't navigate if clicking on play button, like button, or spotify indicator
-      if (e.target.closest('.track-play-btn, .featured-play-btn, .side-play-btn') || 
-          e.target.closest('.like-btn-mini, .featured-like-btn, .side-like-btn') || 
-          e.target.closest('.spotify-indicator, .featured-spotify-btn') ||
-          e.target.closest('.collab-play-btn')) {
+      if (e.target.closest('.track-play-btn') || e.target.closest('.like-btn-mini') || e.target.closest('.spotify-indicator')) {
         return
       }
 
       const trackId = card.dataset.trackId || card.dataset.collabTrackId || card.dataset.trackId
       if (trackId) {
-        window.location.href = `track-detail.html?id=${trackId}`
+        const href = `track-detail.html?id=${trackId}`
+        if (typeof window.spaNavigate === 'function') {
+          window.spaNavigate(href)
+        } else {
+          window.location.href = href
+        }
       }
     }
     card.addEventListener('click', card._clickHandler)
@@ -983,17 +985,16 @@ function playAllTracks() {
   // Use persistent floating player if available
   if (window.persistentPlayer) {
     // Set up full playlist of all tracks
-    const fullPlaylist = window.__tracks.map(t => ({
+    const playlistData = window.__tracks.map(t => ({
       id: t.id,
       title: t.title,
       artistName: t.artistName,
       artwork: t.artwork,
-      audioUrl: t.audioUrl,
       platformLinks: t.platformLinks || {},
       originalData: t
     }))
     
-    window.persistentPlayer.setPlaylist(fullPlaylist, 0)
+    window.persistentPlayer.setPlaylist(playlistData, 0)
     window.persistentPlayer.play()
     
     // Show notification
@@ -1078,7 +1079,6 @@ function handlePlayTrack(track) {
         title: t.title,
         artistName: t.artistName,
         artwork: t.artwork,
-        audioUrl: t.audioUrl,
         platformLinks: t.platformLinks || {},
         originalData: t
       }));
@@ -1097,7 +1097,6 @@ function handlePlayTrack(track) {
         title: track.title,
         artistName: track.artistName,
         artwork: track.artwork,
-        audioUrl: track.audioUrl,
         platformLinks: track.platformLinks || {},
         originalData: track
       });
@@ -1253,7 +1252,11 @@ function storePendingAction(actionType, actionData) {
 function redirectToAuth() {
   const currentUrl = window.location.href
   const authUrl = `auth.html?redirect=${encodeURIComponent(currentUrl)}`
-  window.location.href = authUrl
+  if (typeof window.spaNavigate === 'function') {
+    window.spaNavigate(authUrl)
+  } else {
+    window.location.href = authUrl
+  }
 }
 
 // Helper function to toggle like button visual state
@@ -1445,14 +1448,17 @@ function boot() {
   setTimeout(() => executePendingAction(), 500)
   
   // Listen for liked tracks updates to refresh UI
-  document.addEventListener('likedTracksUpdated', (e) => {
-    const { trackId, isLiked } = e.detail
-    if (trackId && isLiked !== undefined) {
-      likedTracksManager.updateTrackHeartIcons(trackId, isLiked)
-    } else {
-      likedTracksManager.updateAllHeartIcons()
-    }
-  })
+  if (!window.__musicLikedTracksListenerBound) {
+    window.__musicLikedTracksListenerBound = true
+    document.addEventListener('likedTracksUpdated', (e) => {
+      const { trackId, isLiked } = e.detail
+      if (trackId && isLiked !== undefined) {
+        likedTracksManager.updateTrackHeartIcons(trackId, isLiked)
+      } else {
+        likedTracksManager.updateAllHeartIcons()
+      }
+    })
+  }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -1461,5 +1467,13 @@ document.addEventListener('DOMContentLoaded', () => {
 })
 
 document.addEventListener('includes:loaded', () => {
+  boot()
+})
+
+document.addEventListener('spa:navigated', () => {
+  const root = document.getElementById('musicGrid')
+  if (!root) return
+  const page = (window.location.pathname.split('/').pop() || 'index.html')
+  if (page !== 'music.html') return
   boot()
 })

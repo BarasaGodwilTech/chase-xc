@@ -9,6 +9,17 @@ import {
     sendPasswordResetEmail
 } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js'
 
+import {
+    collection,
+    getDocs,
+    limit,
+    orderBy,
+    query,
+    where
+} from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js'
+
+import { db } from './firebase-init.js'
+
 class UserAuth {
     constructor() {
         this.currentUser = null;
@@ -73,9 +84,12 @@ class UserAuth {
         });
 
         // Handle navigation away from auth page
-        window.addEventListener('popstate', () => {
-            this.handleNavigationAway();
-        });
+        if (!window.__authPopstateBound) {
+            window.__authPopstateBound = true
+            window.addEventListener('popstate', () => {
+                this.handleNavigationAway();
+            });
+        }
 
         this.setupEventListeners();
     }
@@ -174,7 +188,12 @@ class UserAuth {
     handleProfileButtonClick() {
         // On mobile, profile icon should behave like a direct navigation entry.
         if (window.innerWidth <= 768) {
-            window.location.href = this.getCurrentUser() ? 'profile.html' : 'auth.html';
+            const href = this.getCurrentUser() ? 'profile.html' : 'auth.html'
+            if (typeof window.spaNavigate === 'function') {
+                window.spaNavigate(href)
+            } else {
+                window.location.href = href
+            }
             return;
         }
 
@@ -318,7 +337,11 @@ class UserAuth {
             
             // Redirect to home
             setTimeout(() => {
-                window.location.href = 'index.html';
+                if (typeof window.spaNavigate === 'function') {
+                    window.spaNavigate('index.html')
+                } else {
+                    window.location.href = 'index.html';
+                }
             }, 1000);
             
         } catch (error) {
@@ -371,10 +394,18 @@ class UserAuth {
         
         if (redirectUrl) {
             sessionStorage.removeItem('authRedirectUrl');
-            window.location.href = redirectUrl;
+            if (typeof window.spaNavigate === 'function') {
+                window.spaNavigate(redirectUrl)
+            } else {
+                window.location.href = redirectUrl;
+            }
         } else {
             // Default redirect to home
-            window.location.href = 'index.html';
+            if (typeof window.spaNavigate === 'function') {
+                window.spaNavigate('index.html')
+            } else {
+                window.location.href = 'index.html';
+            }
         }
     }
 
@@ -393,7 +424,11 @@ class UserAuth {
         if (!this.isLoggedIn()) {
             const currentUrl = redirectUrl || window.location.href;
             this.setRedirectUrl(currentUrl);
-            window.location.href = 'auth.html';
+            if (typeof window.spaNavigate === 'function') {
+                window.spaNavigate('auth.html')
+            } else {
+                window.location.href = 'auth.html';
+            }
             return false;
         }
         return true;
@@ -464,7 +499,11 @@ class UserAuth {
         if (!user) {
             // Prevent redirect if already on auth page
             if (!window.location.pathname.includes('auth.html')) {
-                window.location.href = 'auth.html';
+                if (typeof window.spaNavigate === 'function') {
+                    window.spaNavigate('auth.html')
+                } else {
+                    window.location.href = 'auth.html';
+                }
             }
             return;
         }
@@ -497,7 +536,13 @@ class UserAuth {
 
         const user = this.getCurrentUser();
 
+        const navNotifications = document.getElementById('navNotifications')
+        const badge = document.getElementById('notificationsBadge')
+
         if (user) {
+            if (navNotifications) navNotifications.style.display = ''
+            this.updateNotificationsBadge().catch(() => {})
+
             // User is logged in - show profile menu
             const displayName = user.displayName || 'User';
             const email = user.email;
@@ -507,6 +552,10 @@ class UserAuth {
                     <div class="profile-user-name">${displayName}</div>
                     <div class="profile-user-email">${email}</div>
                 </div>
+                <a href="notifications.html" class="profile-menu-item">
+                    <i class="fas fa-bell"></i>
+                    <span>Notifications</span>
+                </a>
                 <a href="profile.html" class="profile-menu-item">
                     <i class="fas fa-user"></i>
                     <span>My Profile</span>
@@ -535,6 +584,9 @@ class UserAuth {
                 });
             }
         } else {
+            if (navNotifications) navNotifications.style.display = 'none'
+            if (badge) badge.style.display = 'none'
+
             // User is not logged in - show only Sign In option
             dropdown.innerHTML = `
                 <a href="auth.html" class="profile-menu-item">
@@ -542,6 +594,27 @@ class UserAuth {
                     <span>Sign In</span>
                 </a>
             `;
+        }
+    }
+
+    async updateNotificationsBadge() {
+        const user = this.getCurrentUser()
+        if (!user?.uid) return
+
+        const badge = document.getElementById('notificationsBadge')
+        if (!badge) return
+
+        const col = collection(db, 'users', user.uid, 'notifications')
+        const q = query(col, where('read', '==', false), orderBy('serverCreatedAt', 'desc'), limit(99))
+        const snap = await getDocs(q)
+        const count = snap.size || 0
+
+        if (count > 0) {
+            badge.textContent = String(count)
+            badge.style.display = 'inline-flex'
+        } else {
+            badge.textContent = '0'
+            badge.style.display = 'none'
         }
     }
 }

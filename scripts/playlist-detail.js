@@ -1,7 +1,85 @@
 import { auth } from './firebase-init.js'
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js'
 import { getPlaylists, removeTrackFromPlaylist } from './user-data.js'
-import { fetchTrackById } from './data/content-repo.js'
+import { fetchArtists, fetchArtistById, fetchTrackById } from './data/content-repo.js'
+
+function uniqueStrings(values) {
+    const out = []
+    const seen = new Set()
+    for (const v of values || []) {
+        const s = String(v || '').trim()
+        if (!s) continue
+        const key = s.toLowerCase()
+        if (seen.has(key)) continue
+        seen.add(key)
+        out.push(s)
+    }
+    return out
+}
+
+function splitArtistParts(name) {
+    const raw = String(name || '').trim()
+    if (!raw) return []
+    return raw
+        .split(/\s*(?:&|•|\+|,|\/|\bfeat\.?\b|\bft\.?\b|\bx\b)\s*/i)
+        .map((p) => String(p || '').trim())
+        .filter((p) => p && p.toLowerCase() !== 'unknown artist')
+}
+
+function normalizeArtistParts(values) {
+    const parts = []
+    for (const v of values || []) {
+        parts.push(...splitArtistParts(v))
+    }
+    return uniqueStrings(parts)
+}
+
+async function resolveTrackArtistLine(track, artistsById) {
+    const t = track || {}
+    const namesFromDoc = Array.isArray(t.collaboratorNames) ? t.collaboratorNames : []
+
+    const parts = []
+
+    if (namesFromDoc.length > 0) {
+        parts.push(...namesFromDoc)
+    }
+
+    const collabIds = Array.isArray(t.collaborators) ? t.collaborators : []
+    if (collabIds.length > 0) {
+        const fetched = await Promise.all(
+            collabIds.map(async (id) => {
+                const key = String(id || '').trim()
+                if (!key) return ''
+                const fromCache = artistsById?.get(key)
+                if (fromCache?.name) return fromCache.name
+                try {
+                    const a = await fetchArtistById(key)
+                    return a?.name || ''
+                } catch (_) {
+                    return ''
+                }
+            })
+        )
+        parts.push(...fetched)
+    }
+
+    if (t.artistName) parts.push(t.artistName)
+
+    const primaryId = String(t.artist || '').trim()
+    if (primaryId) {
+        const fromCache = artistsById?.get(primaryId)
+        if (fromCache?.name) parts.push(fromCache.name)
+        else {
+            try {
+                const a = await fetchArtistById(primaryId)
+                if (a?.name) parts.push(a.name)
+            } catch (_) {}
+        }
+    }
+
+    const normalized = normalizeArtistParts(parts)
+    return normalized.length > 0 ? normalized.join(' & ') : (t.artistName || 'Unknown Artist')
+}
 
 class PlaylistDetail {
     constructor() {
@@ -9,6 +87,7 @@ class PlaylistDetail {
         this.playlistId = null;
         this.playlist = null;
         this.tracks = [];
+        this.artistsById = new Map();
         this.init();
     }
 
@@ -105,11 +184,20 @@ class PlaylistDetail {
 
         // Fetch track details for each track ID
         this.tracks = [];
+        try {
+            const artists = await fetchArtists()
+            this.artistsById = new Map((artists || []).map((a) => [String(a.id), a]))
+        } catch (e) {
+            console.warn('[PlaylistDetail] Failed to fetch artists for collaboration resolution', e)
+            this.artistsById = new Map()
+        }
+
         for (const trackId of trackIds) {
             try {
                 const track = await fetchTrackById(trackId);
                 if (track) {
-                    this.tracks.push(track);
+                    const artistLine = await resolveTrackArtistLine(track, this.artistsById)
+                    this.tracks.push({ ...track, artistName: artistLine });
                 }
             } catch (error) {
                 console.error('[PlaylistDetail] Error loading track:', trackId, error);
@@ -294,7 +382,6 @@ class PlaylistDetail {
                 title: t.title,
                 artistName: t.artistName,
                 artwork: t.artwork,
-                audioUrl: t.audioUrl,
                 platformLinks: t.platformLinks || {},
                 originalData: t
             }));
@@ -326,7 +413,6 @@ class PlaylistDetail {
                 title: t.title,
                 artistName: t.artistName,
                 artwork: t.artwork,
-                audioUrl: t.audioUrl,
                 platformLinks: t.platformLinks || {},
                 originalData: t
             }));
@@ -374,7 +460,12 @@ class PlaylistDetail {
 
             this.showNotification('Playlist deleted', 'success');
             setTimeout(() => {
-                window.location.href = 'profile.html';
+                const href = 'profile.html'
+                if (typeof window.spaNavigate === 'function') {
+                    window.spaNavigate(href)
+                } else {
+                    window.location.href = href;
+                }
             }, 1000);
         } catch (error) {
             console.error('[PlaylistDetail] Error deleting playlist:', error);
@@ -450,7 +541,23 @@ class PlaylistDetail {
     }
 }
 
+function initPlaylistDetailPage() {
+    const root = document.getElementById('playlistTracksList')
+    if (!root) return
+    if (root.dataset.playlistDetailInit === '1') return
+    root.dataset.playlistDetailInit = '1'
+    new PlaylistDetail()
+}
+
 // Initialize playlist detail page
 document.addEventListener('DOMContentLoaded', () => {
-    new PlaylistDetail();
-});
+    initPlaylistDetailPage()
+})
+
+document.addEventListener('includes:loaded', () => {
+    initPlaylistDetailPage()
+})
+
+document.addEventListener('spa:navigated', () => {
+    initPlaylistDetailPage()
+})

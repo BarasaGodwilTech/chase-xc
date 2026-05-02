@@ -7,6 +7,52 @@ class PlaylistModal {
         this.init();
     }
 
+    splitArtistParts(name) {
+        const raw = String(name || '').trim()
+        if (!raw) return []
+        return raw
+            .split(/\s*(?:&|•|\+|,|\/|\bfeat\.?\b|\bft\.?\b|\bx\b)\s*/i)
+            .map((p) => String(p || '').trim())
+            .filter((p) => p && p.toLowerCase() !== 'unknown artist')
+    }
+
+    uniqueStrings(values) {
+        const out = []
+        const seen = new Set()
+        for (const v of values || []) {
+            const s = String(v || '').trim()
+            if (!s) continue
+            const key = s.toLowerCase()
+            if (seen.has(key)) continue
+            seen.add(key)
+            out.push(s)
+        }
+        return out
+    }
+
+    normalizeArtistParts(values) {
+        const parts = []
+        for (const v of values || []) {
+            parts.push(...this.splitArtistParts(v))
+        }
+        return this.uniqueStrings(parts)
+    }
+
+    getDisplayArtistLine(track) {
+        const t = track || {}
+        const collaboratorNames = Array.isArray(t.collaboratorNames) ? t.collaboratorNames : []
+        const collaborators = Array.isArray(t.collaborators) ? t.collaborators : []
+        const isCollab = collaboratorNames.length > 0 || collaborators.length > 0
+        if (!isCollab) return t.artistName || t.artist || 'Unknown Artist'
+
+        const parts = this.normalizeArtistParts([
+            ...collaboratorNames,
+            t.artistName,
+            ...(collaborators.map((x) => String(x || '').trim()).filter(Boolean)),
+        ])
+        return parts.length > 0 ? parts.join(' & ') : 'Various Artists'
+    }
+
     init() {
         this.createModal();
         this.setupEventListeners();
@@ -96,7 +142,7 @@ class PlaylistModal {
 
         if (artwork) artwork.src = track.artwork || 'public/player-cover-1.jpg';
         if (title) title.textContent = track.title || 'Unknown Track';
-        if (artist) artist.textContent = track.artistName || track.artist || 'Unknown Artist';
+        if (artist) artist.textContent = this.getDisplayArtistLine(track);
 
         // Load playlists
         await this.loadPlaylists();

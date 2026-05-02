@@ -768,7 +768,12 @@ function initMembership() {
             
             // Redirect to auth page after showing message
             setTimeout(() => {
-                window.location.href = 'auth.html';
+                const href = 'auth.html'
+                if (typeof window.spaNavigate === 'function') {
+                    window.spaNavigate(href)
+                } else {
+                    window.location.href = href;
+                }
             }, 4000);
             
             return;

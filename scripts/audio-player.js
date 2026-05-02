@@ -4,6 +4,9 @@ class AudioPlayer {
     this._abortController = null;
     this._saveStateRaf = 0;
     this._pendingRestore = null;
+    this._streamTimer = null;
+    this._streamCountedForTrackId = null;
+    this._currentPlayEventId = null;
 
     this.bindElements();
 
@@ -28,6 +31,15 @@ class AudioPlayer {
     this.dataManager = window.dataManager;
 
     this.init();
+  }
+
+  generatePlayEventId() {
+    try {
+      if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+        return window.crypto.randomUUID()
+      }
+    } catch (_) {}
+    return `${Date.now()}-${Math.random().toString(16).slice(2)}`
   }
 
   normalizeArtistLine(value) {
@@ -449,6 +461,64 @@ class AudioPlayer {
     }
   }
 
+  hasRecentlyCountedStream(trackId) {
+    try {
+      const raw = localStorage.getItem('audioPlayerStreamDedup');
+      if (!raw) return false;
+      const s = JSON.parse(raw);
+      if (!s || typeof s !== 'object') return false;
+      if (s.trackId !== trackId) return false;
+      return !!s.timestamp && (Date.now() - s.timestamp) < 30 * 1000;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  markStreamCounted(trackId) {
+    try {
+      localStorage.setItem('audioPlayerStreamDedup', JSON.stringify({
+        trackId,
+        timestamp: Date.now(),
+      }));
+    } catch (_) {}
+  }
+
+  resetStreamTracking() {
+    if (this._streamTimer) {
+      clearTimeout(this._streamTimer);
+      this._streamTimer = null;
+    }
+    this._streamCountedForTrackId = null;
+  }
+
+  scheduleStreamIncrement() {
+    const currentTrack = this.getCurrentOriginalTrack();
+    const trackId = currentTrack?.id;
+    if (!trackId) return;
+    if (this._streamCountedForTrackId === trackId) return;
+    if (this.hasRecentlyCountedStream(trackId)) return;
+
+    const eventId = this._currentPlayEventId;
+    if (!eventId) return;
+
+    if (this._streamTimer) {
+      clearTimeout(this._streamTimer);
+    }
+
+    this._streamTimer = setTimeout(async () => {
+      this._streamTimer = null;
+      if (!this.isPlaying) return;
+      const stillCurrentId = this.getCurrentOriginalTrack()?.id;
+      if (stillCurrentId !== trackId) return;
+
+      this._streamCountedForTrackId = trackId;
+      this.markStreamCounted(trackId);
+      try {
+        await this.incrementStreams({ eventId });
+      } catch (_) {}
+    }, 30000);
+  }
+
   async decrementLikes() {
     const currentTrack = this.getCurrentOriginalTrack();
     if (currentTrack) {
@@ -503,9 +573,6 @@ class AudioPlayer {
   }
 
   handleTrackEnd() {
-    // Increment streams when track ends
-    this.incrementStreams();
-
     switch (this.repeatMode) {
       case 2: // Repeat one
         if (this.isPlayingExternal && this.ytPlayer) {
@@ -534,7 +601,7 @@ class AudioPlayer {
     }
   }
 
-  async incrementStreams() {
+  async incrementStreams({ eventId } = {}) {
     const currentTrack = this.getCurrentOriginalTrack();
     if (currentTrack) {
       // Update local state
@@ -543,7 +610,7 @@ class AudioPlayer {
       // Also update Firestore
       try {
         const { incrementTrackStreams } = await import('./user-data.js');
-        await incrementTrackStreams(currentTrack.id, 1);
+        await incrementTrackStreams(currentTrack.id, 1, { eventId });
       } catch (error) {
         console.error('[AudioPlayer] Error incrementing streams in Firestore:', error);
       }
@@ -564,6 +631,9 @@ class AudioPlayer {
       this.externalTrackData = null;
       this.audio.src = track.src;
     }
+
+    this._currentPlayEventId = this.generatePlayEventId();
+    this.resetStreamTracking();
     
     // Update main player
     if (this.playerTitle) this.playerTitle.textContent = track.title;
@@ -652,6 +722,8 @@ class AudioPlayer {
       
       // Sync with persistent floating player
       this.syncWithPersistentPlayer();
+
+      this.scheduleStreamIncrement();
 
       this.scheduleSaveState();
     }).catch(error => {

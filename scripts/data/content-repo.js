@@ -72,3 +72,18 @@ export async function fetchTrackById(trackId) {
     throw error
   }
 }
+
+export async function fetchSocialMediaLinks() {
+  console.log('[ContentRepo] Fetching social media links...')
+  try {
+    const socialRef = collection(db, 'socialMedia')
+    const q = query(socialRef, where('active', '==', true))
+    const snap = await getDocs(q)
+    const socialLinks = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+    console.log('[ContentRepo] Fetched', socialLinks.length, 'social media links')
+    return socialLinks
+  } catch (error) {
+    console.error('[ContentRepo] Error fetching social media links:', error)
+    throw error
+  }
+}

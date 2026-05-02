@@ -284,10 +284,28 @@ async function initializeTeamSection() {
 
 // Auto-initialize when DOM is ready
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeTeamSection);
+    document.addEventListener('DOMContentLoaded', () => {
+        initTeamSection()
+    });
 } else {
-    initializeTeamSection();
+    initTeamSection();
 }
+
+function initTeamSection() {
+    const root = document.getElementById('teamGrid')
+    if (!root) return
+    if (root.dataset.teamInit === '1') return
+    root.dataset.teamInit = '1'
+    initializeTeamSection()
+}
+
+document.addEventListener('includes:loaded', () => {
+    initTeamSection()
+})
+
+document.addEventListener('spa:navigated', () => {
+    initTeamSection()
+})
 
 // Export functions for potential use in other scripts
 window.teamUtils = {

@@ -1,5 +1,6 @@
-import { fetchArtists } from './data/content-repo.js'
+import { fetchArtists, fetchPublishedTracks } from './data/content-repo.js'
 import { likedTracksManager } from './liked-tracks-manager.js'
+import { getSocialLinks, onSettingsUpdate } from './config-loader.js'
 
 function formatNumber(num) {
   if (typeof num !== 'number') return '0'
@@ -108,7 +109,12 @@ function setupArtistCardListeners() {
     const go = () => {
       const artistId = card.dataset.artistId
       if (!artistId) return
-      window.location.href = `artist-detail.html?id=${encodeURIComponent(artistId)}`
+      const href = `artist-detail.html?id=${encodeURIComponent(artistId)}`
+      if (typeof window.spaNavigate === 'function') {
+        window.spaNavigate(href)
+      } else {
+        window.location.href = href
+      }
     }
 
     card.addEventListener('click', (e) => {
@@ -200,10 +206,40 @@ async function loadFeaturedTracks() {
       return { ...track, artistSocials }
     }))
 
+    const artistsById = new Map()
+    for (const t of tracksWithArtists) {
+      if (t?.artist) {
+        try {
+          const a = await fetchArtistById(t.artist)
+          if (a?.id) artistsById.set(String(a.id), a)
+        } catch (_) {}
+      }
+      for (const id of (Array.isArray(t?.collaborators) ? t.collaborators : [])) {
+        try {
+          const a = await fetchArtistById(id)
+          if (a?.id) artistsById.set(String(a.id), a)
+        } catch (_) {}
+      }
+    }
+
+    const getDisplayArtistLine = (track) => {
+      const collabIds = safeArray(track?.collaborators)
+      const isCollab = collabIds.length > 0 || safeArray(track?.collaboratorNames).length > 0
+      if (!isCollab) return track?.artistName || 'Unknown Artist'
+
+      const resolvedNames = normalizeArtistParts([
+        ...(safeArray(track?.collaboratorNames)),
+        track?.artistName,
+        ...collabIds.map((id) => artistsById.get(String(id))?.name || ''),
+      ].filter(name => name && name !== 'Unknown Artist' && String(name).trim() !== ''))
+
+      return resolvedNames.length > 0 ? resolvedNames.join(' & ') : 'Various Artists'
+    }
+
     // Populate window.__tracks for audio player compatibility (same as music-page.js)
     window.__tracks = tracksWithArtists.map((track) => ({
       ...track,
-      artistName: track.artistName || 'Unknown Artist'
+      artistName: getDisplayArtistLine(track)
     }))
 
     container.innerHTML = tracksWithArtists.map((track, index) => {
@@ -240,7 +276,7 @@ async function loadFeaturedTracks() {
             <div class="track-header">
               <div class="track-info">
                 <h4 class="track-title">${escapeHtml(track.title || '')}</h4>
-                <p class="track-artist">${escapeHtml(track.artistName || 'Unknown Artist')}</p>
+                <p class="track-artist">${escapeHtml(getDisplayArtistLine(track))}</p>
               </div>
               <button class="like-btn-mini ${isLiked ? 'liked' : ''}" title="Like" data-like-track-id="${track.id}" type="button">
                 <i class="${isLiked ? 'fas' : 'far'} fa-heart"></i>
@@ -293,7 +329,12 @@ function setupTrackCardListeners() {
       }
       const trackId = card.dataset.trackId
       if (trackId) {
-        window.location.href = `track-detail.html?id=${trackId}`
+        const href = `track-detail.html?id=${trackId}`
+        if (typeof window.spaNavigate === 'function') {
+          window.spaNavigate(href)
+        } else {
+          window.location.href = href
+        }
       }
     }
     card.addEventListener('click', card._clickHandler)
@@ -342,7 +383,6 @@ function handlePlayTrack(track) {
         title: t.title,
         artistName: t.artistName,
         artwork: t.artwork,
-        audioUrl: t.audioUrl,
         platformLinks: t.platformLinks || {},
         originalData: t
       }));
@@ -361,7 +401,6 @@ function handlePlayTrack(track) {
         title: track.title,
         artistName: track.artistName,
         artwork: track.artwork,
-        audioUrl: track.audioUrl,
         platformLinks: track.platformLinks || {},
         originalData: track
       });
@@ -463,7 +502,11 @@ function storePendingAction(actionType, actionData) {
 function redirectToAuth() {
   const currentUrl = window.location.href
   const authUrl = `auth.html?redirect=${encodeURIComponent(currentUrl)}`
-  window.location.href = authUrl
+  if (typeof window.spaNavigate === 'function') {
+    window.spaNavigate(authUrl)
+  } else {
+    window.location.href = authUrl
+  }
 }
 
 function toggleLikeButton(btn) {
@@ -479,14 +522,454 @@ function toggleLikeButton(btn) {
   }
 }
 
+// Helper functions for collaboration processing
+function safeArray(val) {
+  if (!val) return []
+  if (Array.isArray(val)) return val.filter(Boolean)
+  return []
+}
+
+function uniqueStrings(values) {
+  const out = []
+  const seen = new Set()
+  for (const v of values || []) {
+    const s = String(v || '').trim()
+    if (!s) continue
+    const key = s.toLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push(s)
+  }
+  return out
+}
+
+function splitArtistParts(name) {
+  const raw = String(name || '').trim()
+  if (!raw) return []
+
+  return raw
+    .split(/\s*(?:&|•|\+|,|\/|\bfeat\.?\b|\bft\.?\b|\bx\b)\s*/i)
+    .map((p) => String(p || '').trim())
+    .filter((p) => p && p.toLowerCase() !== 'unknown artist')
+}
+
+function normalizeArtistParts(values) {
+  const parts = []
+  for (const v of values || []) {
+    parts.push(...splitArtistParts(v))
+  }
+  return uniqueStrings(parts)
+}
+
+function renderHomeCollaborationCard(track, index, artistsById = new Map()) {
+  const collabIds = safeArray(track.collaborators)
+  const isCollab = collabIds.length > 0 || safeArray(track.collaboratorNames).length > 0
+  
+  if (!isCollab) return ''
+
+  const namesFromDoc = safeArray(track.collaboratorNames)
+  const resolvedNames = normalizeArtistParts([
+    track.artistName || '',
+    ...namesFromDoc,
+    ...collabIds.map((id) => artistsById.get(String(id))?.name || ''),
+  ].filter(name => name && name !== 'Unknown Artist' && name.trim() !== ''))
+
+  const artistsLine = resolvedNames.length > 0 ? resolvedNames.join(' & ') : 'Various Artists'
+  const allIds = uniqueStrings([String(track.artist || '').trim(), ...collabIds].filter(Boolean))
+  
+  const avatars = allIds
+    .map((id) => artistsById.get(String(id))?.image || '')
+    .filter(Boolean)
+    .slice(0, 3)
+
+  const avatarHtml = avatars.length
+    ? avatars.map((src) => `
+        <span class="home-collab-avatar"><img src="${escapeHtml(src)}" alt="" loading="lazy" decoding="async"></span>
+      `).join('')
+    : ''
+
+  const spotifyUrl = track.spotifyUrl || (track.platformLinks?.spotify) || ''
+  const isLiked = likedTracksManager.isTrackLiked(track.id)
+
+  return `
+    <div class="home-collab-card" data-track-id="${track.id || ''}" data-collab-track-id="${track.id || ''}">
+      <div class="home-collab-artwork">
+        <img src="${escapeHtml(track.artwork || '')}" alt="${escapeHtml(track.title || '')}" loading="lazy" decoding="async">
+        <button class="home-collab-play-btn" aria-label="Play ${escapeHtml(track.title || '')}" type="button" data-collab-play-track-id="${track.id || ''}">
+          <i class="fas fa-play"></i>
+        </button>
+        ${spotifyUrl ? '<div class="home-collab-spotify" title="Listen on Spotify"><i class="fab fa-spotify"></i></div>' : ''}
+      </div>
+      <div class="home-collab-content">
+        <div class="home-collab-main">
+          <h4 class="home-collab-title">${escapeHtml(track.title || '')}</h4>
+          <p class="home-collab-artists">${escapeHtml(artistsLine)}</p>
+        </div>
+        <div class="home-collab-meta">
+          <div class="home-collab-avatars">${avatarHtml}</div>
+          <button class="home-collab-like-btn ${isLiked ? 'liked' : ''}" title="Like" data-like-track-id="${track.id}" type="button">
+            <i class="${isLiked ? 'fas' : 'far'} fa-heart"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  `
+}
+
+async function loadHomeCollaborations() {
+  console.log('[HomePage] Loading home collaborations...')
+  const container = document.getElementById('homeCollaborationsGrid')
+  
+  if (!container) {
+    console.log('[HomePage] Home collaborations grid container not found')
+    return
+  }
+
+  try {
+    // Fetch tracks and artists
+    const [tracks, artists] = await Promise.all([
+      fetchPublishedTracks(),
+      fetchArtists()
+    ])
+
+    const artistsById = new Map((artists || []).map((a) => [String(a.id), a]))
+
+    if (!Array.isArray(tracks) || tracks.length === 0) {
+      container.innerHTML = '<p class="text-center">No collaborations available yet. Check back soon!</p>'
+      return
+    }
+
+    // Filter for collaboration tracks and limit to 6 for homepage
+    const collabTracks = tracks
+      .filter(track => {
+        const collabIds = safeArray(track.collaborators)
+        return collabIds.length > 0 || safeArray(track.collaboratorNames).length > 0
+      })
+      .slice(0, 6)
+
+    if (collabTracks.length === 0) {
+      container.innerHTML = '<p class="text-center">No collaborations available yet. Check back soon!</p>'
+      return
+    }
+
+    // Sort by streams (most popular first)
+    const sortedTracks = collabTracks
+      .slice()
+      .sort((a, b) => (Number(b.streams || 0) - Number(a.streams || 0)))
+
+    container.innerHTML = sortedTracks.map((track, index) => 
+      renderHomeCollaborationCard(track, index, artistsById)
+    ).join('')
+
+    // Setup event listeners for collaboration cards
+    setupCollaborationCardListeners()
+    console.log('[HomePage] Rendered', sortedTracks.length, 'collaborations')
+  } catch (error) {
+    console.error('[HomePage] Error loading collaborations:', error)
+    container.innerHTML = '<p class="text-center">Error loading collaborations. Please check console for details.</p>'
+  }
+}
+
+function setupCollaborationCardListeners() {
+  // Play button listeners
+  document.querySelectorAll('.home-collab-play-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation()
+      const trackId = btn.dataset.collabPlayTrackId
+      const track = (window.__tracks || []).find((t) => t.id === trackId)
+      if (track) handlePlayTrack(track)
+    })
+  })
+
+  // Card click listeners - navigate to detail page
+  document.querySelectorAll('.home-collab-card').forEach(card => {
+    if (card._clickHandler) {
+      card.removeEventListener('click', card._clickHandler)
+    }
+    
+    card._clickHandler = (e) => {
+      // Don't navigate if clicking on play button, like button, or spotify indicator
+      if (e.target.closest('.home-collab-play-btn') || 
+          e.target.closest('.home-collab-like-btn') || 
+          e.target.closest('.home-collab-spotify')) {
+        return
+      }
+
+      const trackId = card.dataset.trackId || card.dataset.collabTrackId
+      if (trackId) {
+        const href = `track-detail.html?id=${trackId}`
+        if (typeof window.spaNavigate === 'function') {
+          window.spaNavigate(href)
+        } else {
+          window.location.href = href
+        }
+      }
+    }
+    card.addEventListener('click', card._clickHandler)
+  })
+
+  // Like button listeners
+  document.querySelectorAll('.home-collab-like-btn[data-like-track-id]').forEach(btn => {
+    if (btn._likeHandler) {
+      btn.removeEventListener('click', btn._likeHandler)
+    }
+    btn._likeHandler = (e) => {
+      e.stopPropagation()
+      const trackId = btn.dataset.likeTrackId
+      handleLikeTrack(trackId, btn)
+    }
+    btn.addEventListener('click', btn._likeHandler)
+  })
+
+  // Spotify indicator click
+  document.querySelectorAll('.home-collab-spotify').forEach(indicator => {
+    if (indicator._spotifyHandler) {
+      indicator.removeEventListener('click', indicator._spotifyHandler)
+    }
+    indicator._spotifyHandler = (e) => {
+      e.stopPropagation()
+      const card = indicator.closest('.home-collab-card')
+      const trackId = card.dataset.trackId
+      const track = (window.__tracks || []).find((t) => t.id === trackId)
+      const spotifyUrl = track?.spotifyUrl || (track?.platformLinks?.spotify) || ''
+      if (spotifyUrl) {
+        window.open(spotifyUrl, '_blank')
+      }
+    }
+    indicator.addEventListener('click', indicator._spotifyHandler)
+  })
+}
+
+function renderSocialMediaItem(platform, url) {
+  const platformConfig = getPlatformConfig(platform)
+  const username = extractUsernameFromUrl(url, platform)
+  
+  return `
+    <a href="${escapeHtml(url)}" target="_blank" class="social-item" data-platform="${escapeHtml(platform)}" rel="noopener noreferrer">
+      <div class="social-item-icon ${platform.toLowerCase()}">
+        <i class="fab fa-${platformConfig.icon}"></i>
+      </div>
+      <div class="social-item-content">
+        <div class="social-item-header">
+          <div>
+            <div class="social-item-name">Chase X Records</div>
+            <div class="social-item-platform">@${escapeHtml(username)}</div>
+          </div>
+          <button class="social-item-action" onclick="event.stopPropagation(); window.open('${escapeHtml(url)}', '_blank')">
+            ${platformConfig.actionText}
+          </button>
+        </div>
+      </div>
+    </a>
+  `
+}
+
+function getPlatformConfig(platform) {
+  const configs = {
+    instagram: {
+      icon: 'instagram',
+      followerLabel: 'Followers',
+      contentLabel: 'Posts',
+      actionText: 'Follow',
+      defaultDescription: 'Follow us on Instagram for behind-the-scenes content, studio updates, and artist spotlights.'
+    },
+    youtube: {
+      icon: 'youtube',
+      followerLabel: 'Subscribers',
+      contentLabel: 'Videos',
+      actionText: 'Subscribe',
+      defaultDescription: 'Subscribe to our YouTube channel for music videos, tutorials, and exclusive performances.'
+    },
+    tiktok: {
+      icon: 'tiktok',
+      followerLabel: 'Followers',
+      contentLabel: 'Videos',
+      actionText: 'Follow',
+      defaultDescription: 'Join us on TikTok for short-form content, trending challenges, and studio vibes.'
+    },
+    spotify: {
+      icon: 'spotify',
+      followerLabel: 'Followers',
+      contentLabel: 'Playlists',
+      actionText: 'Follow',
+      defaultDescription: 'Listen to our latest releases and curated playlists on Spotify.'
+    },
+    twitter: {
+      icon: 'twitter',
+      followerLabel: 'Followers',
+      contentLabel: 'Tweets',
+      actionText: 'Follow',
+      defaultDescription: 'Follow us on Twitter for real-time updates and music industry insights.'
+    },
+    facebook: {
+      icon: 'facebook',
+      followerLabel: 'Followers',
+      contentLabel: 'Posts',
+      actionText: 'Like',
+      defaultDescription: 'Like our Facebook page for community updates and exclusive content.'
+    },
+    soundcloud: {
+      icon: 'soundcloud',
+      followerLabel: 'Followers',
+      contentLabel: 'Tracks',
+      actionText: 'Follow',
+      defaultDescription: 'Follow us on SoundCloud for exclusive tracks and remixes.'
+    }
+  }
+  
+  return configs[platform] || configs.instagram
+}
+
+function extractUsernameFromUrl(url, platform) {
+  try {
+    const urlObj = new URL(url)
+    
+    switch (platform) {
+      case 'instagram':
+        return urlObj.pathname.replace('/', '').replace('/', '') || 'chasexrecords'
+      case 'youtube':
+        if (urlObj.pathname.includes('/@')) {
+          return urlObj.pathname.split('/@')[1].split('/')[0] || '@chasexrecords'
+        }
+        return urlObj.pathname.split('/').filter(p => p)[0] || '@chasexrecords'
+      case 'tiktok':
+        return urlObj.pathname.replace('/', '').replace('/', '').replace('@', '') || 'chasexrecords'
+      case 'spotify':
+        return urlObj.pathname.split('/').pop() || 'chasexrecords'
+      case 'twitter':
+        return urlObj.pathname.replace('/', '').replace('/', '') || 'chasexrecords'
+      case 'facebook':
+        return urlObj.pathname.split('/').filter(p => p)[0] || 'chasexrecords'
+      case 'soundcloud':
+        return urlObj.pathname.replace('/', '').replace('/', '') || 'chasexrecords'
+      default:
+        return 'chasexrecords'
+    }
+  } catch (error) {
+    console.warn(`Could not extract username from ${platform} URL:`, url)
+    return 'chasexrecords'
+  }
+}
+
+function loadSocialMediaShowcase() {
+  console.log('[HomePage] Loading social media showcase from config...')
+  const trackEl = document.getElementById('socialMarqueeTrack')
+  
+  if (!trackEl) {
+    console.log('[HomePage] Social marquee track not found')
+    return
+  }
+
+  try {
+    // Get social links from the existing config system
+    const socialLinks = getSocialLinks()
+    console.log('[HomePage] Social links from config:', socialLinks)
+
+    // Filter platforms with valid URLs
+    const validPlatforms = Object.entries(socialLinks)
+      .filter(([platform, url]) => {
+        // Check if URL exists, is not empty, and is a valid URL
+        if (!url || typeof url !== 'string') return false
+        const trimmedUrl = url.trim()
+        if (trimmedUrl === '') return false
+        // Basic URL validation
+        try {
+          new URL(trimmedUrl)
+          return true
+        } catch {
+          return false
+        }
+      })
+
+    if (validPlatforms.length === 0) {
+      trackEl.innerHTML = `
+        <div class="social-loading-placeholder">
+          <p>No social media links configured. Please update your studio settings.</p>
+        </div>
+      `
+      return
+    }
+
+    // Create social items
+    const socialItems = validPlatforms.map(([platform, url]) => 
+      renderSocialMediaItem(platform, url)
+    )
+
+    // Create marquee content (duplicate multiple times for truly endless scrolling)
+    const marqueeContent = Array(4).fill(socialItems.join('')).join('')
+    trackEl.innerHTML = marqueeContent
+
+    // Set marquee animation duration based on number of items
+    const duration = Math.max(20, Math.min(60, validPlatforms.length * 8))
+    trackEl.style.setProperty('--marquee-duration', `${duration}s`)
+    
+    console.log('[HomePage] Rendered', validPlatforms.length, 'social media items')
+  } catch (error) {
+    console.error('[HomePage] Error loading social media showcase:', error)
+    trackEl.innerHTML = `
+      <div class="social-loading-placeholder">
+        <p>Error loading social media. Please refresh the page.</p>
+      </div>
+    `
+  }
+}
+
+function updateSocialStats(totalFollowers, activePlatforms) {
+  const totalFollowersEl = document.getElementById('totalFollowers')
+  
+  if (totalFollowersEl) {
+    totalFollowersEl.textContent = formatNumber(totalFollowers)
+  }
+}
+
+// Make function globally available for config-loader integration
+window.loadSocialMediaShowcase = loadSocialMediaShowcase
+
+
+function shareSocialProfile(platform, url) {
+  const shareData = {
+    title: `Follow Chase X Records on ${platform}`,
+    text: `Check out Chase X Records on ${platform} for amazing music content!`,
+    url: url
+  }
+
+  if (navigator.share) {
+    navigator.share(shareData).catch(console.error)
+  } else {
+    // Fallback: copy to clipboard
+    const shareText = `${shareData.text} - ${shareData.url}`
+    navigator.clipboard.writeText(shareText).then(() => {
+      showNotification('Profile link copied to clipboard!', 'success')
+    }).catch(() => {
+      prompt('Copy this link:', shareText)
+    })
+  }
+}
+
 function initHomePage() {
   console.log('[HomePage] Initializing homepage...')
   loadTalentMarquee()
   loadFeaturedArtists()
   loadFeaturedTracks()
+  loadHomeCollaborations()
+  loadSocialMediaShowcase()
   setupTrackCardListeners()
+  
+  // Set up real-time listener for social media updates
+  setupSocialMediaRealtimeListener()
+  
   // Execute any pending action after login
   setTimeout(() => executePendingAction(), 500)
+}
+
+function setupSocialMediaRealtimeListener() {
+  console.log('[HomePage] Setting up real-time social media listener...')
+  
+  // Listen for settings updates (which includes social links)
+  onSettingsUpdate((newConfig) => {
+    console.log('[HomePage] Settings updated, refreshing social media showcase...')
+    loadSocialMediaShowcase()
+  })
 }
 
 // Function to execute pending action after login
@@ -583,14 +1066,17 @@ async function boot() {
   }
   
   // Listen for liked tracks updates to refresh UI
-  document.addEventListener('likedTracksUpdated', (e) => {
-    const { trackId, isLiked } = e.detail
-    if (trackId && isLiked !== undefined) {
-      likedTracksManager.updateTrackHeartIcons(trackId, isLiked)
-    } else {
-      likedTracksManager.updateAllHeartIcons()
-    }
-  })
+  if (!window.__homeLikedTracksListenerBound) {
+    window.__homeLikedTracksListenerBound = true
+    document.addEventListener('likedTracksUpdated', (e) => {
+      const { trackId, isLiked } = e.detail
+      if (trackId && isLiked !== undefined) {
+        likedTracksManager.updateTrackHeartIcons(trackId, isLiked)
+      } else {
+        likedTracksManager.updateAllHeartIcons()
+      }
+    })
+  }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -599,5 +1085,14 @@ document.addEventListener('DOMContentLoaded', () => {
 })
 
 document.addEventListener('includes:loaded', () => {
+  boot()
+})
+
+document.addEventListener('spa:navigated', () => {
+  const root = document.getElementById('homeHero') || document.querySelector('main')
+  if (!root) return
+  // Only boot when actually on home page.
+  const page = (window.location.pathname.split('/').pop() || 'index.html')
+  if (page !== 'index.html') return
   boot()
 })

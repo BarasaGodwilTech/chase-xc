@@ -336,22 +336,38 @@ function setupEventListeners() {
   
   // Play button
   if (playBtn) {
-    playBtn.addEventListener('click', () => handlePlayTrack())
+    if (playBtn._playHandler) {
+      playBtn.removeEventListener('click', playBtn._playHandler)
+    }
+    playBtn._playHandler = () => handlePlayTrack()
+    playBtn.addEventListener('click', playBtn._playHandler)
   }
   
   // Like button
   if (likeBtn) {
-    likeBtn.addEventListener('click', () => handleLikeTrack(likeBtn))
+    if (likeBtn._likeHandler) {
+      likeBtn.removeEventListener('click', likeBtn._likeHandler)
+    }
+    likeBtn._likeHandler = () => handleLikeTrack(likeBtn)
+    likeBtn.addEventListener('click', likeBtn._likeHandler)
   }
   
   // Add to playlist button
   if (playlistBtn) {
-    playlistBtn.addEventListener('click', () => handleAddToPlaylist())
+    if (playlistBtn._playlistHandler) {
+      playlistBtn.removeEventListener('click', playlistBtn._playlistHandler)
+    }
+    playlistBtn._playlistHandler = () => handleAddToPlaylist()
+    playlistBtn.addEventListener('click', playlistBtn._playlistHandler)
   }
   
   // Share button
   if (shareBtn) {
-    shareBtn.addEventListener('click', () => handleShareTrack())
+    if (shareBtn._shareHandler) {
+      shareBtn.removeEventListener('click', shareBtn._shareHandler)
+    }
+    shareBtn._shareHandler = () => handleShareTrack()
+    shareBtn.addEventListener('click', shareBtn._shareHandler)
   }
   
   // Back button - let anchor href work naturally
@@ -376,7 +392,6 @@ function handlePlayTrack() {
         title: t.title,
         artistName: t.artistName,
         artwork: t.artwork,
-        audioUrl: t.audioUrl,
         platformLinks: t.platformLinks || {},
         originalData: t
       }));
@@ -399,7 +414,6 @@ function handlePlayTrack() {
         title: currentTrack.title,
         artistName: collabLine || currentTrack.artistName,
         artwork: currentTrack.artwork,
-        audioUrl: currentTrack.audioUrl,
         platformLinks: currentTrack.platformLinks || {},
         originalData: currentTrack
       });
@@ -682,7 +696,6 @@ function setupMoreTracksListeners() {
             title: t.title,
             artistName: t.artistName,
             artwork: t.artwork,
-            audioUrl: t.audioUrl,
             platformLinks: t.platformLinks || {},
             originalData: t
           }));
@@ -705,7 +718,6 @@ function setupMoreTracksListeners() {
             title: track.title,
             artistName: collabLine || track.artistName,
             artwork: track.artwork,
-            audioUrl: track.audioUrl,
             platformLinks: track.platformLinks || {},
             originalData: track
           });
@@ -729,7 +741,12 @@ function setupMoreTracksListeners() {
       }
       const trackId = card.dataset.trackId
       if (trackId) {
-        window.location.href = `track-detail.html?id=${trackId}`
+        const href = `track-detail.html?id=${trackId}`
+        if (typeof window.spaNavigate === 'function') {
+          window.spaNavigate(href)
+        } else {
+          window.location.href = href
+        }
       }
     })
   })
@@ -790,7 +807,11 @@ function storePendingAction(actionType, actionData) {
 function redirectToAuth() {
   const currentUrl = window.location.href
   const authUrl = `auth.html?redirect=${encodeURIComponent(currentUrl)}`
-  window.location.href = authUrl
+  if (typeof window.spaNavigate === 'function') {
+    window.spaNavigate(authUrl)
+  } else {
+    window.location.href = authUrl
+  }
 }
 
 // Show error message
@@ -813,7 +834,10 @@ document.addEventListener('DOMContentLoaded', () => {
   loadTrackData()
   
   // Listen for liked tracks updates to refresh UI
-  document.addEventListener('likedTracksUpdated', (e) => {
+  const root = document.getElementById('trackHero')
+  if (root && root.dataset.likedListenerBound !== '1') {
+    root.dataset.likedListenerBound = '1'
+    document.addEventListener('likedTracksUpdated', (e) => {
     const { trackId, isLiked } = e.detail
     if (currentTrack && (trackId === currentTrack.id || trackId === null)) {
       const likeBtn = document.getElementById('likeBtn')
@@ -843,10 +867,21 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       likedTracksManager.updateAllHeartIcons()
     }
-  })
+    })
+  }
 })
 
 document.addEventListener('includes:loaded', loadTrackData)
+
+document.addEventListener('spa:navigated', () => {
+  const root = document.getElementById('trackHero')
+  if (!root) return
+  const trackId = getTrackIdFromUrl()
+  if (!trackId) return
+  if (root.dataset.loadedTrackId === trackId) return
+  root.dataset.loadedTrackId = trackId
+  loadTrackData()
+})
 
 document.addEventListener('DOMContentLoaded', () => {
   // If auth.js is on the page, it will hydrate window.userAuth

@@ -1,3 +1,288 @@
+/* Home Collaborations Section Styles */
+.home-collaborations-section {
+  padding: 5rem 0;
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.03), rgba(168, 85, 247, 0.03));
+}
+
+.collaborations-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 1.5rem;
+  margin-top: 3rem;
+}
+
+/* Unique one-line collaboration cards for home page */
+.home-collab-card {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 1rem;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.home-collab-card:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(168, 85, 247, 0.3);
+  box-shadow: 0 8px 25px rgba(168, 85, 247, 0.15);
+}
+
+.home-collab-artwork {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-right: 1.5rem;
+}
+
+.home-collab-artwork img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.home-collab-card:hover .home-collab-artwork img {
+  transform: scale(1.05);
+}
+
+.home-collab-play-btn {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 32px;
+  height: 32px;
+  background: rgba(0, 0, 0, 0.8);
+  border: none;
+  border-radius: 50%;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.home-collab-card:hover .home-collab-play-btn {
+  opacity: 1;
+}
+
+.home-collab-play-btn:hover {
+  background: rgba(168, 85, 247, 0.9);
+  transform: translate(-50%, -50%) scale(1.1);
+}
+
+.home-collab-spotify {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  background: #1DB954;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 12px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  cursor: pointer;
+}
+
+.home-collab-card:hover .home-collab-spotify {
+  opacity: 1;
+}
+
+.home-collab-spotify:hover {
+  transform: scale(1.1);
+}
+
+.home-collab-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.home-collab-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.home-collab-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: white;
+  margin: 0 0 0.25rem 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.home-collab-artists {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.home-collab-meta {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-shrink: 0;
+}
+
+.home-collab-avatars {
+  display: flex;
+  align-items: center;
+}
+
+.home-collab-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  margin-left: -8px;
+  transition: all 0.3s ease;
+}
+
+.home-collab-avatar:first-child {
+  margin-left: 0;
+}
+
+.home-collab-avatar:hover {
+  transform: translateY(-2px);
+  border-color: rgba(168, 85, 247, 0.5);
+  z-index: 1;
+}
+
+.home-collab-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.home-collab-like-btn {
+  width: 36px;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  color: rgba(255, 255, 255, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+}
+
+.home-collab-like-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.5);
+  color: #ef4444;
+  transform: scale(1.1);
+}
+
+.home-collab-like-btn.liked {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.5);
+  color: #ef4444;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .collaborations-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .home-collab-card {
+    padding: 0.875rem;
+  }
+
+  .home-collab-artwork {
+    width: 60px;
+    height: 60px;
+    margin-right: 1rem;
+  }
+
+  .home-collab-title {
+    font-size: 0.9rem;
+  }
+
+  .home-collab-artists {
+    font-size: 0.8rem;
+  }
+
+  .home-collab-avatar {
+    width: 28px;
+    height: 28px;
+  }
+
+  .home-collab-like-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .home-collaborations-section {
+    padding: 3rem 0;
+  }
+
+  .home-collab-card {
+    padding: 0.75rem;
+  }
+
+  .home-collab-artwork {
+    width: 50px;
+    height: 50px;
+    margin-right: 0.875rem;
+  }
+
+  .home-collab-title {
+    font-size: 0.85rem;
+  }
+
+  .home-collab-artists {
+    font-size: 0.75rem;
+  }
+
+  .home-collab-meta {
+    gap: 0.75rem;
+  }
+
+  .home-collab-avatar {
+    width: 24px;
+    height: 24px;
+    margin-left: -6px;
+  }
+
+  .home-collab-like-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 11px;
+  }
+}
+
 /* Team Section Styles */
 .about-team-section {
   padding: 5rem 0;

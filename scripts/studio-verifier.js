@@ -391,5 +391,21 @@ if ('serviceWorker' in navigator) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    initStudioVerifier()
+})
+
+function initStudioVerifier() {
+    const root = document.getElementById('permissionSection')
+    if (!root) return
+    if (root.dataset.studioVerifierInit === '1') return
+    root.dataset.studioVerifierInit = '1'
     studioVerifier = new StudioVerifier();
-});
+}
+
+document.addEventListener('includes:loaded', () => {
+    initStudioVerifier()
+})
+
+document.addEventListener('spa:navigated', () => {
+    initStudioVerifier()
+})

@@ -1,4 +1,4 @@
-import { db } from './firebase-init.js'
+import { db, functions } from './firebase-init.js'
 import {
   doc,
   getDoc,
@@ -18,6 +18,8 @@ import {
   arrayRemove,
   increment
 } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js'
+
+import { httpsCallable } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-functions.js'
 
 function userDocRef(uid) {
   return doc(db, 'users', uid)
@@ -40,12 +42,31 @@ export async function incrementTrackLikes(trackId, delta = 1) {
   })
 }
 
-export async function incrementTrackStreams(trackId, delta = 1) {
+export async function incrementTrackStreams(trackId, delta = 1, { eventId } = {}) {
   if (!trackId) return
-  const ref = trackDocRef(trackId)
-  await updateDoc(ref, {
-    streams: increment(delta)
-  })
+  const trimmedEventId = String(eventId || '').trim()
+
+  // Prefer callable function (bypasses Firestore rules, allows server-side dedup/rate limits).
+  if (trimmedEventId) {
+    try {
+      const call = httpsCallable(functions, 'incrementTrackStreams')
+      await call({ trackId, delta, eventId: trimmedEventId })
+      return
+    } catch (e) {
+      // Fall through to single fallback below
+    }
+  }
+
+  // Fallback to direct update (may be blocked by Firestore rules in prod).
+  try {
+    const ref = trackDocRef(trackId)
+    await updateDoc(ref, {
+      streams: increment(delta)
+    })
+  } catch (inner) {
+    console.error('[user-data] incrementTrackStreams failed:', inner)
+    throw inner
+  }
 }
 
 export async function ensureUserProfileDoc(user) {
@@ -355,6 +376,16 @@ export async function getNotifications(uid, max = 10) {
   const q = query(col, orderBy('serverCreatedAt', 'desc'), limit(max))
   const snap = await getDocs(q)
   return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+}
+
+export async function getAllNotifications(uid, max = 100) {
+  return await getNotifications(uid, max)
+}
+
+export async function markNotificationRead(uid, notificationId) {
+  if (!uid || !notificationId) return
+  const ref = doc(db, 'users', uid, 'notifications', notificationId)
+  await updateDoc(ref, { read: true })
 }
 
 export async function markAllNotificationsRead(uid) {

@@ -27,12 +27,27 @@ class PersistentFloatingPlayer {
         this.isMobile = window.innerWidth <= 480;
         this.isShuffled = false;
         this.repeatMode = 'none'; // 'none', 'one', 'all'
+        
+        // Shuffle functionality
+        this.originalPlaylist = [];
+        this.shuffledPlaylist = [];
+        this.shuffleIndex = 0;
 
         this._streamTimer = null;
         this._streamCountedForTrackId = null;
         this._progressTrackingInterval = null;
+        this._currentPlayEventId = null;
         
         this.init();
+    }
+
+    generatePlayEventId() {
+        try {
+            if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+                return window.crypto.randomUUID();
+            }
+        } catch (_) {}
+        return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
     }
 
     normalizeArtistLine(value) {
@@ -421,9 +436,8 @@ class PersistentFloatingPlayer {
                     this.repeatMode = state.repeatMode || 'none';
                     
                     // Restore based on platform type
-                    if (state.platform === 'audio' && state.track.audioUrl) {
-                        this.restoreAudio(state);
-                    } else if (state.platform && state.platform !== 'audio') {
+                    // Audio-file playback has been removed; only restore embed-based platforms.
+                    if (state.platform && state.platform !== 'audio') {
                         // For embeds, rebuild the iframe so play() can actually control it
                         this.isPlaying = false;
                         this.loadTrack(state.track, { autoplay: false });
@@ -451,6 +465,11 @@ class PersistentFloatingPlayer {
                         }
                     }
 
+                    // Re-initialize shuffle if it was enabled
+                    if (this.isShuffled && this.playlist.length > 0) {
+                        this.enableShuffle();
+                    }
+                    
                     this.updateShuffleRepeatUI();
                     
                     // Restore collapsed state
@@ -580,6 +599,12 @@ class PersistentFloatingPlayer {
     setPlaylist(tracks, startIndex = 0) {
         this.playlist = tracks;
         this.currentIndex = startIndex;
+        
+        // Re-initialize shuffle if it was enabled
+        if (this.isShuffled && tracks.length > 0) {
+            this.enableShuffle();
+        }
+        
         if (tracks.length > 0) {
             this.loadTrack(tracks[startIndex]);
         }
@@ -591,6 +616,7 @@ class PersistentFloatingPlayer {
         const { autoplay = true } = options;
         
         this.currentTrack = track;
+        this._currentPlayEventId = this.generatePlayEventId();
         this.resetStreamTracking();
         this.closeVideoWindow();
         this.isCollapsed = false;
@@ -614,8 +640,12 @@ class PersistentFloatingPlayer {
         }
         
         if (platform === 'audio' && url) {
-            // Direct audio file
-            this.loadAudioFile(track, url);
+            // Direct audio file (no longer supported)
+            this.showNotification('Audio files are no longer supported. Please use a Spotify/YouTube/SoundCloud link.', 'warning');
+            this.currentPlatform = null;
+            this.isPlaying = false;
+            this.updatePlayButton();
+            this.saveState();
         } else if (platform === 'youtubemusic') {
             // YouTube Music - treat as audio (no video window)
             this.loadYouTubeMusicEmbed(track, url, autoplay);
@@ -703,6 +733,10 @@ class PersistentFloatingPlayer {
             clearTimeout(this._streamTimer);
             this._streamTimer = null;
         }
+        if (this._spotifyDurationTimer) {
+            clearInterval(this._spotifyDurationTimer);
+            this._spotifyDurationTimer = null;
+        }
         this._streamCountedForTrackId = null;
     }
 
@@ -739,12 +773,15 @@ class PersistentFloatingPlayer {
         if (this._streamCountedForTrackId === trackId) return;
         if (this.hasRecentlyCountedStream(trackId)) return;
 
+        const eventId = this._currentPlayEventId;
+        if (!eventId) return;
+
         this._streamCountedForTrackId = trackId;
         this.markStreamCounted(trackId);
 
         try {
             const { incrementTrackStreams } = await import('./user-data.js');
-            await incrementTrackStreams(trackId, 1);
+            await incrementTrackStreams(trackId, 1, { eventId });
         } catch (error) {
             console.error('[FloatingPlayer] Error incrementing streams:', error);
         }
@@ -759,7 +796,7 @@ class PersistentFloatingPlayer {
             clearTimeout(this._streamTimer);
         }
 
-        const delayMs = this.currentPlatform === 'audio' ? 15000 : 1000;
+        const delayMs = this.currentPlatform === 'audio' ? 30000 : 30000;
         this._streamTimer = setTimeout(() => {
             this._streamTimer = null;
             if (!this.isPlaying) return;
@@ -785,9 +822,9 @@ class PersistentFloatingPlayer {
                 return { platform: 'soundcloud', url: u };
             }
 
-            // Treat as direct audio only if it looks like an actual audio file URL
+            // Audio files are no longer supported.
             if (/\.(mp3|wav|ogg|m4a|aac)(\?|#|$)/i.test(u)) {
-                return { platform: 'audio', url: u };
+                return { platform: null, url: null };
             }
         }
         
@@ -917,10 +954,11 @@ class PersistentFloatingPlayer {
                                 this.stopProgressTracking();
                                 this.saveState();
                             } else if (e && e.data === 0) {
+                                // Video ended - handle repeat/shuffle logic
                                 this.isPlaying = false;
                                 this.updatePlayButton();
                                 this.stopProgressTracking();
-                                this.saveState();
+                                this.handleTrackEnd();
                             }
                         }
                     }
@@ -1033,11 +1071,11 @@ class PersistentFloatingPlayer {
                                 this.stopProgressTracking();
                                 this.saveState();
                             } else if (e && e.data === 0) {
-                                // Video ended
+                                // Video ended - handle repeat/shuffle logic
                                 this.isPlaying = false;
                                 this.updatePlayButton();
                                 this.stopProgressTracking();
-                                this.saveState();
+                                this.handleTrackEnd();
                             }
                         }
                     }
@@ -1070,41 +1108,36 @@ class PersistentFloatingPlayer {
             return;
         }
         
+        this.resetStreamTracking();
+        this.currentPlatform = 'spotify';
+        
+        if (this.videoWindow) {
+            const videoContent = document.getElementById('flpVideoContent');
+            if (videoContent) {
+                const spotifyId = this.extractSpotifyId(url);
+                videoContent.innerHTML = `
+                    <iframe 
+                        id="flpSpotifyEmbed"
+                        src="https://open.spotify.com/embed/track/${spotifyId}?utm_source=generator&theme=0"
+                        width="100%" 
+                        height="152" 
+                        frameBorder="0" 
+                        allowfullscreen=""
+                        allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                        loading="lazy"
+                        style="border-radius:12px; pointer-events: auto;">
+                    </iframe>
+                `;
+            }
+            this.showVideoWindow();
+        }
+        
         this.updateUI('spotify');
         this.show();
         
-        // Hide video toggle for Spotify
-        const toggleBtn = document.getElementById('flpVideoToggle');
-        if (toggleBtn) toggleBtn.style.display = 'none';
+        // For Spotify, we need to track duration manually since embed doesn't provide end events
+        this.startSpotifyDurationTracking();
         
-        // Create Spotify embed in video window (treated as audio player)
-        const videoContent = document.getElementById('flpVideoContent');
-        const videoTitle = document.getElementById('flpVideoTitle');
-        
-        if (videoContent) {
-            videoContent.innerHTML = `
-                <iframe 
-                    id="flpSpotifyEmbed"
-                    src="https://open.spotify.com/embed/${spotifyUri}?utm_source=generator&theme=0"
-                    frameborder="0"
-                    allowfullscreen=""
-                    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-                    loading="lazy"
-                ></iframe>
-            `;
-        }
-        
-        if (videoTitle) {
-            videoTitle.textContent = track.title || 'Now Playing';
-        }
-        
-        // For Spotify, we want the embed visible so user can interact with it
-        this.videoVisible = true;
-        this.showVideoWindow();
-        // Ensure the video window is positioned and visible
-        this.positionVideoWindow();
-
-        // Spotify embeds do not provide reliable programmatic play control.
         // We never mark as playing automatically; user must start playback in the embed.
         this.isPlaying = false;
         this.updatePlayButton();
@@ -1200,7 +1233,7 @@ class PersistentFloatingPlayer {
                             this.updatePlayButton();
                             this.animateWaveform(false);
                             this.stopProgressTracking();
-                            this.saveState();
+                            this.handleTrackEnd();
                         });
                         if (!autoplay) {
                             try { this.scWidget.pause(); } catch (_) {}
@@ -1248,12 +1281,37 @@ class PersistentFloatingPlayer {
         // Handle Spotify URL formats
         // https://open.spotify.com/track/xxx -> track/xxx
         // https://open.spotify.com/album/xxx -> album/xxx
-        const match = url.match(/spotify\.com\/(track|album|playlist|artist)\/([a-zA-Z0-9]+)/);
-        if (match) {
-            return `${match[1]}/${match[2]}`;
+        const match = url.match(/(?:track|album|playlist)\/([a-zA-Z0-9]+)/);
+        return match ? match[1] : null;
+    }
+
+    extractSpotifyId(url) {
+        if (!url) return null;
+        
+        // Handle Spotify URL formats
+        // https://open.spotify.com/track/xxx -> track/xxx
+        // https://open.spotify.com/album/xxx -> album/xxx
+        const match = url.match(/(?:track|album|playlist)\/([a-zA-Z0-9]+)/);
+        return match ? match[1] : null;
+    }
+
+    startSpotifyDurationTracking() {
+        // Clear any existing Spotify tracking
+        if (this._spotifyDurationTimer) {
+            clearInterval(this._spotifyDurationTimer);
         }
         
-        return null;
+        // For Spotify, we'll use a simple approach: check if we have duration info
+        // and use a timer to approximate when the track might end
+        this._spotifyDurationTimer = setInterval(() => {
+            if (this.currentPlatform !== 'spotify' || !this.isPlaying) {
+                return;
+            }
+            
+            // Since we can't reliably track Spotify playback position,
+            // we'll rely on the user to manually advance tracks or use the repeat/shuffle buttons
+            // This is a limitation of the Spotify embed API
+        }, 5000); // Check every 5 seconds
     }
 
     updateUI(platform = null) {
@@ -1452,6 +1510,10 @@ class PersistentFloatingPlayer {
                 this.isPlaying = true;
                 this.updatePlayButton();
                 this.animateWaveform(true);
+                if (!this._currentPlayEventId) {
+                    this._currentPlayEventId = this.generatePlayEventId();
+                }
+                this.scheduleStreamIncrement();
                 this.dispatchStateChange();
                 this.saveState();
                 return;
@@ -1468,7 +1530,6 @@ class PersistentFloatingPlayer {
             // Check if embed needs to be loaded (after page navigation)
             const videoContent = document.getElementById('flpVideoContent');
             if (!videoContent || !videoContent.innerHTML.trim()) {
-                // Reload the embed
                 const { url } = this.detectPlatform(this.currentTrack);
                 if (url) {
                     if (this.currentPlatform === 'youtube') {
@@ -1482,8 +1543,7 @@ class PersistentFloatingPlayer {
                     }
                 }
             }
-            
-            // Control YouTube embed via postMessage API
+
             if (this.currentPlatform === 'youtube' || this.currentPlatform === 'youtubemusic') {
                 this.attemptYouTubePlay();
             }
@@ -1491,37 +1551,20 @@ class PersistentFloatingPlayer {
             this.isPlaying = true;
             this.updatePlayButton();
             this.animateWaveform(true);
+            if (!this._currentPlayEventId) {
+                this._currentPlayEventId = this.generatePlayEventId();
+            }
+            this.scheduleStreamIncrement();
             this.dispatchStateChange();
             this.saveState();
             return;
         }
-        
-        // Handle audio files
-        if (!this.audio) {
-            // Try to restore audio if we have a track
-            if (this.currentTrack && this.currentTrack.audioUrl) {
-                this.audio = new Audio();
-                this.setupAudioEvents();
-                this.audio.src = this.currentTrack.audioUrl;
-                this.audio.load();
-            } else {
-                this.showNotification('No track loaded', 'warning');
-                return;
-            }
-        }
-        
-        this.audio.play().then(() => {
-            this.isPlaying = true;
-            this.updatePlayButton();
-            this.saveState();
-            this.animateWaveform(true);
-            this.scheduleStreamIncrement();
-            this.dispatchStateChange();
-        }).catch(err => {
-            console.error('[FloatingPlayer] Play error:', err);
-            // Show play button so user can interact
-            this.updatePlayButton();
-        });
+
+        // Audio-file playback has been removed.
+        this.showNotification('This track has no supported external link. Add a Spotify/YouTube/SoundCloud link to play.', 'warning');
+        this.isPlaying = false;
+        this.updatePlayButton();
+        this.saveState();
     }
 
     pause() {
@@ -1549,17 +1592,11 @@ class PersistentFloatingPlayer {
             this.dispatchStateChange();
             return;
         }
-        
-        // Handle audio files
-        if (this.audio) {
-            this.audio.pause();
-            this.isPlaying = false;
-            this.updatePlayButton();
-            this.saveState();
-            this.animateWaveform(false);
-            this.resetStreamTracking();
-            this.dispatchStateChange();
-        }
+
+        // Audio-file playback has been removed.
+        this.isPlaying = false;
+        this.updatePlayButton();
+        this.saveState();
     }
 
     togglePlay() {
@@ -1917,20 +1954,21 @@ class PersistentFloatingPlayer {
     nextTrack() {
         if (this.playlist.length === 0) return;
         
-        // Handle repeat one
+        // Handle repeat one - restart current track
         if (this.repeatMode === 'one') {
-            this.loadTrack(this.playlist[this.currentIndex]);
-            this.play();
+            this.restartCurrentTrack();
             return;
         }
         
-        // Handle shuffle
-        if (this.isShuffled) {
-            this.currentIndex = Math.floor(Math.random() * this.playlist.length);
-        } else {
-            this.currentIndex = (this.currentIndex + 1) % this.playlist.length;
+        // Get next track index based on shuffle state
+        const nextIndex = this.getNextTrackIndex();
+        if (nextIndex === -1) {
+            // No next track available
+            this.stop();
+            return;
         }
         
+        this.currentIndex = nextIndex;
         const track = this.playlist[this.currentIndex];
         this.loadTrack(track);
         this.play();
@@ -1938,19 +1976,21 @@ class PersistentFloatingPlayer {
 
     prevTrack() {
         if (this.playlist.length === 0) return;
+        
         // If more than 3 seconds in, restart current track
-        if (this.audio && this.audio.currentTime > 3) {
-            this.audio.currentTime = 0;
+        if (this.shouldRestartCurrentTrack()) {
+            this.restartCurrentTrack();
             return;
         }
         
-        // Handle shuffle
-        if (this.isShuffled) {
-            this.currentIndex = Math.floor(Math.random() * this.playlist.length);
-        } else {
-            this.currentIndex = (this.currentIndex - 1 + this.playlist.length) % this.playlist.length;
+        // Get previous track index based on shuffle state
+        const prevIndex = this.getPrevTrackIndex();
+        if (prevIndex === -1) {
+            // No previous track available
+            return;
         }
         
+        this.currentIndex = prevIndex;
         const track = this.playlist[this.currentIndex];
         this.loadTrack(track);
         this.play();
@@ -1958,31 +1998,39 @@ class PersistentFloatingPlayer {
 
     handleTrackEnd() {
         this.resetStreamTracking();
-        // Handle repeat one
+        
+        // Handle repeat one - restart current track
         if (this.repeatMode === 'one') {
-            if (this.audio) {
-                this.audio.currentTime = 0;
-                this.play();
-            }
+            this.restartCurrentTrack();
             return;
         }
         
-        // Handle repeat all - continue playing
-        if (this.repeatMode === 'all' || this.currentIndex < this.playlist.length - 1) {
+        // Handle repeat all - continue to next track (will loop back to start)
+        if (this.repeatMode === 'all') {
             this.nextTrack();
-        } else {
-            // End of playlist, stop playing
-            this.isPlaying = false;
-            this.updatePlayButton();
+            return;
+        }
+        
+        // Handle repeat none - stop at end of playlist
+        if (this.repeatMode === 'none') {
+            if (this.isAtEndOfPlaylist()) {
+                this.stop();
+            } else {
+                this.nextTrack();
+            }
         }
     }
     
     toggleShuffle() {
         this.isShuffled = !this.isShuffled;
-        const shuffleBtn = document.getElementById('flpShuffleBtn');
-        if (shuffleBtn) {
-            shuffleBtn.classList.toggle('active', this.isShuffled);
+        
+        if (this.isShuffled) {
+            this.enableShuffle();
+        } else {
+            this.disableShuffle();
         }
+        
+        this.updateShuffleUI();
         this.dispatchStateChange();
         this.saveState();
     }
@@ -1992,6 +2040,171 @@ class PersistentFloatingPlayer {
         const currentIndex = modes.indexOf(this.repeatMode);
         this.repeatMode = modes[(currentIndex + 1) % modes.length];
         
+        this.updateRepeatUI();
+        this.dispatchStateChange();
+        this.saveState();
+    }
+
+    // Helper methods for repeat functionality
+    restartCurrentTrack() {
+        if (this.currentPlatform === 'audio' && this.audio) {
+            this.audio.currentTime = 0;
+            this.play();
+        } else if (this.currentPlatform === 'youtube' && this.ytPlayer) {
+            this.ytPlayer.seekTo(0);
+            this.ytPlayer.playVideo();
+        } else if (this.currentPlatform === 'soundcloud' && this.scWidget) {
+            this.scWidget.seekTo(0);
+            this.scWidget.play();
+        } else if (this.currentPlatform === 'spotify') {
+            // For Spotify, reload the track
+            this.loadTrack(this.currentTrack, { autoplay: true });
+        } else {
+            // Fallback for other platforms
+            this.loadTrack(this.currentTrack, { autoplay: true });
+        }
+    }
+
+    shouldRestartCurrentTrack() {
+        if (this.currentPlatform === 'audio' && this.audio) {
+            return this.audio.currentTime > 3;
+        } else if (this.currentPlatform === 'youtube' && this.ytPlayer) {
+            return this.ytPlayer.getCurrentTime() > 3;
+        } else if (this.currentPlatform === 'soundcloud' && this.scWidget) {
+            // For SoundCloud, we'll use a simpler approach - always go to previous track
+            // since the async nature makes the 3-second check complex
+            return false;
+        }
+        return false;
+    }
+
+    isAtEndOfPlaylist() {
+        if (this.isShuffled) {
+            return this.shuffleIndex >= this.shuffledPlaylist.length - 1;
+        } else {
+            return this.currentIndex >= this.playlist.length - 1;
+        }
+    }
+
+    stop() {
+        this.isPlaying = false;
+        this.updatePlayButton();
+        
+        if (this.currentPlatform === 'audio' && this.audio) {
+            this.audio.pause();
+        } else if (this.currentPlatform === 'youtube' && this.ytPlayer) {
+            this.ytPlayer.pauseVideo();
+        } else if (this.currentPlatform === 'soundcloud' && this.scWidget) {
+            this.scWidget.pause();
+        }
+        // Spotify controls are handled by the embed itself
+    }
+
+    // Helper methods for shuffle functionality
+    enableShuffle() {
+        this.originalPlaylist = [...this.playlist];
+        this.shuffledPlaylist = this.shuffleArray([...this.playlist]);
+        
+        // Find current track in shuffled playlist
+        const currentTrack = this.playlist[this.currentIndex];
+        const shuffledIndex = this.shuffledPlaylist.findIndex(track => track.id === currentTrack.id);
+        
+        if (shuffledIndex !== -1) {
+            this.shuffleIndex = shuffledIndex;
+        } else {
+            this.shuffleIndex = 0;
+        }
+    }
+
+    disableShuffle() {
+        // Find current track in original playlist
+        const currentTrack = this.playlist[this.currentIndex];
+        const originalIndex = this.originalPlaylist.findIndex(track => track.id === currentTrack.id);
+        
+        if (originalIndex !== -1) {
+            this.currentIndex = originalIndex;
+        }
+        
+        this.originalPlaylist = [];
+        this.shuffledPlaylist = [];
+        this.shuffleIndex = 0;
+    }
+
+    shuffleArray(array) {
+        const shuffled = [...array];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        return shuffled;
+    }
+
+    getNextTrackIndex() {
+        if (this.isShuffled) {
+            if (this.shuffleIndex < this.shuffledPlaylist.length - 1) {
+                this.shuffleIndex++;
+            } else {
+                // End of shuffled playlist, loop back to start if repeat all, else stop
+                if (this.repeatMode === 'all') {
+                    this.shuffleIndex = 0;
+                } else {
+                    return -1;
+                }
+            }
+            
+            const nextTrack = this.shuffledPlaylist[this.shuffleIndex];
+            return this.playlist.findIndex(track => track.id === nextTrack.id);
+        } else {
+            if (this.currentIndex < this.playlist.length - 1) {
+                return this.currentIndex + 1;
+            } else {
+                // End of playlist, loop back to start if repeat all, else stop
+                if (this.repeatMode === 'all') {
+                    return 0;
+                } else {
+                    return -1;
+                }
+            }
+        }
+    }
+
+    getPrevTrackIndex() {
+        if (this.isShuffled) {
+            if (this.shuffleIndex > 0) {
+                this.shuffleIndex--;
+            } else {
+                // Start of shuffled playlist, go to end if repeat all, else stay
+                if (this.repeatMode === 'all') {
+                    this.shuffleIndex = this.shuffledPlaylist.length - 1;
+                } else {
+                    return this.currentIndex;
+                }
+            }
+            
+            const prevTrack = this.shuffledPlaylist[this.shuffleIndex];
+            return this.playlist.findIndex(track => track.id === prevTrack.id);
+        } else {
+            if (this.currentIndex > 0) {
+                return this.currentIndex - 1;
+            } else {
+                // Start of playlist, go to end if repeat all, else stay
+                if (this.repeatMode === 'all') {
+                    return this.playlist.length - 1;
+                } else {
+                    return this.currentIndex;
+                }
+            }
+        }
+    }
+
+    updateShuffleUI() {
+        const shuffleBtn = document.getElementById('flpShuffleBtn');
+        if (shuffleBtn) {
+            shuffleBtn.classList.toggle('active', this.isShuffled);
+        }
+    }
+
+    updateRepeatUI() {
         const repeatBtn = document.getElementById('flpRepeatBtn');
         if (repeatBtn) {
             repeatBtn.classList.toggle('active', this.repeatMode !== 'none');
@@ -2002,8 +2215,6 @@ class PersistentFloatingPlayer {
                 repeatBtn.innerHTML = '<i class="fas fa-redo"></i>';
             }
         }
-        this.dispatchStateChange();
-        this.saveState();
     }
 
     syncWithMainPlayer(track, isPlaying, currentTime) {

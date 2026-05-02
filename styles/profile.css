@@ -292,6 +292,14 @@
     border-radius: var(--radius);
     border: 1px solid var(--border);
     overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.overview-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(0, 212, 255, 0.25);
+    box-shadow: 0 16px 50px rgba(0, 0, 0, 0.28);
 }
 
 .overview-card-header {
@@ -323,10 +331,12 @@
     font-weight: 500;
     cursor: pointer;
     transition: var(--transition);
+    padding: 0.25rem 0;
 }
 
 .btn-text:hover {
     color: var(--secondary);
+    text-decoration: underline;
 }
 
 .overview-card-body {
@@ -395,12 +405,22 @@
     align-items: center;
     gap: 1rem;
     padding: 0.75rem;
-    border-radius: 8px;
+    border-radius: var(--radius);
     transition: var(--transition);
+    border: 1px solid transparent;
+    cursor: pointer;
 }
 
 .top-track-item:hover {
     background: rgba(0, 212, 255, 0.05);
+    border-color: rgba(0, 212, 255, 0.18);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+}
+
+.top-track-item:focus-visible {
+    outline: 2px solid rgba(0, 212, 255, 0.45);
+    outline-offset: 2px;
 }
 
 .track-rank {
@@ -455,16 +475,25 @@
     display: flex;
     gap: 1rem;
     padding: 0.75rem;
-    border-radius: 8px;
+    border-radius: var(--radius);
     transition: var(--transition);
+    border: 1px solid transparent;
+    cursor: pointer;
 }
 
 .notification-item.unread {
     background: rgba(0, 212, 255, 0.05);
+    border-color: rgba(0, 212, 255, 0.15);
 }
 
 .notification-item:hover {
     background: rgba(0, 212, 255, 0.1);
+    border-color: rgba(0, 212, 255, 0.25);
+}
+
+.notification-item:focus-visible {
+    outline: 2px solid rgba(0, 212, 255, 0.45);
+    outline-offset: 2px;
 }
 
 .notification-icon {
@@ -781,6 +810,12 @@
 
 .history-item:hover {
     border-color: var(--primary);
+    background: rgba(0, 212, 255, 0.06);
+}
+
+.history-item:focus-visible {
+    outline: 2px solid rgba(0, 212, 255, 0.45);
+    outline-offset: 2px;
 }
 
 .history-item img {
@@ -1019,7 +1054,7 @@
 
 /* Playlist Detail Page Styles */
 .playlist-detail-section {
-    padding: 2rem 0 4rem;
+    padding: 100px 0 4rem;
 }
 
 .playlist-detail-header {
@@ -1070,6 +1105,10 @@
     flex-wrap: wrap;
 }
 
+.playlist-detail-actions .btn {
+    margin-top: 0;
+}
+
 .playlist-tracks-container {
     background: var(--surface);
     border-radius: 16px;
@@ -1083,6 +1122,10 @@
     justify-content: space-between;
     padding: 1.5rem 2rem;
     border-bottom: 1px solid var(--border);
+}
+
+.playlist-tracks-header .btn {
+    margin-top: 0;
 }
 
 .playlist-tracks-header h3 {
@@ -1283,11 +1326,11 @@
 
 @media (max-width: 480px) {
     .playlist-detail-section {
-        padding: 1rem 0 2rem;
+        padding: 90px 0 2rem;
     }
 
     .playlist-detail-header {
-        padding: 1.5rem;
+        flex-direction: column;
     }
 
     .playlist-detail-artwork {

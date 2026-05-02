@@ -323,6 +323,11 @@ async function initSettings() {
     // Populate contact and social data when settings change
     populateContactAndSocialData()
     
+    // Update social media showcase when settings change
+    if (window.loadSocialMediaShowcase) {
+      window.loadSocialMediaShowcase()
+    }
+    
     // Update homepage plan cards when settings change
     if (window.updatePlanCardsFromConfig) {
       window.updatePlanCardsFromConfig(newConfig)
@@ -368,4 +373,7 @@ export {
 }
 
 // Auto-initialize when imported
-initSettings().catch(console.error)
+if (!window.__studioConfigInitStarted) {
+  window.__studioConfigInitStarted = true
+  initSettings().catch(console.error)
+}

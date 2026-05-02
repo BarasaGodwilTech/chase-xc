@@ -765,6 +765,14 @@ if (document.readyState === 'loading') {
     initializeMembershipPaymentManager();
 }
 
+document.addEventListener('includes:loaded', () => {
+    initializeMembershipPaymentManager()
+})
+
+document.addEventListener('spa:navigated', () => {
+    initializeMembershipPaymentManager()
+})
+
 // Test function
 window.testPaymentSelection = function() {
     console.log('🧪 Testing payment selection...');

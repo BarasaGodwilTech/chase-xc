@@ -32,6 +32,21 @@
         autoLoadUserDataTracker()
     }
 
+    function autoLoadSpaNav() {
+        if (document.querySelector('script[src*="spa-nav.js"]')) return
+
+        const script = document.createElement('script')
+        script.type = 'module'
+        script.src = 'scripts/spa-nav.js'
+        document.body.appendChild(script)
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', autoLoadSpaNav)
+    } else {
+        autoLoadSpaNav()
+    }
+
     async function includeAll() {
         const includeEls = document.querySelectorAll('[data-include]');
         if (includeEls.length === 0) return;

@@ -41,7 +41,12 @@ class MembershipManager {
                         // ignore storage errors
                     }
 
-                    window.location.href = 'auth.html';
+                    const href = 'auth.html'
+                    if (typeof window.spaNavigate === 'function') {
+                        window.spaNavigate(href)
+                    } else {
+                        window.location.href = href;
+                    }
                 }, 800);
             }
         });
@@ -693,13 +698,31 @@ class MembershipManager {
     }
 }
 
+function initMembershipPage() {
+    const root = document.getElementById('currentPlanCard')
+    if (!root) return
+    if (root.dataset.membershipInit === '1') return
+    root.dataset.membershipInit = '1'
+    new MembershipManager()
+}
+
 // Initialize membership page
 document.addEventListener('DOMContentLoaded', () => {
-    new MembershipManager();
-});
+    initMembershipPage()
+})
+
+document.addEventListener('includes:loaded', () => {
+    initMembershipPage()
+})
+
+document.addEventListener('spa:navigated', () => {
+    initMembershipPage()
+})
 
 // Add notification animations
+if (!document.getElementById('membershipNotificationAnimations')) {
 const style = document.createElement('style');
+style.id = 'membershipNotificationAnimations'
 style.textContent = `
     @keyframes slideIn {
         from { transform: translateX(100%); opacity: 0; }
@@ -711,3 +734,4 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
+}
