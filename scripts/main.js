@@ -1069,8 +1069,8 @@ function initMembership() {
 }
 
 // === MUSIC FILTERS FUNCTIONALITY ===
-if (typeof MusicFilters === 'undefined') {
-class MusicFilters {
+if (typeof window.MusicFilters === 'undefined') {
+window.MusicFilters = class MusicFilters {
     constructor() {
         this.filterButtons = document.querySelectorAll('.filter-btn');
         this.trackCards = document.querySelectorAll('.track-card');
@@ -1186,16 +1186,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // Don't initialize on music page - music-page.js handles it
     if (!window.location.pathname.includes('music.html')) {
         // Initialize music filters
-        new MusicFilters();
+        new window.MusicFilters();
         
         // Initialize music search
-        new MusicSearch();
+        new window.MusicSearch();
     }
 });
 
 // === MUSIC SEARCH FUNCTIONALITY ===
-if (typeof MusicSearch === 'undefined') {
-class MusicSearch {
+if (typeof window.MusicSearch === 'undefined') {
+window.MusicSearch = class MusicSearch {
     constructor() {
         this.searchInput = document.getElementById('musicSearch');
         this.searchClear = document.getElementById('searchClear');

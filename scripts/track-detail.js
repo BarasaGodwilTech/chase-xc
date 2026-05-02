@@ -4,12 +4,130 @@ import { likedTracksManager } from './liked-tracks-manager.js'
 // Track detail page functionality
 let currentTrack = null
 let artistData = null
+let pagePlaylist = []
 
 // Helper functions for collaboration tracks
 function safeArray(val) {
   if (!val) return []
   if (Array.isArray(val)) return val.filter(Boolean)
   return []
+}
+
+// Load related tracks (More Like This)
+async function loadRelatedTracks(collaborationNames = []) {
+  const container = document.getElementById('relatedTracksGrid')
+  const section = document.getElementById('relatedTracksSection')
+  if (!container || !section || !currentTrack) return
+
+  try {
+    const allTracks = await fetchPublishedTracks()
+
+    const artistIds = new Set()
+    if (currentTrack.artist) artistIds.add(currentTrack.artist)
+    if (currentTrack.collaborators && Array.isArray(currentTrack.collaborators)) {
+      currentTrack.collaborators.forEach((id) => artistIds.add(id))
+    }
+
+    const related = pickRelatedTracks({
+      allTracks,
+      seedTrack: currentTrack,
+      artistIds: Array.from(artistIds),
+      limit: 8,
+    })
+
+    if (!related || related.length === 0) {
+      section.style.display = 'none'
+      return
+    }
+
+    // Extend the page playlist with related tracks (dedup)
+    ensurePagePlaylist([...(pagePlaylist.length ? pagePlaylist : [currentTrack]), ...related])
+
+    container.innerHTML = related
+      .map((track) => {
+        const idx = pagePlaylist.findIndex((t) => t.id === track.id)
+        return renderTrackCardHtml(track, idx, track.artistName || 'Unknown Artist')
+      })
+      .join('')
+
+    setupRelatedTracksListeners()
+  } catch (error) {
+    console.error('[TrackDetail] Error loading related tracks:', error)
+    section.style.display = 'none'
+  }
+}
+
+function setupRelatedTracksListeners() {
+  const rootSel = '#relatedTracksGrid'
+
+  document.querySelectorAll(`${rootSel} .track-play-btn`).forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation()
+      const card = btn.closest('.track-card')
+      const trackIndex = parseInt(card.dataset.track)
+      const track = pagePlaylist[trackIndex]
+      if (!track || !window.persistentPlayer) return
+
+      const fullPlaylist = buildPlayerPlaylistFromPageTracks()
+      const startIndex = Math.max(0, fullPlaylist.findIndex((t) => t.id === track.id))
+      window.persistentPlayer.setPlaylist(fullPlaylist, startIndex)
+      window.persistentPlayer.play()
+    })
+  })
+
+  document.querySelectorAll(`${rootSel} .track-card`).forEach((card) => {
+    card.addEventListener('click', (e) => {
+      if (
+        e.target.closest('.track-play-btn') ||
+        e.target.closest('.like-btn-mini') ||
+        e.target.closest('.spotify-indicator')
+      ) {
+        return
+      }
+      const trackId = card.dataset.trackId
+      if (trackId) {
+        const href = `track-detail.html?id=${trackId}`
+        if (typeof window.spaNavigate === 'function') {
+          window.spaNavigate(href)
+        } else {
+          window.location.href = href
+        }
+      }
+    })
+  })
+
+  document.querySelectorAll(`${rootSel} .like-btn-mini`).forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation()
+      const trackId = btn.dataset.likeTrackId
+      const track = pagePlaylist.find((t) => t.id === trackId) || currentTrack
+      if (!track) return
+
+      if (!isUserAuthenticated()) {
+        storePendingAction('like', { trackId })
+        redirectToAuth()
+        return
+      }
+
+      likedTracksManager.toggleLike(track, btn).then((result) => {
+        if (result?.error) {
+          if (window.notifications) window.notifications.show('Error saving favorite.', 'error')
+        }
+      })
+    })
+  })
+
+  document.querySelectorAll(`${rootSel} .spotify-indicator`).forEach((indicator) => {
+    indicator.addEventListener('click', (e) => {
+      e.stopPropagation()
+      const card = indicator.closest('.track-card')
+      const trackIndex = parseInt(card.dataset.track)
+      const track = pagePlaylist[trackIndex]
+      if (!track) return
+      const spotifyUrl = track.spotifyUrl || track.platformLinks?.spotify
+      if (spotifyUrl) window.open(spotifyUrl, '_blank')
+    })
+  })
 }
 
 function uniqueStrings(values) {
@@ -137,6 +255,113 @@ function getTrackBadge(track) {
   return null
 }
 
+function pickRelatedTracks({ allTracks, seedTrack, artistIds = [], limit = 8 }) {
+  const seedId = String(seedTrack?.id || '')
+  const seedGenre = String(seedTrack?.genre || '').toLowerCase().trim()
+  const seedTitle = String(seedTrack?.title || '').toLowerCase()
+
+  const tokenize = (s) =>
+    String(s || '')
+      .toLowerCase()
+      .split(/[^a-z0-9]+/g)
+      .filter((w) => w && w.length >= 3)
+
+  const seedWords = new Set([...tokenize(seedTitle), ...tokenize(seedTrack?.description)])
+  const seedArtistSet = new Set((artistIds || []).map((x) => String(x)))
+
+  const candidates = (allTracks || []).filter((t) => {
+    if (!t) return false
+    const id = String(t.id || '')
+    if (!id || id === seedId) return false
+    return true
+  })
+
+  const score = (t) => {
+    let s = 0
+    const g = String(t.genre || '').toLowerCase().trim()
+    if (seedGenre && g && g === seedGenre) s += 6
+
+    // small boost for same artist/collab artists (but not too much so it doesn't duplicate the section)
+    if (seedArtistSet.size > 0 && seedArtistSet.has(String(t.artist || ''))) s += 2
+
+    const words = tokenize(t.title)
+    let overlap = 0
+    for (const w of words) if (seedWords.has(w)) overlap += 1
+    s += Math.min(3, overlap)
+
+    const streams = Number(t.streams || 0)
+    if (Number.isFinite(streams)) s += Math.min(3, Math.log10(streams + 1))
+
+    const rd = new Date(t.releaseDate || 0).getTime()
+    if (Number.isFinite(rd) && rd > 0) s += Math.min(2, (Date.now() - rd) < 1000 * 60 * 60 * 24 * 45 ? 2 : 0)
+    return s
+  }
+
+  candidates.sort((a, b) => score(b) - score(a))
+  return candidates.slice(0, Math.max(0, limit))
+}
+
+function ensurePagePlaylist(tracks) {
+  const normalized = (tracks || []).filter(Boolean)
+  const seen = new Set()
+  pagePlaylist = []
+  for (const t of normalized) {
+    const id = String(t.id || '')
+    if (!id || seen.has(id)) continue
+    seen.add(id)
+    pagePlaylist.push(t)
+  }
+  window.__tracks = pagePlaylist
+}
+
+function buildPlayerPlaylistFromPageTracks() {
+  return (pagePlaylist || []).map((t) => {
+    const collabLine = normalizeArtistParts([
+      ...(safeArray(t.collaboratorNames)),
+      t.artistName,
+    ]).join(' & ')
+
+    return {
+      id: t.id,
+      title: t.title,
+      artistName: collabLine || t.artistName,
+      artwork: t.artwork,
+      platformLinks: t.platformLinks || {},
+      originalData: t,
+    }
+  })
+}
+
+function renderTrackCardHtml(track, trackIndex, fallbackArtistName = 'Unknown Artist') {
+  const badge = getTrackBadge(track)
+  const spotifyUrl = track.spotifyUrl || track.platformLinks?.spotify || ''
+  const isLiked = track?.id ? likedTracksManager.isTrackLiked(track.id) : false
+
+  return `
+    <div class="track-card" data-track="${trackIndex}" data-track-id="${track.id}">
+      <div class="track-artwork">
+        <img src="${track.artwork || ''}" alt="${track.title || ''}">
+        ${badge ? `<div class="track-badge ${badge.type}">${badge.text}</div>` : ''}
+        ${spotifyUrl ? '<div class="spotify-indicator" title="Listen on Spotify"><i class="fab fa-spotify"></i></div>' : ''}
+        <button class="track-play-btn" aria-label="Play ${track.title || ''}" type="button">
+          <i class="fas fa-play"></i>
+        </button>
+      </div>
+      <div class="track-content">
+        <div class="track-header">
+          <div class="track-info">
+            <h4 class="track-title">${track.title || ''}</h4>
+            <p class="track-artist">${track.artistName || fallbackArtistName}</p>
+          </div>
+          <button class="like-btn-mini ${isLiked ? 'liked' : ''}" title="Like" data-like-track-id="${track.id}" type="button">
+            <i class="${isLiked ? 'fas' : 'far'} fa-heart"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  `
+}
+
 // Get track ID from URL
 function getTrackIdFromUrl() {
   const params = new URLSearchParams(window.location.search)
@@ -181,6 +406,9 @@ async function loadTrackData() {
     
     // Load more from artist
     await loadMoreFromArtist(collaborationNames)
+
+    // Load related tracks to keep user engaged
+    await loadRelatedTracks(collaborationNames)
     
   } catch (error) {
     console.error('[TrackDetail] Error loading track:', error)
@@ -304,7 +532,7 @@ function renderTrackDetails(collaborationNames = []) {
         ${socials.tiktok ? `<a href="${socials.tiktok}" target="_blank" title="TikTok"><i class="fab fa-tiktok"></i></a>` : ''}
         ${socials.spotify ? `<a href="${socials.spotify}" target="_blank" title="Spotify"><i class="fab fa-spotify"></i></a>` : ''}
         ${socials.soundcloud ? `<a href="${socials.soundcloud}" target="_blank" title="SoundCloud"><i class="fab fa-soundcloud"></i></a>` : ''}
-        ${socials.twitter ? `<a href="${socials.twitter}" target="_blank" title="Twitter"><i class="fab fa-twitter"></i></a>` : ''}
+        ${socials.x ? `<a href="${socials.x}" target="_blank" title="X"><i class="fab fa-x-twitter"></i></a>` : ''}
       </div>
     `
   }
@@ -385,8 +613,13 @@ function handlePlayTrack() {
   
   // Use persistent floating player for all tracks
   if (window.persistentPlayer) {
-    // Build full playlist from all tracks if not set
-    if (window.persistentPlayer.playlist.length === 0 && window.__tracks?.length > 0) {
+    // Always prefer this page's playlist (current + more from artist + related)
+    if (pagePlaylist.length > 0) {
+      const fullPlaylist = buildPlayerPlaylistFromPageTracks()
+      const startIndex = Math.max(0, fullPlaylist.findIndex((t) => t.id === currentTrack.id))
+      window.persistentPlayer.setPlaylist(fullPlaylist, startIndex)
+    } else if (window.persistentPlayer.playlist.length === 0 && window.__tracks?.length > 0) {
+      // Fallback: previous behavior
       const fullPlaylist = window.__tracks.map(t => ({
         id: t.id,
         title: t.title,
@@ -623,42 +856,15 @@ async function loadMoreFromArtist(collaborationNames = []) {
       return
     }
     
-    // Populate window.__tracks for audio player
-    if (!window.__tracks) {
-      window.__tracks = []
-    }
-    
-    container.innerHTML = artistTracks.map((track, index) => {
-      const existingIndex = window.__tracks.findIndex(t => t.id === track.id)
-      const trackIndex = existingIndex === -1 ? (window.__tracks.push(track) - 1) : existingIndex
-      
-      const badge = getTrackBadge(track)
-      const spotifyUrl = track.spotifyUrl || track.platformLinks?.spotify || ''
-      
-      return `
-        <div class="track-card" data-track="${trackIndex}" data-track-id="${track.id}">
-          <div class="track-artwork">
-            <img src="${track.artwork || ''}" alt="${track.title || ''}">
-            ${badge ? `<div class="track-badge ${badge.type}">${badge.text}</div>` : ''}
-            ${spotifyUrl ? '<div class="spotify-indicator" title="Listen on Spotify"><i class="fab fa-spotify"></i></div>' : ''}
-            <button class="track-play-btn" aria-label="Play ${track.title || ''}" type="button">
-              <i class="fas fa-play"></i>
-            </button>
-          </div>
-          <div class="track-content">
-            <div class="track-header">
-              <div class="track-info">
-                <h4 class="track-title">${track.title || ''}</h4>
-                <p class="track-artist">${track.artistName || artistData?.name || 'Unknown Artist'}</p>
-              </div>
-              <button class="like-btn-mini" title="Like" data-like-track-id="${track.id}" type="button">
-                <i class="far fa-heart"></i>
-              </button>
-            </div>
-          </div>
-        </div>
-      `
-    }).join('')
+    const pageTracks = [currentTrack, ...artistTracks]
+    ensurePagePlaylist(pageTracks)
+
+    container.innerHTML = artistTracks
+      .map((track) => {
+        const idx = pagePlaylist.findIndex((t) => t.id === track.id)
+        return renderTrackCardHtml(track, idx, track.artistName || artistData?.name || 'Unknown Artist')
+      })
+      .join('')
     
     // Update section title for collaboration tracks
     const sectionTitle = section.querySelector('.section-title')
@@ -686,45 +892,12 @@ function setupMoreTracksListeners() {
       e.stopPropagation()
       const card = btn.closest('.track-card')
       const trackIndex = parseInt(card.dataset.track)
-      const track = window.__tracks[trackIndex]
+      const track = pagePlaylist[trackIndex]
       
       if (track && window.persistentPlayer) {
-        // Build full playlist from all tracks if not set
-        if (window.persistentPlayer.playlist.length === 0 && window.__tracks?.length > 0) {
-          const fullPlaylist = window.__tracks.map(t => ({
-            id: t.id,
-            title: t.title,
-            artistName: t.artistName,
-            artwork: t.artwork,
-            platformLinks: t.platformLinks || {},
-            originalData: t
-          }));
-          window.persistentPlayer.setPlaylist(fullPlaylist, 0);
-        }
-        
-        // Find track index in playlist
-        const existingIndex = window.persistentPlayer.playlist.findIndex(t => t.id === track.id);
-        if (existingIndex !== -1) {
-          window.persistentPlayer.currentIndex = existingIndex;
-          window.persistentPlayer.loadTrack(window.persistentPlayer.playlist[existingIndex]);
-        } else {
-          // Track not in playlist, add it
-          const collabLine = normalizeArtistParts([
-            ...(safeArray(track.collaboratorNames)),
-            track.artistName,
-          ]).join(' & ')
-          window.persistentPlayer.playlist.push({
-            id: track.id,
-            title: track.title,
-            artistName: collabLine || track.artistName,
-            artwork: track.artwork,
-            platformLinks: track.platformLinks || {},
-            originalData: track
-          });
-          window.persistentPlayer.currentIndex = window.persistentPlayer.playlist.length - 1;
-          window.persistentPlayer.loadTrack(track);
-        }
-        
+        const fullPlaylist = buildPlayerPlaylistFromPageTracks()
+        const startIndex = Math.max(0, fullPlaylist.findIndex((t) => t.id === track.id))
+        window.persistentPlayer.setPlaylist(fullPlaylist, startIndex)
         window.persistentPlayer.play()
       }
     })
@@ -756,7 +929,20 @@ function setupMoreTracksListeners() {
     btn.addEventListener('click', (e) => {
       e.stopPropagation()
       const trackId = btn.dataset.likeTrackId
-      handleLikeTrack(btn)
+      const track = pagePlaylist.find((t) => t.id === trackId) || currentTrack
+      if (!track) return
+
+      if (!isUserAuthenticated()) {
+        storePendingAction('like', { trackId })
+        redirectToAuth()
+        return
+      }
+
+      likedTracksManager.toggleLike(track, btn).then((result) => {
+        if (result?.error) {
+          if (window.notifications) window.notifications.show('Error saving favorite.', 'error')
+        }
+      })
     })
   })
   
@@ -766,7 +952,7 @@ function setupMoreTracksListeners() {
       e.stopPropagation()
       const card = indicator.closest('.track-card')
       const trackIndex = parseInt(card.dataset.track)
-      const track = window.__tracks[trackIndex]
+      const track = pagePlaylist[trackIndex]
       
       if (track) {
         const spotifyUrl = track.spotifyUrl || track.platformLinks?.spotify

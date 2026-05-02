@@ -243,10 +243,20 @@ class NotificationsPage {
 }
 
 function boot() {
-    if (document.getElementById('allNotificationsList')) {
-        new NotificationsPage()
-    }
+    const root = document.getElementById('allNotificationsList')
+    if (!root) return
+    if (root.dataset.notificationsInit === '1') return
+    root.dataset.notificationsInit = '1'
+    new NotificationsPage()
 }
 
 document.addEventListener('DOMContentLoaded', boot)
 document.addEventListener('includes:loaded', boot)
+
+document.addEventListener('spa:navigated', () => {
+    const root = document.getElementById('allNotificationsList')
+    if (!root) return
+    const page = (window.location.pathname.split('/').pop() || 'index.html')
+    if (page !== 'notifications.html') return
+    boot()
+})

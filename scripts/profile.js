@@ -11,9 +11,13 @@ import {
     markAllNotificationsRead,
     getWeeklyListeningActivity,
     getFavorites,
+    getFavoritesCount,
+    getListenedTracksCount,
     getPlaylists,
     createPlaylist
 } from './user-data.js'
+import { db } from './firebase-init.js'
+import { collection, getDocs } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js'
 import { likedTracksManager } from './liked-tracks-manager.js'
 import { fetchArtists, fetchArtistById, fetchTrackById } from './data/content-repo.js'
 
@@ -137,6 +141,16 @@ class UserProfile {
                 } else {
                     likedTracksManager.updateAllHeartIcons();
                 }
+
+                // Keep the favorites counter in sync with the canonical liked ids list when present.
+                const allLikedIds = Array.isArray(e.detail?.allLikedIds) ? e.detail.allLikedIds : null
+                if (allLikedIds) {
+                    const favoritesCount = document.getElementById('favoritesCount')
+                    if (favoritesCount) favoritesCount.textContent = String(allLikedIds.length)
+                }
+
+                // Reconcile with Firestore aggregation (in case some likes were added/removed elsewhere).
+                this.refreshAuthoritativeStats().catch(() => {})
             });
         }
     }
@@ -148,6 +162,20 @@ class UserProfile {
         this.userProfile = ensured?.data || null
 
         this.updateUI();
+    }
+
+    async refreshListeningTimeFromProfile() {
+        if (!this.currentUser?.uid) return
+        try {
+            const ensured = await ensureUserProfileDoc(this.currentUser)
+            this.userProfile = ensured?.data || this.userProfile
+            const totalListeningTime = document.getElementById('totalListeningTime')
+            if (totalListeningTime) {
+                totalListeningTime.textContent = this.formatListeningTime(this.userProfile?.stats?.totalListeningTime || 0)
+            }
+        } catch (e) {
+            console.warn('[Profile] Failed to refresh listening time', e)
+        }
     }
 
     updateUI() {
@@ -184,6 +212,12 @@ class UserProfile {
         if (membershipStatus) membershipStatus.textContent = this.getMembershipStatus();
         if (totalListeningTime) totalListeningTime.textContent = this.formatListeningTime(this.userProfile.stats?.totalListeningTime || 0);
 
+        // Replace cached stats with authoritative counts from Firestore.
+        this.refreshAuthoritativeStats().catch((e) => console.warn('[Profile] Failed to refresh authoritative stats', e))
+
+        // Refresh listening time (which is incremented over time by user-data-tracker).
+        this.refreshListeningTimeFromProfile().catch(() => {})
+
         // Load favorites, history, and playlists
         this.loadFavorites();
         this.loadHistory();
@@ -193,6 +227,46 @@ class UserProfile {
         this.loadTopTracks();
         this.loadNotifications();
         this.loadListeningActivity();
+
+        if (!this._visibilityHandlerBound) {
+            this._visibilityHandlerBound = true
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) {
+                    this.refreshListeningTimeFromProfile().catch(() => {})
+                }
+            })
+        }
+    }
+
+    async refreshAuthoritativeStats() {
+        if (!this.currentUser?.uid) return
+
+        const uid = this.currentUser.uid
+        const tracksListenedEl = document.getElementById('tracksListened')
+        const favoritesCountEl = document.getElementById('favoritesCount')
+
+        try {
+            const [favoritesTotal, listensTotal] = await Promise.all([
+                getFavoritesCount(uid),
+                getListenedTracksCount(uid)
+            ])
+
+            if (favoritesCountEl) favoritesCountEl.textContent = String(favoritesTotal)
+            if (tracksListenedEl) tracksListenedEl.textContent = String(listensTotal)
+        } catch (e) {
+            // If count aggregation isn't available, fall back to explicit document counting.
+            console.warn('[Profile] Authoritative stats fallback', e)
+            try {
+                const [favorites, listenedSnap] = await Promise.all([
+                    getFavorites(uid, 1000),
+                    getDocs(collection(db, 'users', uid, 'listenedTracks'))
+                ])
+                if (favoritesCountEl) favoritesCountEl.textContent = String(favorites.length)
+                if (tracksListenedEl) tracksListenedEl.textContent = String(listenedSnap.size)
+            } catch (inner) {
+                console.warn('[Profile] Authoritative stats fallback (doc count) failed', inner)
+            }
+        }
     }
 
     getMembershipStatus() {

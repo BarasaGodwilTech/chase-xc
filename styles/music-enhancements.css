@@ -1445,9 +1445,56 @@ select:focus-visible {
     text-overflow: ellipsis;
 }
 
+.music-user-banner {
+    margin-top: 0.85rem;
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: linear-gradient(135deg, rgba(0, 212, 255, 0.08), rgba(124, 58, 237, 0.06));
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.music-user-banner__text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.music-user-banner__text strong {
+    font-weight: 700;
+}
+
+.music-user-banner__text span {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+}
+
+.music-user-banner__actions {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
 .shelf-empty {
     color: var(--text-secondary);
     padding: 1rem 0;
+}
+
+@media (max-width: 768px) {
+    .music-user-banner {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .music-user-banner__actions {
+        width: 100%;
+        justify-content: flex-start;
+    }
 }
 
 @media (max-width: 768px) {

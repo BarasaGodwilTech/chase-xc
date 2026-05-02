@@ -903,6 +903,10 @@ class PersistentFloatingPlayer {
         this.audio.addEventListener('timeupdate', () => {
             this.updateProgress();
             this.saveProgress();
+
+            // Periodically emit state so other modules (e.g. user-data-tracker) can
+            // compute listening time based on currentTime.
+            this.maybeDispatchStateChange();
         });
         
         this.audio.addEventListener('loadedmetadata', () => {
@@ -2047,6 +2051,18 @@ class PersistentFloatingPlayer {
         }
         
         this.updateProgressUI(currentTime, duration);
+
+        // Progress tracking for non-audio platforms runs through updateProgress.
+        // Emit state occasionally so listeners can track time.
+        this.maybeDispatchStateChange();
+    }
+
+    maybeDispatchStateChange() {
+        const now = Date.now();
+        if (!this._lastStateDispatchAt) this._lastStateDispatchAt = 0;
+        if (now - this._lastStateDispatchAt < 5000) return;
+        this._lastStateDispatchAt = now;
+        this.dispatchStateChange();
     }
     
     updateProgressUI(currentTime, duration) {

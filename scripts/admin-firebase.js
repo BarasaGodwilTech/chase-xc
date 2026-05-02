@@ -659,6 +659,16 @@ async function handleAddArtistSubmit(e) {
   const name = String(fd.get('artistName') || '').trim()
   const genre = String(fd.get('artistGenre') || '').trim()
   const bio = String(fd.get('artistBio') || '').trim()
+  const socialsRaw = {
+    instagram: String(fd.get('artistInstagram') || '').trim(),
+    tiktok: String(fd.get('artistTikTok') || '').trim(),
+    youtube: String(fd.get('artistYouTube') || '').trim(),
+    spotify: String(fd.get('artistSpotify') || '').trim(),
+    soundcloud: String(fd.get('artistSoundcloud') || '').trim(),
+    appleMusic: String(fd.get('artistAppleMusic') || '').trim(),
+    website: String(fd.get('artistWebsite') || '').trim(),
+    x: String(fd.get('artistX') || '').trim(),
+  }
   const imageFile = /** @type {File|null} */ (fd.get('artistImage'))
 
   if (!name) {
@@ -705,11 +715,24 @@ async function handleAddArtistSubmit(e) {
 
     setFormSubmitBusy(form, true, '<i class="fas fa-spinner fa-spin"></i> Saving artist...')
 
+    const normalizeSocialUrl = (url) => {
+      const u = String(url || '').trim()
+      if (!u) return ''
+      return !/^https?:\/\//i.test(u) ? `https://${u}` : u
+    }
+
+    const socials = Object.fromEntries(
+      Object.entries(socialsRaw)
+        .map(([k, v]) => [k, normalizeSocialUrl(v)])
+        .filter(([, v]) => Boolean(v))
+    )
+
     const artistData = {
       name,
       genre,
       bio,
       image: imageUrl,
+      socials,
       status: 'active',
       updatedAt: serverTimestamp(),
     }
@@ -1081,6 +1104,21 @@ window.editArtist = async function(artistId) {
       document.getElementById('artistGenre').value = artist.genre || '';
       document.getElementById('artistStatus').value = artist.status || 'active';
       document.getElementById('artistBio').value = artist.bio || '';
+
+      const socials = artist.socials || {};
+      const setSocialValue = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.value = String(val || '');
+      }
+
+      setSocialValue('artistInstagram', socials.instagram);
+      setSocialValue('artistTikTok', socials.tiktok);
+      setSocialValue('artistYouTube', socials.youtube);
+      setSocialValue('artistSpotify', socials.spotify);
+      setSocialValue('artistSoundcloud', socials.soundcloud);
+      setSocialValue('artistAppleMusic', socials.appleMusic);
+      setSocialValue('artistWebsite', socials.website);
+      setSocialValue('artistX', socials.x);
       
       // Show existing image preview
       if (artist.image) {

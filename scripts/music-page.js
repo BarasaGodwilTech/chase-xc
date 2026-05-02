@@ -113,6 +113,159 @@ function renderShelfCard(track) {
   `
 }
 
+function renderMusicUserBanner() {
+  const banner = document.getElementById('musicUserBanner')
+  if (!banner) return
+
+  const user = window.userAuth?.getCurrentUser?.()
+  if (!user) {
+    banner.innerHTML = ''
+    return
+  }
+
+  const name = (user.displayName || user.email || 'there').split('@')[0]
+  const likedCount = likedTracksManager?.likedTrackIds?.size || 0
+
+  banner.innerHTML = `
+    <div class="music-user-banner">
+      <div class="music-user-banner__text">
+        <strong>Welcome back, ${escapeHtml(name)}.</strong>
+        <span>${likedCount} liked track${likedCount === 1 ? '' : 's'}</span>
+      </div>
+      <div class="music-user-banner__actions">
+        <a class="btn btn-sm btn-outline" href="profile.html">Your Library</a>
+        <a class="btn btn-sm btn-primary" href="playlist-detail.html">Playlists</a>
+      </div>
+    </div>
+  `
+}
+
+function renderLikedTracksShelf(tracks) {
+  const shelf = document.getElementById('likedTracksShelf')
+  const row = document.getElementById('likedTracksRow')
+  if (!shelf || !row) return
+
+  const user = window.userAuth?.getCurrentUser?.()
+  if (!user) {
+    shelf.style.display = 'none'
+    row.innerHTML = ''
+    return
+  }
+
+  const likedIds = new Set(likedTracksManager?.likedTrackIds ? Array.from(likedTracksManager.likedTrackIds) : [])
+  const likedTracks = (tracks || []).filter((t) => t?.id && likedIds.has(t.id))
+
+  shelf.style.display = 'block'
+
+  if (likedTracks.length === 0) {
+    row.innerHTML = '<p class="shelf-empty">Like a few tracks to see them here</p>'
+    return
+  }
+
+  const picks = likedTracks
+    .slice()
+    .sort((a, b) => (Number(b.streams || 0) - Number(a.streams || 0)))
+    .slice(0, 10)
+
+  row.innerHTML = picks.map(renderShelfCard).join('')
+}
+
+async function renderContinueListening(tracks) {
+  const shelf = document.getElementById('continueListeningShelf')
+  const row = document.getElementById('continueListeningRow')
+  if (!shelf || !row) return
+
+  const user = window.userAuth?.getCurrentUser?.()
+  if (!user) {
+    shelf.style.display = 'none'
+    row.innerHTML = ''
+    return
+  }
+
+  try {
+    const { getRecentListeningEvents } = await import('./user-data.js')
+    const events = await getRecentListeningEvents(user.uid, 20)
+
+    if (!events || events.length === 0) {
+      shelf.style.display = 'none'
+      row.innerHTML = ''
+      return
+    }
+
+    // Dedupe by trackId, preserving recency
+    const seen = new Set()
+    const recentIds = []
+    for (const e of events) {
+      if (!e.trackId) continue
+      if (seen.has(e.trackId)) continue
+      seen.add(e.trackId)
+      recentIds.push(e.trackId)
+      if (recentIds.length >= 10) break
+    }
+
+    const allTracks = tracks || []
+    const picks = recentIds
+      .map((id) => allTracks.find((t) => String(t.id) === String(id)))
+      .filter(Boolean)
+
+    if (picks.length === 0) {
+      shelf.style.display = 'none'
+      row.innerHTML = ''
+      return
+    }
+
+    shelf.style.display = 'block'
+    row.innerHTML = picks.map(renderShelfCard).join('')
+  } catch (e) {
+    console.warn('[MusicPage] Failed to load continue listening:', e)
+    shelf.style.display = 'none'
+    row.innerHTML = ''
+  }
+}
+
+async function renderRecentlyLiked(tracks) {
+  const shelf = document.getElementById('recentlyLikedShelf')
+  const row = document.getElementById('recentlyLikedRow')
+  if (!shelf || !row) return
+
+  const user = window.userAuth?.getCurrentUser?.()
+  if (!user) {
+    shelf.style.display = 'none'
+    row.innerHTML = ''
+    return
+  }
+
+  try {
+    const { getFavorites } = await import('./user-data.js')
+    const favorites = await getFavorites(user.uid, 20)
+
+    if (!favorites || favorites.length === 0) {
+      shelf.style.display = 'none'
+      row.innerHTML = ''
+      return
+    }
+
+    const allTracks = tracks || []
+    const picks = favorites
+      .slice(0, 10)
+      .map((f) => allTracks.find((t) => String(t.id) === String(f.trackId)))
+      .filter(Boolean)
+
+    if (picks.length === 0) {
+      shelf.style.display = 'none'
+      row.innerHTML = ''
+      return
+    }
+
+    shelf.style.display = 'block'
+    row.innerHTML = picks.map(renderShelfCard).join('')
+  } catch (e) {
+    console.warn('[MusicPage] Failed to load recently liked:', e)
+    shelf.style.display = 'none'
+    row.innerHTML = ''
+  }
+}
+
 function renderMadeForYou(tracks) {
   const row = document.getElementById('madeForYouRow')
   if (!row) return
@@ -752,13 +905,32 @@ async function initMusicPage() {
   await renderCollaborations(normalizedTracks, artistsById)
 
   renderMadeForYou(normalizedTracks)
+  renderLikedTracksShelf(normalizedTracks)
+  renderContinueListening(normalizedTracks)
+  renderRecentlyLiked(normalizedTracks)
   renderTopPicks(normalizedTracks)
   renderBecauseYouLikedShelves(normalizedTracks)
+  renderMusicUserBanner()
   setupShelfListeners()
 
   if (!document._madeForYouLikedListenerAttached) {
     document._madeForYouLikedListenerAttached = true
     document.addEventListener('likedTracksUpdated', () => {
+      renderMadeForYou(window.__tracks || [])
+      renderLikedTracksShelf(window.__tracks || [])
+      renderRecentlyLiked(window.__tracks || [])
+      renderBecauseYouLikedShelves(window.__tracks || [])
+      renderMusicUserBanner()
+    })
+  }
+
+  if (!document._musicPageAuthListenerAttached) {
+    document._musicPageAuthListenerAttached = true
+    document.addEventListener('authStateChanged', () => {
+      renderMusicUserBanner()
+      renderLikedTracksShelf(window.__tracks || [])
+      renderContinueListening(window.__tracks || [])
+      renderRecentlyLiked(window.__tracks || [])
       renderMadeForYou(window.__tracks || [])
       renderBecauseYouLikedShelves(window.__tracks || [])
     })

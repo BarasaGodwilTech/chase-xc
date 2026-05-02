@@ -162,6 +162,36 @@ function playTrackList(tracks, trackId) {
   window.persistentPlayer.play()
 }
 
+function pickRecommendedTracks({ allTracks, artistId, artistGenre, artistTracks, limit = 12 }) {
+  const seen = new Set((artistTracks || []).map((t) => String(t.id || '')))
+  const artistTrackGenres = new Set((artistTracks || []).map((t) => String(t.genre || '').toLowerCase()).filter(Boolean))
+  const aGenre = String(artistGenre || '').toLowerCase().trim()
+
+  const candidates = (allTracks || []).filter((t) => {
+    if (!t) return false
+    const id = String(t.id || '')
+    if (!id || seen.has(id)) return false
+    // Avoid showing the same artist again.
+    if (String(t.artist || '') === String(artistId || '')) return false
+    return true
+  })
+
+  const score = (t) => {
+    let s = 0
+    const g = String(t.genre || '').toLowerCase()
+    if (aGenre && g && g === aGenre) s += 6
+    if (g && artistTrackGenres.has(g)) s += 4
+    const streams = Number(t.streams || 0)
+    if (Number.isFinite(streams)) s += Math.min(3, Math.log10(streams + 1))
+    const rd = new Date(t.releaseDate || 0).getTime()
+    if (Number.isFinite(rd) && rd > 0) s += Math.min(2, (Date.now() - rd) < 1000 * 60 * 60 * 24 * 45 ? 2 : 0)
+    return s
+  }
+
+  candidates.sort((a, b) => score(b) - score(a))
+  return candidates.slice(0, Math.max(0, limit))
+}
+
 async function load() {
   const artistId = getArtistIdFromQuery()
 
@@ -173,6 +203,7 @@ async function load() {
   const trackCountEl = document.getElementById('artistTrackCount')
   const streamCountEl = document.getElementById('artistStreamCount')
   const tracksGrid = document.getElementById('artistTracksGrid')
+  const recommendedGrid = document.getElementById('artistRecommendedGrid')
 
   if (!artistId) {
     if (nameEl) nameEl.textContent = 'Artist not found'
@@ -205,32 +236,58 @@ async function load() {
 
     const artistTracks = (tracks || []).filter((t) => String(t.artist || '') === String(artistId))
 
-    // Provide for player/like interactions.
-    const normalizedTracks = artistTracks.map((t) => ({
+    const normalizedArtistTracks = artistTracks.map((t) => ({
       ...t,
       artistName,
     }))
+
+    const recommended = pickRecommendedTracks({
+      allTracks: tracks || [],
+      artistId,
+      artistGenre: artist.genre,
+      artistTracks: normalizedArtistTracks,
+      limit: 12,
+    }).map((t) => ({
+      ...t,
+      artistName: t.artistName || t.artistDisplayName || 'Unknown Artist',
+    }))
+
+    // Combined playlist so the player keeps going beyond the artist.
+    const normalizedTracks = [...normalizedArtistTracks, ...recommended]
     window.__tracks = normalizedTracks
 
-    if (trackCountEl) trackCountEl.textContent = formatNumber(normalizedTracks.length)
+    if (trackCountEl) trackCountEl.textContent = formatNumber(normalizedArtistTracks.length)
     if (streamCountEl) {
-      const totalStreams = normalizedTracks.reduce((sum, t) => sum + Number(t.streams || 0), 0)
+      const totalStreams = normalizedArtistTracks.reduce((sum, t) => sum + Number(t.streams || 0), 0)
       streamCountEl.textContent = formatNumber(totalStreams)
     }
 
     if (!tracksGrid) return
 
-    if (normalizedTracks.length === 0) {
+    if (normalizedArtistTracks.length === 0) {
       tracksGrid.innerHTML = '<p class="text-center">No tracks published for this artist yet.</p>'
-      return
+    } else {
+      tracksGrid.innerHTML = normalizedArtistTracks
+        .map((t, idx) => renderTrackCard(t, idx, artistName))
+        .join('')
     }
 
-    tracksGrid.innerHTML = normalizedTracks.map((t, idx) => renderTrackCard(t, idx, artistName)).join('')
+    if (recommendedGrid) {
+      if (recommended.length === 0) {
+        recommendedGrid.innerHTML = '<p class="text-center">No recommendations yet.</p>'
+      } else {
+        const offset = normalizedArtistTracks.length
+        recommendedGrid.innerHTML = recommended
+          .map((t, idx) => renderTrackCard(t, offset + idx, t.artistName))
+          .join('')
+      }
+    }
 
     setupTrackInteractions(normalizedTracks)
   } catch (e) {
     console.error('[ArtistDetail] Failed to load artist details:', e)
     if (tracksGrid) tracksGrid.innerHTML = '<p class="text-center">Error loading artist details.</p>'
+    if (recommendedGrid) recommendedGrid.innerHTML = ''
   }
 }
 

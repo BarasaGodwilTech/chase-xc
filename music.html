@@ -82,6 +82,7 @@
         <div class="container">
             <div class="section-header">
                 <h3 class="section-title">Featured Releases</h3>
+                <div id="musicUserBanner"></div>
                 <div class="section-controls">
                     <button class="filter-btn active" data-filter="all">
                         <i class="fas fa-layer-group"></i>
@@ -255,6 +256,45 @@
                     <a class="music-shelf-link" href="#musicSection">See all</a>
                 </div>
                 <div class="music-shelf-row" id="madeForYouRow">
+                    <!-- Loaded dynamically -->
+                </div>
+            </div>
+
+            <div class="music-shelf" id="likedTracksShelf" style="display:none;">
+                <div class="music-shelf-header">
+                    <div>
+                        <h3 class="section-title">Your Liked Tracks</h3>
+                        <p class="section-subtitle">Quick access to your favorites</p>
+                    </div>
+                    <a class="music-shelf-link" href="profile.html">View library</a>
+                </div>
+                <div class="music-shelf-row" id="likedTracksRow">
+                    <!-- Loaded dynamically -->
+                </div>
+            </div>
+
+            <div class="music-shelf" id="continueListeningShelf" style="display:none;">
+                <div class="music-shelf-header">
+                    <div>
+                        <h3 class="section-title">Continue Listening</h3>
+                        <p class="section-subtitle">Pick up where you left off</p>
+                    </div>
+                    <a class="music-shelf-link" href="profile.html">View history</a>
+                </div>
+                <div class="music-shelf-row" id="continueListeningRow">
+                    <!-- Loaded dynamically -->
+                </div>
+            </div>
+
+            <div class="music-shelf" id="recentlyLikedShelf" style="display:none;">
+                <div class="music-shelf-header">
+                    <div>
+                        <h3 class="section-title">Recently Liked</h3>
+                        <p class="section-subtitle">Your latest favorites</p>
+                    </div>
+                    <a class="music-shelf-link" href="profile.html">View all</a>
+                </div>
+                <div class="music-shelf-row" id="recentlyLikedRow">
                     <!-- Loaded dynamically -->
                 </div>
             </div>

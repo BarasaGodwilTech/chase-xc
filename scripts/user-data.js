@@ -1,4 +1,4 @@
-import { db, functions } from './firebase-init.js'
+import { db } from './firebase-init.js'
 import {
   doc,
   getDoc,
@@ -13,6 +13,7 @@ import {
   orderBy,
   limit,
   getDocs,
+  getCountFromServer,
   writeBatch,
   arrayUnion,
   arrayRemove,
@@ -23,6 +24,33 @@ import { httpsCallable } from 'https://www.gstatic.com/firebasejs/10.12.5/fireba
 
 function userDocRef(uid) {
   return doc(db, 'users', uid)
+}
+
+const __countCache = new Map()
+const __countInFlight = new Map()
+
+async function getCachedCount(cacheKey, fetcher, { ttlMs = 30_000 } = {}) {
+  const now = Date.now()
+  const cached = __countCache.get(cacheKey)
+  if (cached && now - cached.at < ttlMs && Number.isFinite(cached.value)) {
+    return cached.value
+  }
+
+  const inflight = __countInFlight.get(cacheKey)
+  if (inflight) return inflight
+
+  const p = (async () => {
+    try {
+      const value = await fetcher()
+      __countCache.set(cacheKey, { value, at: Date.now() })
+      return value
+    } finally {
+      __countInFlight.delete(cacheKey)
+    }
+  })()
+
+  __countInFlight.set(cacheKey, p)
+  return p
 }
 
 function safeNumber(value, fallback = 0) {
@@ -151,6 +179,10 @@ function favoriteDocRef(uid, trackId) {
   return doc(db, 'users', uid, 'favorites', trackId)
 }
 
+function listenedTrackDocRef(uid, trackId) {
+  return doc(db, 'users', uid, 'listenedTracks', trackId)
+}
+
 export async function isFavorite(uid, trackId) {
   if (!uid || !trackId) return false
   const snap = await getDoc(favoriteDocRef(uid, trackId))
@@ -165,10 +197,20 @@ export async function getFavorites(uid, max = 100) {
   return snap.docs.map(d => ({ id: d.id, ...d.data() }))
 }
 
-export async function toggleFavorite(uid, track, { force } = {}) {
-  if (!uid || !track?.id) return { liked: false }
+export async function getFavoritesCount(uid) {
+  if (!uid) return 0
+  return getCachedCount(`favorites:${uid}`, async () => {
+    const col = collection(db, 'users', uid, 'favorites')
+    const snap = await getCountFromServer(col)
+    return Number(snap.data()?.count || 0)
+  })
+}
 
-  const ref = favoriteDocRef(uid, track.id)
+export async function toggleFavorite(uid, track, { force } = {}) {
+  const trackId = track?.id || track?.trackId
+  if (!uid || !trackId) return { liked: false }
+
+  const ref = favoriteDocRef(uid, trackId)
   const snap = await getDoc(ref)
   const currentlyLiked = snap.exists()
 
@@ -176,7 +218,7 @@ export async function toggleFavorite(uid, track, { force } = {}) {
 
   if (shouldLike) {
     await setDoc(ref, {
-      trackId: track.id,
+      trackId,
       title: track.title || '',
       artistName: track.artistName || track.artist || '',
       artwork: track.artwork || track.cover || '',
@@ -189,7 +231,7 @@ export async function toggleFavorite(uid, track, { force } = {}) {
     
     // Increment track likes count in tracks collection
     if (!currentlyLiked) {
-      await incrementTrackLikes(track.id, 1)
+      await incrementTrackLikes(trackId, 1)
     }
     
     return { liked: true }
@@ -200,7 +242,7 @@ export async function toggleFavorite(uid, track, { force } = {}) {
     await incrementUserStats(uid, { favoritesDelta: -1 })
     
     // Decrement track likes count in tracks collection
-    await incrementTrackLikes(track.id, -1)
+    await incrementTrackLikes(trackId, -1)
   }
   return { liked: false }
 }
@@ -271,12 +313,13 @@ export async function removeTrackFromPlaylist(uid, playlistId, trackId) {
 }
 
 export async function logListeningEvent(uid, track, meta = {}) {
-  if (!uid || !track?.id) return
+  const trackId = track?.id || track?.trackId
+  if (!uid || !trackId) return
 
   const eventsCol = collection(db, 'users', uid, 'listeningEvents')
 
   const payload = {
-    trackId: track.id,
+    trackId,
     title: track.title || '',
     artistName: track.artistName || track.artist || '',
     artwork: track.artwork || track.cover || '',
@@ -288,9 +331,27 @@ export async function logListeningEvent(uid, track, meta = {}) {
 
   await addDoc(eventsCol, payload)
 
-  await incrementUserStats(uid, {
-    tracksListenedDelta: 1
-  })
+  // Maintain a unique per-track listen index, so "Tracks Listened" can represent
+  // unique tracks instead of raw play events.
+  const uniqueRef = listenedTrackDocRef(uid, trackId)
+  const uniqueSnap = await getDoc(uniqueRef)
+
+  await setDoc(uniqueRef, {
+    trackId,
+    title: track.title || '',
+    artistName: track.artistName || track.artist || '',
+    artwork: track.artwork || track.cover || '',
+    firstListenedAt: uniqueSnap.exists() ? (uniqueSnap.data()?.firstListenedAt || serverTimestamp()) : serverTimestamp(),
+    lastListenedAt: serverTimestamp(),
+    updatedAt: serverTimestamp()
+  }, { merge: true })
+
+  // Only increment unique tracksListened when this is the first time.
+  if (!uniqueSnap.exists()) {
+    await incrementUserStats(uid, {
+      tracksListenedDelta: 1
+    })
+  }
 }
 
 export async function incrementUserStats(uid, { tracksListenedDelta = 0, favoritesDelta = 0, listeningMinutesDelta = 0 } = {}) {
@@ -318,6 +379,24 @@ export async function getRecentListeningEvents(uid, max = 20) {
   const snap = await getDocs(q)
 
   return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+}
+
+export async function getListeningEventsCount(uid) {
+  if (!uid) return 0
+  return getCachedCount(`listeningEvents:${uid}`, async () => {
+    const col = collection(db, 'users', uid, 'listeningEvents')
+    const snap = await getCountFromServer(col)
+    return Number(snap.data()?.count || 0)
+  })
+}
+
+export async function getListenedTracksCount(uid) {
+  if (!uid) return 0
+  return getCachedCount(`listenedTracks:${uid}`, async () => {
+    const col = collection(db, 'users', uid, 'listenedTracks')
+    const snap = await getCountFromServer(col)
+    return Number(snap.data()?.count || 0)
+  })
 }
 
 export async function getWeeklyListeningActivity(uid) {
