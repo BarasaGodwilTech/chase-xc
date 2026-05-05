@@ -22,37 +22,37 @@
     align-items: center;
     justify-content: flex-start;
     gap: 6px;
-    padding: 8px 12px;
+    padding: 6px 10px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
- .flp-pip {
-     background: none;
-     border: none;
-     color: rgba(255, 255, 255, 0.5);
-     cursor: pointer;
-     font-size: 12px;
-     transition: color 0.2s, transform 0.2s;
-     width: 28px;
-     height: 28px;
-     display: flex;
-     align-items: center;
-     justify-content: center;
-     border-radius: 6px;
-     position: relative;
-     z-index: 2;
- }
+.flp-pip {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    font-size: 12px;
+    transition: color 0.2s, transform 0.2s;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    position: relative;
+    z-index: 2;
+}
 
- .flp-pip:hover {
-     color: #fff;
-     background: rgba(255, 255, 255, 0.1);
- }
+.flp-pip:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+}
 
- .flp-pip.active {
-     color: #fff;
-     background: rgba(99, 102, 241, 0.25);
-     border: 1px solid rgba(99, 102, 241, 0.35);
- }
+.flp-pip.active {
+    color: #fff;
+    background: rgba(99, 102, 241, 0.25);
+    border: 1px solid rgba(99, 102, 241, 0.35);
+}
 
 .flp-drag-handle {
     display: flex;
@@ -64,6 +64,7 @@
     min-width: 0;
     position: relative;
     z-index: 1;
+    height: 28px;
 }
 
 .flp-drag-handle:active {
@@ -118,12 +119,135 @@
     border-radius: 50%;
     position: relative;
     z-index: 2;
+    top: 6px;
+    right: 12px;
 }
 
 .flp-close:hover {
     color: #fff;
     background: rgba(255, 255, 255, 0.1);
     transform: scale(1.1);
+}
+
+@keyframes slideIn {
+    from { 
+        transform: translateX(100px);
+        opacity: 0;
+    }
+    to { 
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* WhatsApp icon z-index - ensure it stays above floating player */
+.whatsapp-float,
+.whatsapp-button,
+a[href*="whatsapp"] {
+    z-index: 9999 !important;
+}
+
+/* Mobile adjustments */
+@media (max-width: 480px) {
+    .persistent-floating-player {
+        width: calc(100% - 32px);
+        left: 16px !important;
+        right: 16px !important;
+        bottom: 16px !important;
+        top: auto !important;
+        border-radius: 12px;
+    }
+    
+    /* Video window closed by default on mobile - only shows with .visible class */
+    .flp-video-window {
+        display: none !important;
+    }
+    
+    .flp-video-window.visible {
+        display: block !important;
+        width: calc(100% - 32px);
+        left: 16px !important;
+        right: 16px !important;
+        bottom: auto !important;
+    }
+    
+    .flp-header {
+        padding: 6px 10px;
+    }
+    
+    .flp-drag-handle {
+        display: none;
+    }
+    
+    .flp-content {
+        padding: 8px;
+    }
+    
+    .flp-artwork img {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .flp-info h4 {
+        font-size: 13px;
+    }
+    
+    .flp-info p {
+        font-size: 11px;
+    }
+    
+    .flp-play-btn {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .flp-btn {
+        width: 32px;
+        height: 32px;
+    }
+    
+    /* Video toggle button visible on mobile for YouTube tracks */
+    .flp-video-toggle {
+        display: flex !important;
+        padding: 8px;
+        font-size: 11px;
+    }
+    
+    /* Collapsed mode on mobile */
+    .persistent-floating-player.collapsed {
+        width: 56px !important;
+        height: 56px !important;
+        left: auto !important;
+        right: 16px !important;
+    }
+    
+    .persistent-floating-player.collapsed .flp-mini-thumb {
+        width: 56px;
+        height: 56px;
+    }
+}
+
+/* Tablet adjustments */
+@media (min-width: 481px) and (max-width: 768px) {
+    .persistent-floating-player {
+        width: 320px;
+    }
+}
+
+/* Animation for player appearing */
+.persistent-floating-player {
+    animation: playerSlideIn 0.3s ease-out;
+}
+
+@keyframes playerSlideIn {
+    from {
+        transform: translateY(100px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
 }
 
 /* Collapsed/Mini Mode */
@@ -276,16 +400,15 @@
     color: #fff;
 }
 
-
 /* Video Toggle Button - below artwork, aligned right */
 .flp-video-toggle {
     display: none;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
+    width: 28px;
+    height: 28px;
     padding: 0;
-    margin: 4px 0 0 auto;
+    margin: 0 0 0 8px;
     background: rgba(255, 0, 0, 0.15);
     border: 1px solid rgba(255, 0, 0, 0.3);
     border-radius: 50%;
@@ -338,99 +461,11 @@
     color: #ff8800;
 }
 
-.persistent-floating-player:hover {
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
-}
-
-.persistent-floating-player.dragging {
-    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
-    transform: scale(1.02);
-}
-
-.flp-drag-handle {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 32px;
-    cursor: grab;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: rgba(255, 255, 255, 0.4);
-    font-size: 14px;
-    border-radius: 16px 16px 0 0;
-    background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, transparent 100%);
-}
-
-.flp-drag-handle:active {
-    cursor: grabbing;
-}
-
-.flp-drag-handle i {
-    opacity: 0.6;
-    transition: opacity 0.2s;
-}
-
-.persistent-floating-player:hover .flp-drag-handle i {
-    opacity: 1;
-}
-
-.flp-close {
-    position: absolute;
-    top: 8px;
-    right: 12px;
-    background: none;
-    border: none;
-    color: rgba(255, 255, 255, 0.5);
-    cursor: pointer;
-    font-size: 16px;
-    z-index: 10;
-    transition: color 0.2s, transform 0.2s;
-    width: 24px;
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-}
-
-.flp-close:hover {
-    color: #fff;
-    background: rgba(255, 255, 255, 0.1);
-    transform: scale(1.1);
-}
-
-/* Collapse button */
-.flp-collapse {
-    position: absolute;
-    top: 8px;
-    right: 40px;
-    background: none;
-    border: none;
-    color: rgba(255, 255, 255, 0.9);
-    cursor: pointer;
-    font-size: 14px;
-    z-index: 10;
-    transition: color 0.2s, transform 0.2s;
-    width: 24px;
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-}
-
-.flp-collapse:hover {
-    color: #fff;
-    background: rgba(255, 255, 255, 0.1);
-}
-
 .flp-content {
-    padding: 8px;
+    padding: 6px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 4px;
 }
 
 .flp-artwork {
@@ -440,8 +475,8 @@
 }
 
 .flp-artwork img {
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
     border-radius: 6px;
     object-fit: cover;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
@@ -449,7 +484,7 @@
 
 .flp-waveform {
     flex: 1;
-    height: 28px;
+    height: 22px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -464,16 +499,8 @@
 }
 
 @keyframes waveform {
-    from { height: 5px; }
-    to { height: 20px; }
-}
-
-.flp-waveform .waveform-bar:nth-child(odd) {
-    animation-delay: 0.1s;
-}
-
-.flp-waveform .waveform-bar:nth-child(3n) {
-    animation-delay: 0.2s;
+    from { height: 4px; }
+    to { height: 16px; }
 }
 
 .flp-info {
@@ -503,8 +530,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    padding: 2px 0;
+    gap: 6px;
+    padding: 1px 0;
 }
 
 .flp-btn {
@@ -512,8 +539,8 @@
     border: none;
     color: rgba(255, 255, 255, 0.7);
     cursor: pointer;
-    width: 32px;
-    height: 32px;
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -522,61 +549,21 @@
     font-size: 12px;
 }
 
-.flp-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: #fff;
-}
-
-.flp-btn:active {
-    transform: scale(0.95);
-}
-
-.flp-btn.active {
-    color: #1db954;
-}
-
-.flp-btn-small {
-    width: 28px;
-    height: 28px;
-    font-size: 10px;
-    position: relative;
-}
-
-.flp-repeat-one {
-    position: absolute;
-    font-size: 8px;
-    font-weight: bold;
-    bottom: 2px;
-    right: 2px;
-    color: #1db954;
-    line-height: 1;
-}
-
 .flp-play-btn {
     background: #1db954;
     color: #fff;
-    width: 40px;
-    height: 40px;
+    width: 34px;
+    height: 34px;
     font-size: 16px;
-}
-
-.flp-play-btn:hover {
-    background: #1ed760;
-    transform: scale(1.05);
-    box-shadow: 0 4px 16px rgba(29, 185, 84, 0.4);
-}
-
-.flp-play-btn:active {
-    transform: scale(0.98);
 }
 
 .flp-progress-container {
     display: flex;
     align-items: center;
-    gap: 10px;
-    font-size: 11px;
+    gap: 8px;
+    font-size: 10px;
     color: rgba(255, 255, 255, 0.6);
-    padding-top: 4px;
+    padding-top: 2px;
 }
 
 .flp-progress-bar {
@@ -587,10 +574,6 @@
     border-radius: 2px;
     cursor: pointer;
     overflow: hidden;
-}
-
-.flp-progress-bar:hover {
-    height: 6px;
 }
 
 .flp-progress-fill {
@@ -617,153 +600,9 @@
     z-index: 10;
 }
 
-.flp-seek::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 12px;
-    height: 12px;
-    background: #1db954;
-    border-radius: 50%;
-    cursor: pointer;
-}
-
-.flp-seek::-moz-range-thumb {
-    width: 12px;
-    height: 12px;
-    background: #1db954;
-    border-radius: 50%;
-    cursor: pointer;
-    border: none;
-}
-
 .flp-time {
-    font-size: 11px;
-    min-width: 36px;
+    font-size: 10px;
+    min-width: 32px;
     text-align: center;
     font-variant-numeric: tabular-nums;
-}
-
-/* Notification styles */
-.flp-notification {
-    animation: slideIn 0.3s ease-out;
-}
-
-@keyframes slideIn {
-    from { 
-        transform: translateX(100px);
-        opacity: 0;
-    }
-    to { 
-        transform: translateX(0);
-        opacity: 1;
-    }
-}
-
-/* WhatsApp icon z-index - ensure it stays above floating player */
-.whatsapp-float,
-.whatsapp-button,
-a[href*="whatsapp"] {
-    z-index: 9999 !important;
-}
-
-/* Mobile adjustments */
-@media (max-width: 480px) {
-    .persistent-floating-player {
-        width: calc(100% - 32px);
-        left: 16px !important;
-        right: 16px !important;
-        bottom: 16px !important;
-        top: auto !important;
-        border-radius: 12px;
-    }
-    
-    /* Video window closed by default on mobile - only shows with .visible class */
-    .flp-video-window {
-        display: none !important;
-    }
-    
-    .flp-video-window.visible {
-        display: block !important;
-        width: calc(100% - 32px);
-        left: 16px !important;
-        right: 16px !important;
-        bottom: auto !important;
-    }
-    
-    .flp-header {
-        padding: 6px 10px;
-    }
-    
-    .flp-drag-handle {
-        display: none;
-    }
-    
-    .flp-content {
-        padding: 8px;
-    }
-    
-    .flp-artwork img {
-        width: 40px;
-        height: 40px;
-    }
-    
-    .flp-info h4 {
-        font-size: 13px;
-    }
-    
-    .flp-info p {
-        font-size: 11px;
-    }
-    
-    .flp-play-btn {
-        width: 40px;
-        height: 40px;
-    }
-    
-    .flp-btn {
-        width: 32px;
-        height: 32px;
-    }
-    
-    /* Video toggle button visible on mobile for YouTube tracks */
-    .flp-video-toggle {
-        display: flex !important;
-        padding: 8px;
-        font-size: 11px;
-    }
-    
-    /* Collapsed mode on mobile */
-    .persistent-floating-player.collapsed {
-        width: 56px !important;
-        height: 56px !important;
-        left: auto !important;
-        right: 16px !important;
-    }
-    
-    .persistent-floating-player.collapsed .flp-mini-thumb {
-        width: 56px;
-        height: 56px;
-    }
-}
-
-/* Tablet adjustments */
-@media (min-width: 481px) and (max-width: 768px) {
-    .persistent-floating-player {
-        width: 320px;
-    }
-}
-
-/* Animation for player appearing */
-.persistent-floating-player {
-    animation: playerSlideIn 0.3s ease-out;
-}
-
-@keyframes playerSlideIn {
-    from {
-        transform: translateY(100px);
-        opacity: 0;
-    }
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
 }

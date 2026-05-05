@@ -129,11 +129,10 @@ class PersistentFloatingPlayer {
                     <div class="flp-artwork">
                         <img id="flpArtwork" src="" alt="Now Playing">
                         <div class="flp-waveform" id="flpWaveform"></div>
+                        <button class="flp-video-toggle" id="flpVideoToggle" style="display: none;" title="Toggle Video">
+                            <i class="fas fa-video"></i>
+                        </button>
                     </div>
-                    <!-- Video toggle button below artwork -->
-                    <button class="flp-video-toggle" id="flpVideoToggle" style="display: none;" title="Toggle Video">
-                        <i class="fas fa-video"></i>
-                    </button>
                     <div class="flp-info">
                         <h4 id="flpTitle">Select a track</h4>
                         <p id="flpArtist">--</p>
